@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { ThemeColors, DEFAULT_THEME, DEFAULT_SEMANTIC, applyThemeToCSS } from "@/lib/colorUtils";
+import {
+  ThemeColors,
+  DEFAULT_THEME,
+  applyThemeToCSS,
+  normalizeTheme,
+  resolveOrganizationTheme,
+} from "@/lib/colorUtils";
 import { applyThemeToDocument } from "@/lib/themeDocument";
 import {
   insertApplicationSettingForSession,
@@ -11,50 +16,83 @@ import {
   fetchPublicApplicationSettings,
   findPublicSetting,
 } from "@/services/public/publicApplicationSettingsFetch";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope, useOrganization } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { parseBrandingSettings } from "@/types/branding";
 
-const QUERY_KEY = ["theme-colors"];
+const QUERY_KEY_BASE = ["theme-colors"] as const;
 
-async function fetchThemeColors(): Promise<ThemeColors> {
-  const rows = await fetchPublicApplicationSettings(["theme_colors"]);
-  const row = findPublicSetting(rows, "theme_colors", "global_theme");
+async function fetchThemeColors(
+  organizationId: number,
+  organizationSlug: string,
+  brandingTheme?: ThemeColors,
+): Promise<ThemeColors> {
+  let dbTheme: ThemeColors | undefined;
 
-  if (!row?.setting_value) return DEFAULT_THEME;
+  try {
+    const rows = await fetchPublicApplicationSettings(
+      ["theme_colors"],
+      organizationId,
+    );
+    const row = findPublicSetting(rows, "theme_colors", "global_theme");
+    if (row?.setting_value) {
+      dbTheme = row.setting_value as unknown as ThemeColors;
+    }
+  } catch (error) {
+    console.warn("[fetchThemeColors] RPC mislukt, gebruik slug-fallback:", error);
+  }
 
-  const val = row.setting_value as unknown as ThemeColors;
-  if (!val?.primaryBase || !val?.scale) return DEFAULT_THEME;
-
-  // Migreer oud paars club-thema naar Sport Harelbeke-blauw
-  if (val.primaryBase.toLowerCase() === "#60368c") return DEFAULT_THEME;
-  
-  // Merge with defaults for any missing semantic colors
-  return {
-    ...val,
-    destructive: val.destructive ?? DEFAULT_SEMANTIC.destructive,
-    success: val.success ?? DEFAULT_SEMANTIC.success,
-    warning: val.warning ?? DEFAULT_SEMANTIC.warning,
-    info: val.info ?? DEFAULT_SEMANTIC.info,
-  };
+  return resolveOrganizationTheme(organizationSlug, {
+    brandingTheme,
+    dbTheme,
+  });
 }
 
 /**
  * Hook that loads theme colors from DB and applies them to CSS variables.
- * Call once at the app root level.
+ * Call once at the app root level (inside OrganizationProvider).
  */
 export function useThemeColorsInit() {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+  const { organization, organizationSlug } = useOrganization();
+
+  const brandingTheme = useMemo(
+    () =>
+      organization
+        ? parseBrandingSettings(organization.brandingSettings).themeColors
+        : undefined,
+    [organization],
+  );
+
+  const slugFallback = useMemo(
+    () => resolveOrganizationTheme(organizationSlug, { brandingTheme }),
+    [organizationSlug, brandingTheme],
+  );
+
   const { data: theme } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: fetchThemeColors,
-    staleTime: Infinity,
+    queryKey: withOrgQueryKey(
+      [...QUERY_KEY_BASE, organizationSlug],
+      organizationId,
+    ),
+    queryFn: () =>
+      fetchThemeColors(organizationId!, organizationSlug, brandingTheme),
+    enabled: orgQueryEnabled,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    placeholderData: slugFallback,
   });
 
   useEffect(() => {
-    const activeTheme = theme ?? DEFAULT_THEME;
+    if (!orgQueryEnabled) return;
+    const activeTheme = theme ?? slugFallback;
     applyThemeToCSS(activeTheme);
     void applyThemeToDocument(activeTheme);
-  }, [theme]);
+  }, [theme, slugFallback, organizationId, orgQueryEnabled]);
 }
 
 /**
@@ -63,10 +101,21 @@ export function useThemeColorsInit() {
 export function useThemeColorsAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+  const { organization, organizationSlug } = useOrganization();
+  const brandingTheme = organization
+    ? parseBrandingSettings(organization.brandingSettings).themeColors
+    : undefined;
+  const queryKey = withOrgQueryKey(
+    [...QUERY_KEY_BASE, organizationSlug],
+    organizationId,
+  );
 
   const { data: theme, isLoading } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: fetchThemeColors,
+    queryKey,
+    queryFn: () =>
+      fetchThemeColors(organizationId!, organizationSlug, brandingTheme),
+    enabled: orgQueryEnabled,
   });
 
   const saveMutation = useMutation({
@@ -88,9 +137,9 @@ export function useThemeColorsAdmin() {
       }
     },
     onSuccess: (_, newTheme) => {
-      applyThemeToCSS(newTheme);
-      void applyThemeToDocument(newTheme);
-      queryClient.setQueryData(QUERY_KEY, newTheme);
+      applyThemeToCSS(normalizeTheme(newTheme));
+      void applyThemeToDocument(normalizeTheme(newTheme));
+      queryClient.setQueryData(queryKey, newTheme);
       toast({ title: "Kleuren opgeslagen", description: "Het kleurenpalet is bijgewerkt." });
     },
     onError: () => {
@@ -99,7 +148,7 @@ export function useThemeColorsAdmin() {
   });
 
   return {
-    theme: theme ?? DEFAULT_THEME,
+    theme: theme ?? resolveOrganizationTheme(organizationSlug, { brandingTheme }),
     isLoading,
     saveTheme: saveMutation.mutate,
     isSaving: saveMutation.isPending,

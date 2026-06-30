@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { enhancedTeamService, Team } from "@/services";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface TeamFormData {
   team_name: string;
@@ -18,10 +20,12 @@ export interface TeamStatistics {
 export const useTeamsData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
+  const teamsQueryKey = withOrgQueryKey(['teams'], organizationId);
 
   // Fetch all teams
   const teamsQuery = useQuery({
-    queryKey: ['teams'],
+    queryKey: teamsQueryKey,
     queryFn: async () => {
       const teams = await enhancedTeamService.getAllTeams();
       return teams;
@@ -47,7 +51,7 @@ export const useTeamsData = () => {
         title: "Team toegevoegd",
         description: result.message
       });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: teamsQueryKey });
     },
     onError: (error: Error) => {
       toast({
@@ -72,7 +76,7 @@ export const useTeamsData = () => {
         title: "Team bijgewerkt",
         description: result.message
       });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: teamsQueryKey });
     },
     onError: (error: Error) => {
       toast({
@@ -97,7 +101,7 @@ export const useTeamsData = () => {
         title: "Team verwijderd",
         description: result.message
       });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: teamsQueryKey });
     },
     onError: (error: Error) => {
       toast({
@@ -195,6 +199,6 @@ export const useTeamsData = () => {
     
     // Query controls
     refetch: teamsQuery.refetch,
-    invalidate: () => queryClient.invalidateQueries({ queryKey: ['teams'] })
+    invalidate: () => queryClient.invalidateQueries({ queryKey: teamsQueryKey })
   };
 }; 

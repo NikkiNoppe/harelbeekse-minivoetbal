@@ -20,7 +20,7 @@ const SelectValue = SelectPrimitive.Value
 
 const selectTriggerBase = {
   default:
-    "flex h-10 min-w-[100px] max-w-full items-center justify-between rounded-md border border-[var(--purple-light)] bg-white px-3 py-2 text-sm text-[var(--main-color-dark)] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:truncate transition-all",
+    "flex h-10 min-w-[100px] max-w-full items-center justify-between rounded-md border border-[var(--color-primary-light)] bg-white px-3 py-2 text-sm text-[var(--color-primary-base)] ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:truncate transition-all",
   schedule:
     "flex w-full min-w-0 items-center justify-between gap-2 [&>span]:line-clamp-1 [&>span]:truncate focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
 } as const;
@@ -88,7 +88,7 @@ const SelectContent = React.forwardRef<
       ref={ref}
       className={cn(
         "relative z-[1001] max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md",
-        "bg-white text-[var(--main-color-dark)] border-[var(--purple-400)]",
+        "bg-white text-[var(--color-primary-base)] border-[var(--color-400)]",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",

@@ -37,7 +37,7 @@ const ArchiefPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16 text-purple-700">
+      <div className="flex items-center justify-center py-16 text-brand-700">
         <Loader2 className="w-6 h-6 animate-spin mr-2" /> Archief laden...
       </div>
     );
@@ -45,15 +45,15 @@ const ArchiefPage: React.FC = () => {
 
   if (isError) {
     return (
-      <div className="text-center py-16 bg-white rounded-xl border border-purple-100 space-y-3">
-        <p className="text-purple-800 font-medium">Archief kon niet worden geladen</p>
+      <div className="text-center py-16 bg-white rounded-xl border border-brand-100 space-y-3">
+        <p className="text-brand-800 font-medium">Archief kon niet worden geladen</p>
         <p className="text-sm text-muted-foreground">
           Probeer het opnieuw. Als het probleem blijft, neem contact op met de organisatie.
         </p>
         <button
           type="button"
           onClick={() => refetch()}
-          className="min-h-[44px] px-4 rounded-md text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors"
+          className="min-h-[44px] px-4 rounded-md text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors"
         >
           Opnieuw proberen
         </button>
@@ -64,11 +64,11 @@ const ArchiefPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-          <Archive className="w-5 h-5 text-purple-700" />
+        <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center">
+          <Archive className="w-5 h-5 text-brand-700" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-purple-900">Archief</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-900">Archief</h1>
           <p className="text-sm text-muted-foreground">
             Eindklassementen, playoffs en bekerwinnaars per seizoen.
           </p>
@@ -76,9 +76,9 @@ const ArchiefPage: React.FC = () => {
       </div>
 
       {seasons.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-purple-100">
-          <Archive className="w-10 h-10 mx-auto text-purple-300 mb-3" />
-          <p className="text-purple-800 font-medium">Nog geen gearchiveerde seizoenen</p>
+        <div className="text-center py-16 bg-white rounded-xl border border-brand-100">
+          <Archive className="w-10 h-10 mx-auto text-brand-300 mb-3" />
+          <p className="text-brand-800 font-medium">Nog geen gearchiveerde seizoenen</p>
           <p className="text-sm text-muted-foreground mt-1">
             Een beheerder kan het huidige seizoen archiveren via de competitie-, playoff- en bekerbeheerpagina.
           </p>

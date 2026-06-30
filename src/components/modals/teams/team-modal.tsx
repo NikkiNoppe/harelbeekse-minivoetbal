@@ -371,7 +371,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   // Memoized form sections to prevent unnecessary re-renders
   const teamNameSection = useMemo(() => (
     <div className="space-y-2">
-      <label className="text-purple-dark font-medium">Team naam *</label>
+      <label className="text-brand-dark font-medium">Team naam *</label>
       <Input
         placeholder="Voer team naam in"
         className="modal__input"
@@ -449,7 +449,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Contactpersoon</label>
+            <label className="text-brand-dark font-medium">Contactpersoon</label>
             <Input
               placeholder="Naam contactpersoon"
               className="modal__input"
@@ -460,7 +460,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
           </div>
           
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Telefoon</label>
+            <label className="text-brand-dark font-medium">Telefoon</label>
             <Input
               placeholder="Telefoonnummer"
               className="modal__input"
@@ -472,7 +472,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-purple-dark font-medium">Email</label>
+          <label className="text-brand-dark font-medium">Email</label>
           <Input
             placeholder="Email adres"
             className="modal__input"
@@ -487,7 +487,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
 
   const clubColorsSection = useMemo(() => (
     <div className="space-y-2">
-      <Label htmlFor="club_colors" className="text-purple-dark font-medium">Clubkleuren</Label>
+      <Label htmlFor="club_colors" className="text-brand-dark font-medium">Clubkleuren</Label>
       <div className="flex items-center gap-3">
         {/* Color name input (left) */}
         <div className="flex items-center gap-2 flex-1">
@@ -628,14 +628,14 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   const preferencesSection = useMemo(() => (
     <div className="space-y-6 pt-2">
       <div>
-        <h3 className="text-purple-dark font-medium mb-1">Speelmoment voorkeuren</h3>
+        <h3 className="text-brand-dark font-medium mb-1">Speelmoment voorkeuren</h3>
         <p className="text-xs text-muted-foreground">Selecteer je voorkeuren voor speeldagen, tijdsloten en locaties</p>
       </div>
       
       {/* Days */}
       {availableDays.length > 0 && (
         <div className="space-y-3">
-          <label className="text-purple-dark font-medium">Voorkeur dagen</label>
+          <label className="text-brand-dark font-medium">Voorkeur dagen</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {availableDays.map((day) => {
               const selected = isPreferenceSelected('days', day);
@@ -726,7 +726,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       {/* Timeslots */}
       {availableTimeslots.length > 0 && (
         <div className="space-y-3">
-          <label className="text-purple-dark font-medium">Voorkeur tijdsloten</label>
+          <label className="text-brand-dark font-medium">Voorkeur tijdsloten</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {availableTimeslots.map((timeslot) => {
               const selected = isPreferenceSelected('timeslots', timeslot.id);
@@ -817,7 +817,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       {/* Venues */}
       {availableVenues.length > 0 && (
         <div className="space-y-3">
-          <label className="text-purple-dark font-medium">Voorkeur locaties</label>
+          <label className="text-brand-dark font-medium">Voorkeur locaties</label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {availableVenues.map((venue) => {
               const selected = isPreferenceSelected('venues', venue.venue_id);

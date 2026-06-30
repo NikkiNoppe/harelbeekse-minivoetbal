@@ -1,5 +1,5 @@
 import React, { memo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { 
   Trophy, Award, Target, Users, Shield, Ban, 
@@ -20,6 +20,7 @@ interface ActionItem {
   icon: React.ReactNode;
   path: string;
   adminOnly?: boolean;
+  superAdminOnly?: boolean;
   teamManagerOnly?: boolean;
   refereeOnly?: boolean;
 }
@@ -39,17 +40,17 @@ const managementActions: ActionItem[] = [
 ];
 
 const systemActions: ActionItem[] = [
-  { key: "competition", label: "Competitie Planning", icon: <Trophy size={16} />, path: ADMIN_ROUTES.competition, adminOnly: true },
-  { key: "cup", label: "Beker Planning", icon: <Award size={16} />, path: ADMIN_ROUTES.cup, adminOnly: true },
-  { key: "playoffs", label: "Playoff Planning", icon: <Target size={16} />, path: ADMIN_ROUTES.playoffs, adminOnly: true },
-  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
-  { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
-  { key: "notification", label: "Berichten", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true },
+  { key: "competition", label: "Competitie Planning", icon: <Trophy size={16} />, path: ADMIN_ROUTES.competition, adminOnly: true, superAdminOnly: true },
+  { key: "cup", label: "Beker Planning", icon: <Award size={16} />, path: ADMIN_ROUTES.cup, adminOnly: true, superAdminOnly: true },
+  { key: "playoffs", label: "Playoff Planning", icon: <Target size={16} />, path: ADMIN_ROUTES.playoffs, adminOnly: true, superAdminOnly: true },
+  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true, superAdminOnly: true },
+  { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true, superAdminOnly: true },
+  { key: "notification", label: "Berichten", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true, superAdminOnly: true },
 ];
 
 const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange }) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const navigate = useOrgAwareNavigate();
+  const { user, isSuperAdmin } = useAuth();
 
   const normalizedRole = String(user?.role || "").toLowerCase();
   const isAdmin = normalizedRole === "admin";
@@ -57,6 +58,7 @@ const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange })
 
   const filterActions = (actions: ActionItem[]) => {
     return actions.filter(action => {
+      if (action.superAdminOnly && !isSuperAdmin) return false;
       if (action.adminOnly && !isAdmin) return false;
       if (action.refereeOnly && !(isAdmin || isReferee)) return false;
       return true;

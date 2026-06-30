@@ -11,6 +11,16 @@ import {
   restoreSupabaseAuthBridgeSession,
   signOutSupabaseAuthBridge,
 } from '@/lib/supabaseAuthBridge';
+import {
+  resolveOrganizationFromHostname,
+  userBelongsToOrganization,
+} from '@/services/organization/resolveOrganization';
+import { getActiveOrgSlugOverride } from '@/config/organizationHosts';
+import {
+  clearSuperAdminActingOrg,
+  getSuperAdminActingOrg,
+} from '@/lib/superAdminOrg';
+import { setSuperAdminActingOrganization } from '@/services/organization/superAdminOrganizationService';
 
 function isSuperAdminUsername(username: string): boolean {
   return username.toLowerCase() === 'superadmin';
@@ -113,6 +123,45 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
 
+        const isSuperAdminUser =
+          nextUser.isSuperAdmin === true || nextUser.id === -1;
+
+        if (isSuperAdminUser) {
+          const acting = getSuperAdminActingOrg();
+          if (acting) {
+            const applied = await setSuperAdminActingOrganization(
+              acting.organizationId,
+            );
+            if (applied) {
+              nextUser = { ...nextUser, organizationId: acting.organizationId };
+              persistAuthState(nextUser, authData.sessionToken);
+            }
+          }
+        }
+
+        try {
+          const hostOrg = await resolveOrganizationFromHostname({
+            orgSlugOverride: getActiveOrgSlugOverride({
+              isSuperAdmin: isSuperAdminUser,
+            }),
+          });
+          if (
+            !userBelongsToOrganization(
+              nextUser.organizationId,
+              hostOrg.id,
+              isSuperAdminUser,
+            )
+          ) {
+            localStorage.removeItem('auth_data');
+            setAuthContextReady(true);
+            return;
+          }
+        } catch {
+          localStorage.removeItem('auth_data');
+          setAuthContextReady(true);
+          return;
+        }
+
         setUser(nextUser);
         setIsAuthenticated(true);
         setAuthContextReady(true);
@@ -132,9 +181,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       if (isSuperAdminUsername(username)) {
         const { data, error } = await supabase.rpc('login_super_admin', {
-          p_password: password,
+          p_password: password.trim(),
         });
         if (error || !data?.[0]?.session_token) {
+          if (error) {
+            console.error('SuperAdmin login RPC error:', error.message);
+          }
           return false;
         }
 
@@ -193,8 +245,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: userData.role as User['role'],
         email: userData.email || '',
         isSuperAdmin: false,
+        organizationId: userData.organization_id,
         ...(teamId !== undefined ? { teamId } : {}),
       };
+
+      try {
+        const hostOrg = await resolveOrganizationFromHostname();
+        if (
+          !userBelongsToOrganization(
+            loggedInUser.organizationId,
+            hostOrg.id,
+            false,
+          )
+        ) {
+          await supabase.rpc('logout_user', {
+            p_session_token: userData.session_token,
+          });
+          return false;
+        }
+      } catch {
+        return false;
+      }
 
       setUser(loggedInUser);
       setIsAuthenticated(true);
@@ -224,6 +295,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
+    clearSuperAdminActingOrg();
     resetUserContextCache();
     try {
       sessionStorage.removeItem('dismissedNotifications');

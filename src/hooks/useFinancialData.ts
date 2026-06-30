@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import {
   computeTeamFinances,
   type TeamFinancesSummary,
@@ -97,6 +99,7 @@ function useMinLoadingGate(isWaiting: boolean) {
 export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const enableSync = options?.enableSync ?? true;
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const { syncStatus, forceResync, invalidateFinancialQueries } = useMatchCostSync(
     enableSync,
     undefined,
@@ -104,7 +107,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   );
 
   const teamsQuery = useQuery({
-    queryKey: ["teams-financial"],
+    queryKey: withOrgQueryKey(["teams-financial"], organizationId),
     queryFn: async (): Promise<Team[]> => {
       const teams = await fetchTeamsForSession();
       return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name })) as Team[];
@@ -121,7 +124,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   });
 
   const transactionsQuery = useQuery({
-    queryKey: ["all-team-transactions"],
+    queryKey: withOrgQueryKey(["all-team-transactions"], organizationId),
     queryFn: fetchAllTeamTransactionsOverview,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
@@ -134,7 +137,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   });
 
   const revisionQuery = useQuery({
-    queryKey: ["team-costs-revision"],
+    queryKey: withOrgQueryKey(["team-costs-revision"], organizationId),
     queryFn: fetchTeamCostsRevision,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,

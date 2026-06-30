@@ -1,5 +1,5 @@
-import { teamService } from '@/services/core/teamService';
-import { fetchPublicMatches, isRegularMatch } from '@/services/public/publicScheduleFetch';
+import { fetchPublicMatches, fetchPublicTeams, isRegularMatch } from '@/services/public/publicScheduleFetch';
+import { DEFAULT_ORGANIZATION_ID } from '@/config/organization';
 
 export interface MatchRow {
   home_team_id: number | null;
@@ -155,8 +155,10 @@ export const sortWithTiebreakers = <T extends SortableTeam>(
   return result;
 };
 
-export async function fetchRegularMatches(): Promise<MatchRow[]> {
-  const data = (await fetchPublicMatches())
+export async function fetchRegularMatches(
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
+): Promise<MatchRow[]> {
+  const data = (await fetchPublicMatches(organizationId))
     .filter(isRegularMatch)
     .map((m) => ({
       home_team_id: m.home_team_id,
@@ -170,8 +172,11 @@ export async function fetchRegularMatches(): Promise<MatchRow[]> {
 }
 
 /** Publieke teamnamen — gebruikt door competitie, playoff en archief. */
-export async function fetchTeams(): Promise<Map<number, string>> {
-  return teamService.getPublicTeamMap();
+export async function fetchTeams(
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
+): Promise<Map<number, string>> {
+  const teams = await fetchPublicTeams(organizationId);
+  return new Map(teams.map((t) => [t.team_id, t.team_name]));
 }
 
 function hasSubmittedRegularMatches(matches: MatchRow[]): boolean {
@@ -186,10 +191,12 @@ function hasSubmittedRegularMatches(matches: MatchRow[]): boolean {
 }
 
 /** Bereken reguliere competitiestand live uit matches (bron van waarheid). */
-export async function fetchRegularStandings(): Promise<RegularStanding[]> {
+export async function fetchRegularStandings(
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
+): Promise<RegularStanding[]> {
   const [regularMatches, teamMap] = await Promise.all([
-    fetchRegularMatches(),
-    fetchTeams(),
+    fetchRegularMatches(organizationId),
+    fetchTeams(organizationId),
   ]);
 
   if (!hasSubmittedRegularMatches(regularMatches)) {

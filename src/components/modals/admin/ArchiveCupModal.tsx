@@ -160,8 +160,8 @@ const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
               )}
             </div>
             {(cup.semi_finals?.length ?? 0) > 0 && (
-              <div className="rounded-lg border border-purple-100 bg-purple-50/30 p-3 space-y-2">
-                <p className="text-xs font-medium text-purple-800">Halve finales (worden mee gearchiveerd)</p>
+              <div className="rounded-lg border border-brand-100 bg-brand-50/30 p-3 space-y-2">
+                <p className="text-xs font-medium text-brand-800">Halve finales (worden mee gearchiveerd)</p>
                 <ul className="text-xs text-muted-foreground space-y-1">
                   {cup.semi_finals!.map((round) => (
                     <li key={round.label}>

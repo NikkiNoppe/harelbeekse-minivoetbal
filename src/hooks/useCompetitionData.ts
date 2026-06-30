@@ -1,6 +1,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchCompetitionMatches } from "@/services/match";
 import { fetchRegularStandings } from "@/services/standings/standingsService";
+import { useOrganization, useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface Team {
   id: number;
@@ -38,8 +40,10 @@ const sharedQueryOptions = {
   networkMode: "online" as const,
 };
 
-const fetchCompetitionStandings = async (): Promise<Team[]> => {
-  const standings = await fetchRegularStandings();
+const fetchCompetitionStandings = async (
+  organizationId: number,
+): Promise<Team[]> => {
+  const standings = await fetchRegularStandings(organizationId);
   return standings.map((s) => ({
     id: s.team_id,
     name: s.team_name,
@@ -53,17 +57,23 @@ const fetchCompetitionStandings = async (): Promise<Team[]> => {
 };
 
 export const useCompetitionStandings = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: ["competitionStandings"],
-    queryFn: fetchCompetitionStandings,
+    queryKey: withOrgQueryKey(["competitionStandings"], organizationId),
+    queryFn: () => fetchCompetitionStandings(organizationId!),
+    enabled: orgQueryEnabled,
     ...sharedQueryOptions,
   });
 };
 
 export const useCompetitionMatches = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: ["competitionMatches"],
-    queryFn: fetchCompetitionMatches,
+    queryKey: withOrgQueryKey(["competitionMatches"], organizationId),
+    queryFn: () => fetchCompetitionMatches(organizationId!),
+    enabled: orgQueryEnabled,
     ...sharedQueryOptions,
   });
 };

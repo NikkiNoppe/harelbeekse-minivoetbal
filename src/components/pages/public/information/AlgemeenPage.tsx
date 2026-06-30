@@ -6,11 +6,12 @@ import { AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
+import { useOrganizationContent } from "@/hooks/useOrganizationContent";
 import { PageHeader } from "@/components/layout";
 
 const CONTENT_PREVIEW_LENGTH = 240;
 
-const CompetitionInfo = memo(() => {
+const CompetitionInfo = memo(({ aboutParagraph }: { aboutParagraph: string }) => {
   const headingId = React.useId();
   return (
     <section aria-labelledby={headingId}>
@@ -19,9 +20,7 @@ const CompetitionInfo = memo(() => {
       </h2>
       <Card>
         <CardContent className="pt-6 text-sm">
-          <p>
-            Opgericht in 1979 is de Harelbeekse Minivoetbal Competitie uitgegroeid tot de grootste minivoetbalcompetitie van Harelbeke. Elk seizoen nemen tal van teams uit Harelbeke en omgeving deel.
-          </p>
+          <p>{aboutParagraph}</p>
         </CardContent>
       </Card>
     </section>
@@ -209,14 +208,13 @@ const NewsSection = memo(() => {
 });
 
 const AlgemeenPage: React.FC = () => {
+  const { algemeen } = useOrganizationContent();
+
   return (
     <div className="space-y-6 motion-safe:animate-slide-up">
-      <PageHeader
-        title="Minivoetbal Harelbeke"
-        subtitle="De officiële minivoetbalcompetitie van Harelbeke en Bavikhove sinds 1979"
-      />
+      <PageHeader title={algemeen.title} subtitle={algemeen.subtitle} />
 
-      <CompetitionInfo />
+      <CompetitionInfo aboutParagraph={algemeen.aboutParagraph} />
       <NewsSection />
     </div>
   );

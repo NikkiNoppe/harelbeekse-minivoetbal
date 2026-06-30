@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 
@@ -86,6 +88,7 @@ const fetchPlayersViaRPC = async (teamId: number | null): Promise<Player[]> => {
  */
 export const usePlayersQuery = (teamId: number | null = null) => {
   const { user, authContextReady } = useAuth();
+  const { organizationId } = useOrgQueryScope();
   const isAdmin = user?.role === "admin";
   
   // Determine what to fetch based on teamId and user role
@@ -111,8 +114,8 @@ export const usePlayersQuery = (teamId: number | null = null) => {
   
   // Create a stable query key
   const queryKey = useMemo(() => {
-    return playerQueryKeys.list(teamId);
-  }, [teamId]);
+    return withOrgQueryKey(playerQueryKeys.list(teamId), organizationId);
+  }, [teamId, organizationId]);
   
   return useQuery({
     queryKey,
@@ -169,9 +172,10 @@ export const usePlayersQuery = (teamId: number | null = null) => {
  */
 export const useTeamsQuery = () => {
   const { authContextReady } = useAuth();
-  
+  const { organizationId } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: ['teams'],
+    queryKey: withOrgQueryKey(['teams'], organizationId),
     queryFn: async (): Promise<Team[]> => {
       const teams = await fetchTeamsForSession();
       return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));

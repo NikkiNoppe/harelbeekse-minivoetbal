@@ -104,7 +104,7 @@ const TeamManagerSuspensionNotice: React.FC = () => {
 };
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab }) => {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const isAdmin = user?.role === "admin";
   const isTeamManager = user?.role === "player_manager";
   const { isTabVisible } = useTabVisibility();
@@ -187,6 +187,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                   <UserPage />
                 </LazyTabContent>
                 
+                <LazyTabContent value="financial" activeTab={activeTab}>
+                  <FinancialPage />
+                </LazyTabContent>
+                
+                <LazyTabContent value="polls" activeTab={activeTab}>
+                  <ScheidsrechtersPage />
+                </LazyTabContent>
+              </>
+            )}
+
+            {isSuperAdmin && (
+              <>
                 <LazyTabContent value="competition" activeTab={activeTab}>
                   <CompetitionPage />
                 </LazyTabContent>
@@ -199,27 +211,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                   <PlayoffPage />
                 </LazyTabContent>
                 
-                <LazyTabContent value="financial" activeTab={activeTab}>
-                  <FinancialPage />
-                </LazyTabContent>
-                
                 <LazyTabContent value="settings" activeTab={activeTab}>
                   <SettingsPanel />
                 </LazyTabContent>
-                
-                <LazyTabContent value="polls" activeTab={activeTab}>
-                  <ScheidsrechtersPage />
+
+                <LazyTabContent value="blog-management" activeTab={activeTab}>
+                  <BlogPage />
+                </LazyTabContent>
+
+                <LazyTabContent value="notification" activeTab={activeTab}>
+                  <NotificationPage />
                 </LazyTabContent>
               </>
             )}
-
-            <LazyTabContent value="blog-management" activeTab={activeTab}>
-              <BlogPage />
-            </LazyTabContent>
-
-            <LazyTabContent value="notification" activeTab={activeTab}>
-              <NotificationPage />
-            </LazyTabContent>
 
             {/* Scheidsrechters tab - removed as it's now handled via main navigation */}
           </div>

@@ -72,8 +72,8 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Updated purple theme colors with exact RGB values
-			purple: {
+				// Organisatie-brand palet (multi-tenant) — gekoppeld aan --color-* CSS vars
+				brand: {
 					50: 'var(--color-50)',
 					100: 'var(--color-100)',
 					200: 'var(--color-200)',
@@ -86,8 +86,8 @@ export default {
 					900: 'var(--color-900)',
 					dark: 'var(--color-primary-base)',
 					light: 'var(--color-primary-light)',
+					subtle: 'var(--color-50)',
 					white: '#ffffff',
-					'light-gray': 'var(--color-50)',
 				},
 				soccer: {
 					green: 'var(--color-primary-base)',

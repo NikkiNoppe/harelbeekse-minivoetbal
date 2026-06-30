@@ -1,0 +1,49 @@
+---
+description: Multi-tenant platformvisie en stap-voor-stap ontwikkelmethode — lees vóór elke organisatie-/tenant-feature
+alwaysApply: true
+---
+
+# Multi-tenant platform — visie & ontwikkelmethode
+
+**Lees deze rule vóór elke wijziging die meerdere organisaties, tenants of white-label deployments raakt.**
+
+## Visie
+
+Dit project groeit van **één competitie-site** (Harelbeke Minivoetbal) naar een **multi-tenant platform**.
+
+| Principe | Regel |
+|----------|-------|
+| Huidige site | Blijft hoofdgebruiker en regressie-referentie |
+| Nieuwe laag | `Organization` — herbruikbaar voor andere competities/verenigingen |
+| Codebase | **Eén** repo; geen fork per organisatie |
+| Styling & content | Per organisatie via configbestand en/of database-instellingen |
+
+Architectuur-details: `multi-tenant-database.mdc` (Supabase) en `multi-tenant-frontend.mdc` (`src/`).
+
+Auth blijft custom session tokens — zie `custom-auth-architectuur.mdc`. Tenant-scheiding is **aanvullend** op session-RPC's en RLS, geen vervanging.
+
+---
+
+## Ontwikkelmethode (verplicht)
+
+### Stap-voor-stap
+
+1. **Analyseer eerst:** "Hoe beïnvloedt deze wijziging de huidige Harelbeke-data?"
+2. **Eén feature per PR/stap** — geen grote code-dumps of alles-tegelijk refactors.
+3. **Backward compatible** tot de nieuwe structuur 100% werkt en getest is.
+4. **Harelbeke eerst groen** — elke stap moet de bestaande site ongewijzigd laten functioneren (of expliciet gemigreerd met backfill).
+
+### Verboden tijdens transitie
+
+- Bestaande kolommen/tabellen **verwijderen** vóór de vervanger productie-klaar is
+- Tenant-logica alleen in de frontend — server/RLS moet altijd mee
+- Hardcoded `organization_id` of Harelbeke-specifieke checks verspreid in de codebase
+- Parallelle codebases of forks per organisatie
+
+### Checklist vóór merge (tenant-werk)
+
+- [ ] Harelbeke-data blijft bereikbaar en correct (lokaal + security-tests)
+- [ ] Wijziging is incrementeel en reviewbaar (geen megadiff)
+- [ ] Migratie heeft backfill/default voor bestaande rijen waar nodig
+- [ ] `npm run test:security` groen na DB-wijziging
+- [ ] Documentatie in commit/PR: welke tabellen/RPC's geraakt worden

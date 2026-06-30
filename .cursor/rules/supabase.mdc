@@ -9,6 +9,9 @@ alwaysApply: true
 
 | Rule | Bestand | Scope |
 |------|---------|-------|
+| **Multi-tenant platform** | `multi-tenant-visie.mdc` | altijd — organisatielaag, stap-voor-stap migratie |
+| **Multi-tenant database** | `multi-tenant-database.mdc` | `supabase/**` — `organization_id`, RLS |
+| **Multi-tenant frontend** | `multi-tenant-frontend.mdc` | `src/**` — org-filter, config |
 | **Custom auth (definitief)** | `custom-auth-architectuur.mdc` | altijd — sessies, login, edge-auth, auth-tabellen |
 | **Session-RPC (verplicht)** | `session-rpc-beveiliging.mdc` | migraties, services, hooks, publiek/admin |
 | Gevoelige data & RLS | `supabase-rls-sensitive-data.mdc` | matches, players, users |

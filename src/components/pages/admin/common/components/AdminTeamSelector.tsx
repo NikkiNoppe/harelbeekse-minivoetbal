@@ -106,7 +106,7 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
                           onClick={() => onToggle(team.team_id)}
                           className={cn(
                             "flex items-center gap-2 cursor-pointer",
-                            isSelected && "bg-purple-50 hover:bg-purple-100"
+                            isSelected && "bg-brand-50 hover:bg-brand-100"
                           )}
                           aria-selected={isSelected}
                         >
@@ -114,7 +114,7 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
                             checked={isSelected}
                             onCheckedChange={() => onToggle(team.team_id)}
                             id={`admin-team-${team.team_id}`}
-                            className="mr-2 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600 data-[state=checked]:text-white focus:ring-purple-600"
+                            className="mr-2 data-[state=checked]:bg-brand-600 data-[state=checked]:border-brand-600 data-[state=checked]:text-white focus:ring-brand-600"
                             onClick={(e) => e.stopPropagation()}
                           />
                           <Label 

@@ -1,0 +1,100 @@
+---
+description: UX-principes — feedback, formulieren, navigatie, leeg/fout-states
+globs: src/components/**/*.tsx,src/pages/**/*.tsx
+alwaysApply: false
+---
+
+# UX-principes
+
+**Lees vóór nieuwe pagina's, modals, formulieren of interactieflows.** Combineer met `data-snel-laden.mdc` (laad-UX), `ui-mobile-first.mdc` en `ui-design-system.mdc`.
+
+## Feedback & status
+
+| Situatie | Gedrag |
+|----------|--------|
+| Actie gestart | Knop `disabled` + loading-indicator (`isPending`, `Loader2`) |
+| Succes | Toast (`useToast`) of inline bevestiging; modal sluiten indien van toepassing |
+| Fout | Duidelijke NL-foutmelding + herstelactie (Opnieuw, Sluiten) |
+| Achtergrond-sync | Subtiele banner — blokkeer niet de hele UI (`data-snel-laden.mdc`) |
+| Vernieuwen met data op scherm | Subtiele "Vernieuwen…" — geen full-page spinner |
+
+**Nooit:** stil falen; generieke "Er is iets misgegaan" zonder context waar een specifiekere boodschap kan.
+
+---
+
+## Laad-, leeg- en fout-states
+
+Zie `data-snel-laden.mdc` voor het verplichte TanStack Query-patroon. Samenvatting:
+
+| Status | UI |
+|--------|-----|
+| Eerste fetch bezig | Skeleton in content (min. 250 ms) |
+| `isFetched` + leeg | "Geen … gevonden" — pas na succesvolle fetch |
+| Fout / timeout (>5 s) | Foutmelding + Opnieuw-knop |
+| Modal open, detail laadt | Placeholder uit list-cache waar mogelijk |
+
+**Nooit:** `data = []` als default die laden maskeert.
+
+---
+
+## Formulieren
+
+1. **Labels** boven velden (mobiel); `htmlFor` + `id` gekoppeld
+2. **Validatie** inline bij submit; destructive tekst onder het veld
+3. **Primaire actie** rechts/onderaan; destructive apart gestyled (`variant="destructive"`)
+4. **Annuleren** altijd zichtbaar in modals (`AppModal`-patroon)
+5. **Destructieve acties** — bevestigingsmodal (`AppAlertModal`) vóór delete/irreversibel
+6. **Autosave** alleen waar expliciet ontworpen; anders expliciete Opslaan-knop
+
+---
+
+## Navigatie & hiërarchie
+
+- **Publiek:** `Header` + hamburger Sheet; actieve route visueel gemarkeerd
+- **Admin:** zelfde patroon; `admin-quick-sheet` op mobiel
+- **Breadcrumbs** waar diepte > 2 (admin subpagina's)
+- **Terug-navigatie:** browser back werkt; geen dode einden
+- **Deep links:** routes bookmarkbaar; modals via URL alleen als bestaand patroon
+
+Paginatitel: `useRouteMeta` + `branding.meta` — niet hardcoded per pagina tenzij content-specifiek.
+
+---
+
+## Content & taal
+
+- **Taal:** Nederlands (BE) — informeel-professioneel, geen jargon
+- **Datums/tijden:** consistent `nl-BE` formatting
+- **Cijfers:** €-bedragen met komma-decimaal waar financieel
+- **Lege tabellen:** korte uitleg + actie ("Voeg team toe") indien admin
+
+---
+
+## Modals & sheets
+
+- Focus trap en Escape sluiten (shadcn Dialog/Sheet)
+- Scroll **binnen** modal op mobiel; body niet locken zonder reden
+- `min-h-[44px]` op sluit- en actieknoppen
+- Grote formulieren: sticky footer met acties op mobiel waar nodig
+
+---
+
+## Consistentie
+
+| Element | Patroon |
+|---------|---------|
+| Knoppen | `Button` uit `@/components/ui/button` |
+| Modals | `AppModal`, `AppAlertModal` |
+| Tabellen (mobiel) | `ResponsiveTable` / cards — geen brede vaste tabellen |
+| Cards | shadcn `Card` + project spacing |
+| Toasts | `useToast` — max. één toast per actie |
+
+---
+
+## Anti-patterns
+
+- Full-page blocking loader als enige laadtoestand
+- Hover-only essentiële acties (zie `ui-mobile-first.mdc`)
+- Meerdere concurrerende primaire knoppen
+- Formulier zonder foutfeedback bij mislukte submit
+- Modal die niet scrollbaar is op kleine viewports
+- Engelse UI-teksten in gebruikersgerichte flows

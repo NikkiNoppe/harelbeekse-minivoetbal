@@ -17,23 +17,34 @@ export type Database = {
       application_settings: {
         Row: {
           id: number
+          organization_id: number
           setting_category: string
           setting_name: string
           setting_value: Json
         }
         Insert: {
           id?: number
+          organization_id: number
           setting_category: string
           setting_name: string
           setting_value?: Json
         }
         Update: {
           id?: number
+          organization_id?: number
           setting_category?: string
           setting_name?: string
           setting_value?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "application_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auth_rate_limits: {
         Row: {
@@ -59,20 +70,31 @@ export type Database = {
           category: string
           id: number
           name: string
+          organization_id: number
         }
         Insert: {
           amount?: number | null
           category: string
           id?: number
           name: string
+          organization_id: number
         }
         Update: {
           amount?: number | null
           category?: string
           id?: number
           name?: string
+          organization_id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "costs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matches: {
         Row: {
@@ -93,6 +115,7 @@ export type Database = {
           location: string | null
           match_date: string
           match_id: number
+          organization_id: number
           playoff_type: string | null
           poll_group_id: string | null
           poll_month: string | null
@@ -120,6 +143,7 @@ export type Database = {
           location?: string | null
           match_date: string
           match_id?: number
+          organization_id: number
           playoff_type?: string | null
           poll_group_id?: string | null
           poll_month?: string | null
@@ -147,6 +171,7 @@ export type Database = {
           location?: string | null
           match_date?: string
           match_id?: number
+          organization_id?: number
           playoff_type?: string | null
           poll_group_id?: string | null
           poll_month?: string | null
@@ -171,7 +196,35 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["team_id"]
           },
+          {
+            foreignKeyName: "matches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      organizations: {
+        Row: {
+          branding_settings: Json
+          id: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          branding_settings?: Json
+          id: number
+          name: string
+          slug: string
+        }
+        Update: {
+          branding_settings?: Json
+          id?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       password_reset_tokens: {
         Row: {
@@ -208,6 +261,7 @@ export type Database = {
           birth_date: string
           first_name: string
           last_name: string
+          organization_id: number
           player_id: number
           red_cards: number | null
           suspended_matches_remaining: number
@@ -218,6 +272,7 @@ export type Database = {
           birth_date: string
           first_name: string
           last_name: string
+          organization_id: number
           player_id?: number
           red_cards?: number | null
           suspended_matches_remaining?: number
@@ -228,6 +283,7 @@ export type Database = {
           birth_date?: string
           first_name?: string
           last_name?: string
+          organization_id?: number
           player_id?: number
           red_cards?: number | null
           suspended_matches_remaining?: number
@@ -235,6 +291,13 @@ export type Database = {
           yellow_cards?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "players_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "players_team_id_fkey"
             columns: ["team_id"]
@@ -251,6 +314,7 @@ export type Database = {
           id: number
           is_available: boolean | null
           match_id: number | null
+          organization_id: number
           poll_group_id: string | null
           poll_month: string | null
           referee_id: number
@@ -261,6 +325,7 @@ export type Database = {
           id?: number
           is_available?: boolean | null
           match_id?: number | null
+          organization_id: number
           poll_group_id?: string | null
           poll_month?: string | null
           referee_id: number
@@ -271,11 +336,20 @@ export type Database = {
           id?: number
           is_available?: boolean | null
           match_id?: number | null
+          organization_id?: number
           poll_group_id?: string | null
           poll_month?: string | null
           referee_id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referee_matches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_costs: {
         Row: {
@@ -284,6 +358,7 @@ export type Database = {
           id: number
           is_auto_card_penalty: boolean
           match_id: number | null
+          organization_id: number
           team_id: number | null
           transaction_date: string
         }
@@ -293,6 +368,7 @@ export type Database = {
           id?: number
           is_auto_card_penalty?: boolean
           match_id?: number | null
+          organization_id: number
           team_id?: number | null
           transaction_date?: string
         }
@@ -302,6 +378,7 @@ export type Database = {
           id?: number
           is_auto_card_penalty?: boolean
           match_id?: number | null
+          organization_id?: number
           team_id?: number | null
           transaction_date?: string
         }
@@ -321,6 +398,13 @@ export type Database = {
             referencedColumns: ["match_id"]
           },
           {
+            foreignKeyName: "team_costs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "team_costs_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -332,16 +416,19 @@ export type Database = {
       team_users: {
         Row: {
           id: number
+          organization_id: number
           team_id: number | null
           user_id: number | null
         }
         Insert: {
           id?: number
+          organization_id: number
           team_id?: number | null
           user_id?: number | null
         }
         Update: {
           id?: number
+          organization_id?: number
           team_id?: number | null
           user_id?: number | null
         }
@@ -357,8 +444,22 @@ export type Database = {
             foreignKeyName: "team_managers_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "team_managers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "team_users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "team_users_team_id_fkey"
@@ -375,6 +476,7 @@ export type Database = {
           contact_email: string | null
           contact_person: string | null
           contact_phone: string | null
+          organization_id: number
           preferred_play_moments: Json | null
           team_id: number
           team_name: string
@@ -384,6 +486,7 @@ export type Database = {
           contact_email?: string | null
           contact_person?: string | null
           contact_phone?: string | null
+          organization_id: number
           preferred_play_moments?: Json | null
           team_id?: number
           team_name: string
@@ -393,11 +496,20 @@ export type Database = {
           contact_email?: string | null
           contact_person?: string | null
           contact_phone?: string | null
+          organization_id?: number
           preferred_play_moments?: Json | null
           team_id?: number
           team_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_sessions: {
         Row: {
@@ -424,6 +536,7 @@ export type Database = {
         Row: {
           auth_uid: string | null
           email: string | null
+          organization_id: number
           password: string
           role: Database["public"]["Enums"]["user_role"]
           user_id: number
@@ -432,6 +545,7 @@ export type Database = {
         Insert: {
           auth_uid?: string | null
           email?: string | null
+          organization_id: number
           password: string
           role: Database["public"]["Enums"]["user_role"]
           user_id?: number
@@ -440,16 +554,59 @@ export type Database = {
         Update: {
           auth_uid?: string | null
           email?: string | null
+          organization_id?: number
           password?: string
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: number
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          auth_uid: string | null
+          email: string | null
+          organization_id: number | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          user_id: number | null
+          username: string | null
+        }
+        Insert: {
+          auth_uid?: string | null
+          email?: string | null
+          organization_id?: number | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: number | null
+          username?: string | null
+        }
+        Update: {
+          auth_uid?: string | null
+          email?: string | null
+          organization_id?: number | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          user_id?: number | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_team_cost: {
@@ -502,15 +659,26 @@ export type Database = {
         }
         Returns: boolean
       }
-      apply_app_user_context: {
-        Args: {
-          p_role: string
-          p_team_ids: string
-          p_user_id: number
-          p_username?: string
-        }
-        Returns: undefined
-      }
+      apply_app_user_context:
+        | {
+            Args: {
+              p_role: string
+              p_team_ids: string
+              p_user_id: number
+              p_username?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_organization_id?: number
+              p_role: string
+              p_team_ids: string
+              p_user_id: number
+              p_username?: string
+            }
+            Returns: undefined
+          }
       apply_suspension_after_match: {
         Args: { match_id_param: number }
         Returns: undefined
@@ -548,6 +716,10 @@ export type Database = {
       calculate_team_balance_updated: {
         Args: { team_id_param: number }
         Returns: number
+      }
+      can_access_organization: {
+        Args: { p_organization_id: number }
+        Returns: boolean
       }
       can_current_user_manage_player: {
         Args: { player_team_id: number }
@@ -595,12 +767,13 @@ export type Database = {
           email_param: string
           p_session_token: string
           password_param: string
-          role_param: Database["public"]["Enums"]["user_role"]
+          role_param?: Database["public"]["Enums"]["user_role"]
           username_param: string
         }
         Returns: {
           auth_uid: string | null
           email: string | null
+          organization_id: number
           password: string
           role: Database["public"]["Enums"]["user_role"]
           user_id: number
@@ -678,6 +851,7 @@ export type Database = {
           name: string
         }[]
       }
+      get_current_user_organization_id: { Args: never; Returns: number }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_team_ids: { Args: never; Returns: number[] }
       get_match_card_events: {
@@ -746,6 +920,7 @@ export type Database = {
           location: string | null
           match_date: string
           match_id: number
+          organization_id: number
           playoff_type: string | null
           poll_group_id: string | null
           poll_month: string | null
@@ -821,11 +996,11 @@ export type Database = {
         }[]
       }
       get_profile_polls_for_session: {
-        Args: { p_session_token: string }
+        Args: { p_organization_id: number; p_session_token: string }
         Returns: Json
       }
       get_public_application_settings: {
-        Args: { p_categories: string[] }
+        Args: { p_categories?: string[]; p_organization_id?: number }
         Returns: {
           id: number
           setting_category: string
@@ -834,7 +1009,7 @@ export type Database = {
         }[]
       }
       get_public_matches: {
-        Args: never
+        Args: { p_organization_id?: number }
         Returns: {
           away_position: number
           away_score: number
@@ -859,7 +1034,7 @@ export type Database = {
         }[]
       }
       get_public_teams: {
-        Args: never
+        Args: { p_organization_id?: number }
         Returns: {
           club_colors: string
           team_id: number
@@ -1074,6 +1249,7 @@ export type Database = {
         Args: { input_password: string; input_username_or_email: string }
         Returns: {
           email: string
+          organization_id: number
           role: string
           session_token: string
           team_ids: number[]
@@ -1122,6 +1298,7 @@ export type Database = {
       manage_profile_poll_for_session: {
         Args: {
           p_operation: string
+          p_organization_id: number
           p_payload?: Json
           p_poll_id?: number
           p_session_token: string
@@ -1214,6 +1391,7 @@ export type Database = {
       submit_profile_poll_response_for_session: {
         Args: {
           p_option_ids: string[]
+          p_organization_id: number
           p_poll_id: number
           p_session_token: string
         }
@@ -1291,6 +1469,16 @@ export type Database = {
           user_id_param: number
         }
         Returns: boolean
+      }
+      upsert_organization_for_super_admin: {
+        Args: {
+          p_branding_settings?: Json
+          p_name: string
+          p_organization_id: number
+          p_session_token: string
+          p_slug: string
+        }
+        Returns: Json
       }
       upsert_referee_availability_for_session: {
         Args: {

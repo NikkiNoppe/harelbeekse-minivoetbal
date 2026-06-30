@@ -1,0 +1,89 @@
+---
+description: Multi-tenant frontend — actieve organization_id, config en query-filters in src/
+globs: src/**
+alwaysApply: false
+---
+
+# Multi-tenant — frontend & services
+
+**Lees vóór hooks, services, pagina's of config die organisatie-data tonen of muteren.** Combineer met `multi-tenant-visie.mdc`, `data-snel-laden.mdc` en `supabase-client.mdc`.
+
+## Kernregel
+
+**Elke query/mutatie op organisatie-data MOET filteren op de actieve `organization_id`.**
+
+De client bepaalt niet welke tenant zichtbaar is — die komt uit:
+
+1. **Host/slug/subdomein** (bijv. `harelbeke.…` / pad-prefix), of
+2. **Organisatie-config** (env / database), of
+3. **Sessie** (zodra `resolve_app_session` `organization_id` teruggeeft)
+
+Hardcoded Harelbeke-id's alleen tijdelijk in migratie/backfill — niet in productie-features.
+
+---
+
+## Organisatie-config (één codebase)
+
+| Laag | Aanpak |
+|------|--------|
+| Branding | Logo, kleuren, titel via org-config (niet hardcoded in componenten) — zie `ui-design-system.mdc` |
+| Content | Teksten/instellingen uit DB of config per `organization_id` |
+| Thema | `application_settings.theme_colors` + `organizations.branding_settings` — `useThemeColorsInit` |
+| Routes | Zelfde routes; tenant uit resolver, geen duplicate pagina's per org |
+
+Centraliseer org-context in één provider/hook (bijv. `OrganizationProvider` / `useOrganization`) — niet verspreid over services.
+
+Publieke paginateksten: `useOrganizationContent()` + `src/config/organizationContent.ts` (override via `branding_settings.content`).
+
+---
+
+## Services & hooks
+
+```typescript
+// ✅ GOED — organization_id uit context, niet uit user-input
+const { organizationId } = useOrganization();
+supabase.rpc('get_teams_for_session', {
+  ...getRpcSessionArgs(),
+  p_organization_id: organizationId, // alleen als RPC dit server-side valideert
+});
+
+// ❌ FOUT — geen filter, vertrouwt op impliciete single-tenant
+supabase.rpc('get_teams_for_session', getRpcSessionArgs());
+```
+
+| Regel | Detail |
+|-------|--------|
+| Publieke fetches | `publicScheduleFetch` etc. krijgen `organizationId` of slug |
+| TanStack Query keys | Inclusief `organizationId`: `['teams', organizationId]` |
+| Mutaties | Na save: `invalidateQueries` scoped op org-key |
+| Placeholder/cache | Geen data van org A tonen bij switch naar org B |
+
+Zie `data-snel-laden.mdc` voor laad-UX; tenant-wissel mag geen flits van verkeerde data geven.
+
+---
+
+## UI & SEO
+
+- `document.title`, favicon, OG-tags: uit org-config waar van toepassing
+- Footer/header branding: geen Harelbeke-specifieke assets zonder org-fallback
+- Admin: super-admin ziet meerdere orgs alleen via expliciete org-selector + server-check
+
+---
+
+## Ontwikkelstappen (frontend)
+
+1. Org-resolver + context provider
+2. Bestaande hooks één voor één: `organizationId` in queryKey + fetch
+3. Config-driven branding (kleuren, logo, sitenaam)
+4. Regressietest: Harelbeke-flow ongewijzigd
+
+**Geen grote refactor in één keer** — per feature/route migreren.
+
+---
+
+## Anti-patterns
+
+- `organization_id` optioneel laten in TypeScript types/services
+- Tenant filter alleen in React, niet in RPC/RLS
+- Aparte componenten per organisatie i.p.v. config
+- Query keys zonder `organizationId` (cache-lek tussen tenants)

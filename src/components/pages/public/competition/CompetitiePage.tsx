@@ -26,6 +26,8 @@ import {
 import { seasonService } from "@/services/seasonService";
 import { deriveSeasonLabel } from "@/services/archiveService";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { cn } from "@/lib/utils";
 
 const DataErrorState = memo(({
@@ -141,7 +143,7 @@ const MatchGroup = memo(({
     >
       <span className="text-left flex-1">{speeldag}</span>
     </AccordionTrigger>
-    <AccordionContent className="!p-0 border-t border-purple-light bg-card">
+    <AccordionContent className="!p-0 border-t border-brand-light bg-card">
       {matches.map((match) => (
         <MatchListItem key={match.matchId} match={match} />
       ))}
@@ -190,10 +192,12 @@ const CompetitiePage: React.FC = () => {
   const showMatchesTimeout = matchesGate.timedOut && !hasMatchesData;
 
   const { isTabVisible } = useTabVisibility();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   const { data: seasonData } = useQuery({
-    queryKey: ["seasonData"],
-    queryFn: () => seasonService.getSeasonData(),
+    queryKey: withOrgQueryKey(["seasonData"], organizationId),
+    queryFn: () => seasonService.getSeasonData(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });

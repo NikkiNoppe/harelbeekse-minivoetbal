@@ -62,7 +62,137 @@ export const DEFAULT_THEME: ThemeColors = {
   info: { base: "#007fff", bg: "#e3f3fc" },
 };
 
-/** Convert hex to HSL */
+/** Kuurne minivoetbal — minivoetbalkuurne.be (donker + geel accent). */
+export const KUURNE_THEME: ThemeColors = {
+  primaryBase: "#1A1A1A",
+  primaryLight: "#FFC107",
+  scale: {
+    50: "#fafafa",
+    100: "#f5f5f5",
+    200: "#FFF8E1",
+    300: "#FFE082",
+    400: "#FFD54F",
+    500: "#FFC107",
+    600: "#1A1A1A",
+    700: "#141414",
+    800: "#0f0f0f",
+    900: "#0a0a0a",
+  },
+  destructive: DEFAULT_SEMANTIC.destructive,
+  success: DEFAULT_SEMANTIC.success,
+  warning: { base: "#FFC107", bg: "#FFF8E1" },
+  info: { base: "#5A8F99", bg: "#E0EFF2" },
+};
+
+/** Code-fallback per organisatie-slug (sync met DB-migraties). */
+export const ORGANIZATION_THEMES: Record<string, ThemeColors> = {
+  harelbeke: DEFAULT_THEME,
+  kuurne: KUURNE_THEME,
+};
+
+export function normalizeTheme(val: ThemeColors | undefined): ThemeColors {
+  if (!val?.primaryBase || !val?.scale) return DEFAULT_THEME;
+  if (val.primaryBase.toLowerCase() === "#60368c") return DEFAULT_THEME;
+  return {
+    ...val,
+    destructive: val.destructive ?? DEFAULT_SEMANTIC.destructive,
+    success: val.success ?? DEFAULT_SEMANTIC.success,
+    warning: val.warning ?? DEFAULT_SEMANTIC.warning,
+    info: val.info ?? DEFAULT_SEMANTIC.info,
+  };
+}
+
+export function resolveOrganizationTheme(
+  slug: string,
+  options?: {
+    brandingTheme?: ThemeColors;
+    dbTheme?: ThemeColors;
+  },
+): ThemeColors {
+  const branding = options?.brandingTheme;
+  if (branding?.primaryBase && branding?.scale) {
+    return normalizeTheme(branding);
+  }
+  const db = options?.dbTheme;
+  if (db?.primaryBase && db?.scale) {
+    return normalizeTheme(db);
+  }
+  return ORGANIZATION_THEMES[slug] ?? DEFAULT_THEME;
+}
+
+function setTwRgbTriplet(root: HTMLElement, token: string, hex: string): void {
+  const [r, g, b] = hexToRgb(hex);
+  root.style.setProperty(`--tw-${token}`, `${r} ${g} ${b}`);
+}
+
+/** Apply theme colors to CSS custom properties on :root */
+export function applyThemeToCSS(theme: ThemeColors): void {
+  const root = document.documentElement;
+  const normalized = normalizeTheme(theme);
+  const [r, g, b] = hexToRgb(normalized.primaryBase);
+
+  root.style.setProperty("--color-primary-base", normalized.primaryBase);
+  root.style.setProperty("--color-primary-light", normalized.primaryLight);
+  root.style.setProperty("--brand-dark", normalized.primaryBase);
+  root.style.setProperty("--brand-light", normalized.primaryLight);
+
+  for (const [key, value] of Object.entries(normalized.scale)) {
+    root.style.setProperty(`--color-${key}`, value);
+  }
+
+  const opacities = [0.04, 0.07, 0.09, 0.10, 0.12, 0.15, 0.18, 0.25];
+  const opacityNames = ["04", "07", "09", "10", "12", "15", "18", "25"];
+  opacities.forEach((opacity, i) => {
+    root.style.setProperty(
+      `--color-shadow-primary-${opacityNames[i]}`,
+      `rgba(${r}, ${g}, ${b}, ${opacity})`,
+    );
+  });
+
+  const semantic = {
+    destructive: normalized.destructive ?? DEFAULT_SEMANTIC.destructive,
+    success: normalized.success ?? DEFAULT_SEMANTIC.success,
+    warning: normalized.warning ?? DEFAULT_SEMANTIC.warning,
+    info: normalized.info ?? DEFAULT_SEMANTIC.info,
+  };
+
+  for (const [name, colors] of Object.entries(semantic)) {
+    root.style.setProperty(`--color-${name}`, colors.base);
+    root.style.setProperty(`--color-${name}-dark`, colors.base);
+    root.style.setProperty(`--color-${name}-bg`, colors.bg);
+    if (colors.border) {
+      root.style.setProperty(`--color-${name}-border`, colors.border);
+    }
+    if (name === "destructive") {
+      const [dr, dg, db] = hexToRgb(colors.base);
+      root.style.setProperty("--color-shadow-destructive-07", `rgba(${dr}, ${dg}, ${db}, 0.07)`);
+      root.style.setProperty("--color-shadow-destructive-15", `rgba(${dr}, ${dg}, ${db}, 0.15)`);
+    }
+  }
+
+  // Shadcn / Tailwind RGB tokens — anders blijven Harelbeke-waarden uit index.css actief
+  root.style.setProperty("--primary", "var(--color-600)");
+  root.style.setProperty("--foreground", "var(--color-600)");
+  root.style.setProperty("--ring", "var(--color-600)");
+  root.style.setProperty("--focus-ring-color", "var(--color-600)");
+
+  setTwRgbTriplet(root, "primary", normalized.scale[600]);
+  setTwRgbTriplet(root, "foreground", normalized.scale[600]);
+  setTwRgbTriplet(root, "ring", normalized.scale[600]);
+  setTwRgbTriplet(root, "secondary", normalized.scale[50]);
+  setTwRgbTriplet(root, "secondary-foreground", normalized.scale[600]);
+  setTwRgbTriplet(root, "muted", normalized.scale[50]);
+  setTwRgbTriplet(root, "muted-foreground", normalized.scale[700]);
+  setTwRgbTriplet(root, "accent", normalized.scale[50]);
+  setTwRgbTriplet(root, "accent-foreground", normalized.scale[700]);
+  setTwRgbTriplet(root, "card-foreground", normalized.scale[600]);
+  setTwRgbTriplet(root, "popover-foreground", normalized.scale[600]);
+  setTwRgbTriplet(root, "primary-foreground", "#ffffff");
+  setTwRgbTriplet(root, "background", "#ffffff");
+  setTwRgbTriplet(root, "card", "#ffffff");
+  setTwRgbTriplet(root, "popover", "#ffffff");
+  setTwRgbTriplet(root, "input", normalized.scale[200]);
+}
 export function hexToHsl(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return [0, 0, 0];
@@ -162,50 +292,4 @@ export function generateThemeFromBase(baseHex: string): ThemeColors {
     scale,
     ...DEFAULT_SEMANTIC,
   };
-}
-
-/** Apply theme colors to CSS custom properties on :root */
-export function applyThemeToCSS(theme: ThemeColors): void {
-  const root = document.documentElement;
-  const [r, g, b] = hexToRgb(theme.primaryBase);
-
-  root.style.setProperty("--color-primary-base", theme.primaryBase);
-  root.style.setProperty("--color-primary-light", theme.primaryLight);
-
-  // Scale
-  for (const [key, value] of Object.entries(theme.scale)) {
-    root.style.setProperty(`--color-${key}`, value);
-  }
-
-  // Shadow RGBA variants
-  const opacities = [0.04, 0.07, 0.09, 0.10, 0.12, 0.15, 0.18, 0.25];
-  const opacityNames = ["04", "07", "09", "10", "12", "15", "18", "25"];
-  opacities.forEach((opacity, i) => {
-    root.style.setProperty(
-      `--color-shadow-primary-${opacityNames[i]}`,
-      `rgba(${r}, ${g}, ${b}, ${opacity})`
-    );
-  });
-
-  // Semantic colors
-  const semantic = {
-    destructive: theme.destructive ?? DEFAULT_SEMANTIC.destructive,
-    success: theme.success ?? DEFAULT_SEMANTIC.success,
-    warning: theme.warning ?? DEFAULT_SEMANTIC.warning,
-    info: theme.info ?? DEFAULT_SEMANTIC.info,
-  };
-
-  for (const [name, colors] of Object.entries(semantic)) {
-    root.style.setProperty(`--color-${name}`, colors.base);
-    root.style.setProperty(`--color-${name}-dark`, colors.base);
-    root.style.setProperty(`--color-${name}-bg`, colors.bg);
-    if (colors.border) {
-      root.style.setProperty(`--color-${name}-border`, colors.border);
-    }
-    if (name === 'destructive') {
-      const [dr, dg, db] = hexToRgb(colors.base);
-      root.style.setProperty(`--color-shadow-destructive-07`, `rgba(${dr}, ${dg}, ${db}, 0.07)`);
-      root.style.setProperty(`--color-shadow-destructive-15`, `rgba(${dr}, ${dg}, ${db}, 0.15)`);
-    }
-  }
 }

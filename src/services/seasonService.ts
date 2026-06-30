@@ -20,10 +20,10 @@ export interface SeasonData {
 
 export const seasonService = {
   // Read season data from database with fallback to JSON file
-  async getSeasonData(): Promise<SeasonData> {
+  async getSeasonData(organizationId?: number): Promise<SeasonData> {
     try {
       console.log('🔄 Loading season data...');
-      const rows = await fetchPublicApplicationSettings(['season_data']);
+      const rows = await fetchPublicApplicationSettings(['season_data'], organizationId);
       const row = findPublicSetting(rows, 'season_data', 'main_config');
 
       if (!row?.setting_value) {

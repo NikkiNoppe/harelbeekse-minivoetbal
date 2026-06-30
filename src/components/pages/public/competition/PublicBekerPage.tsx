@@ -429,7 +429,7 @@ const TournamentContent = memo(({
       <div className="flex justify-end">
         <Link
           to="/archief"
-          className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-900 hover:underline font-medium"
+          className="inline-flex items-center gap-1.5 text-sm text-brand-700 hover:text-brand-900 hover:underline font-medium"
         >
           <Archive className="w-4 h-4" />
           Vorige seizoenen

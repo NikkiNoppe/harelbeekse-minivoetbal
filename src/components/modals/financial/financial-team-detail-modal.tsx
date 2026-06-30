@@ -392,12 +392,12 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       >
         <div className="space-y-4">
           {/* Current Balance Card */}
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-purple-900 mb-1">Huidig Saldo</h3>
-                  <p className="text-sm text-purple-700 truncate">{team.team_name}</p>
+                  <h3 className="text-base font-semibold text-brand-900 mb-1">Huidig Saldo</h3>
+                  <p className="text-sm text-brand-700 truncate">{team.team_name}</p>
                 </div>
                 {isBalanceLoading ? (
                   <Skeleton className="h-9 w-28" />
@@ -761,7 +761,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                       onClick={() => handleEditTransaction(transaction)}
                                       className={cn(
                                         "h-7 w-7 border-[var(--color-300)]",
-                                        "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                                        "bg-white hover:bg-brand-50 hover:border-[var(--color-400)]",
                                         "text-[var(--color-700)] hover:text-[var(--color-900)]",
                                         "transition-colors duration-150"
                                       )}

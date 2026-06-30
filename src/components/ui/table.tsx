@@ -11,7 +11,7 @@ const Table = React.forwardRef<
   }
 >(({ className, stickyHeader = false, stickyColumns = 0, ...props }, ref) => (
   <div className={cn(
-    "relative w-full overflow-auto border-[0.5px] border-[var(--purple-400)] rounded-xl overflow-hidden",
+    "relative w-full overflow-auto border-[0.5px] border-[var(--color-400)] rounded-xl overflow-hidden",
     stickyColumns > 0 && "responsive-table-container"
   )}>
     <table

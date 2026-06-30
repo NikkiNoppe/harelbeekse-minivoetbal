@@ -1,0 +1,128 @@
+---
+description: Design system — kleuren, branding en tokens per organisatie (multi-tenant)
+globs: src/components/**/*.tsx,src/hooks/useThemeColors.ts,src/hooks/useBranding.ts,src/lib/colorUtils.ts,src/index.css
+alwaysApply: false
+---
+
+# Design system — kleuren & branding
+
+**Lees vóór UI-wijzigingen die kleur, logo, sitenaam of tenant-identiteit raken.** Combineer met `multi-tenant-frontend.mdc`, `ui-mobile-first.mdc` en `ui-21st-dev.mdc`.
+
+## Bron van waarheid (per organisatie)
+
+| Laag | Opslag | Gebruik |
+|------|--------|---------|
+| **Thema-kleuren (runtime)** | `application_settings` — `theme_colors` / `global_theme` per `organization_id` | Admin bewerkt via Instellingen → Kleuren; `useThemeColorsInit` past CSS-vars toe |
+| **Branding-meta** | `organizations.branding_settings` (JSONB) | Naam, logo-paden, hostnames, SEO; optioneel `themeColors` als fallback |
+| **Code-fallback** | `DEFAULT_THEME` in `src/lib/colorUtils.ts`, `DEFAULT_BRANDING` in `src/types/branding.ts` | Alleen als DB leeg is of tijdens SSR/bootstrap |
+| **CSS-fallback** | `src/index.css` `:root` | Initiële paint vóór JS; moet in sync blijven met `DEFAULT_THEME` |
+
+**Harelbeke = `organization_id` 1.** Nieuwe tenants krijgen eigen rij in `application_settings` + `organizations.branding_settings`.
+
+### Laadvolgorde thema (`useThemeColors`)
+
+1. `organizations.branding_settings.themeColors` (indien aanwezig)
+2. `get_public_application_settings(['theme_colors'], organizationId)`
+3. `DEFAULT_THEME`
+
+---
+
+## Harelbeke-palet (referentie)
+
+Sport Harelbeke-blauw — bron: sportdienstharelbeke.be / `DEFAULT_THEME`.
+
+| Token | Waarde | Gebruik |
+|-------|--------|---------|
+| `primaryBase` / `--color-primary-base` | `#0072b9` | Header, footer, primaire knoppen, `theme-color` meta |
+| `primaryLight` / `--color-primary-light` | `#4dbbff` | Hover, accenten |
+| `scale.50`–`900` | `#f1f9fd` … `#02121c` | Achtergronden, borders, tekst-hiërarchie |
+| `warning.base` | `#ffb300` | CTA-goud (Harelbeke) |
+| `info.base` | `#007fff` | Informatie-banners |
+| `destructive` / `success` | Rood / groen | Fouten, bevestigingen (gedeeld tussen tenants) |
+
+**Semantic tokens in componenten:** Tailwind `brand-*` utilities (organisatie-palet), shadcn `primary` (knoppen), `destructive`, `success`, `warning`, `info` — **geen losse hex** in JSX tenzij in admin color picker of `ColorPreview`.
+
+### Tailwind `brand-*` (organisatie-palet)
+
+| Utility | CSS-var | Gebruik |
+|---------|---------|---------|
+| `bg-brand-600` | `--color-600` | Header, footer, primaire surfaces |
+| `text-brand-dark` | `--color-primary-base` | Labels, koppen, donkere tekst |
+| `text-brand-light` / `border-brand-light` | `--color-primary-light` | Accenten, borders |
+| `bg-brand-50` … `bg-brand-900` | `--color-50` … `--color-900` | Achtergronden, hover, subtiele vlakken |
+| `bg-brand-subtle` | `--color-50` | Zeer lichte achtergrond |
+
+In `var()` altijd `--color-*` of `--color-primary-base` — geen `--purple-*` (verwijderd).
+
+---
+
+## Kuurne-palet (referentie, org 2)
+
+Bron: minivoetbalkuurne.be — donkere nav, geel accent, licht teal header-sfeer.
+
+| Token | Waarde | Gebruik |
+|-------|--------|---------|
+| `primaryBase` / `scale.600` | `#1A1A1A` | Header, footer, navigatie (donker, witte tekst) |
+| `primaryLight` / `scale.500` | `#FFC107` | Geel accent (titelbalken, highlights) |
+| `scale.200`–`400` | `#FFF8E1` … `#FFD54F` | Lichte gele tinten (mobiel menu, hover) |
+| `warning.base` | `#FFC107` | Sectie-koppen (zoals “Kalender Seizoen …”) |
+| `info.base` / `info.bg` | `#5A8F99` / `#E0EFF2` | Header-achtergrond sfeer (licht teal) |
+| Tekst op geel | `#000000` | Zwarte titels op gele balken |
+
+Migratie: `20260630210000_kuurne_theme_colors_seed.sql`
+
+---
+
+## Verplicht patroon
+
+```typescript
+// ✅ Kleuren uit thema / brand utilities
+<header className="bg-brand-600" />
+<label className="text-brand-dark">Voornaam</label>
+
+// ✅ Branding uit hook
+const branding = useBranding();
+<img src={branding.logoPath} alt={branding.displayName} />
+
+// ❌ Hardcoded tenant-specifiek
+<h1>Harelbeekse Minivoetbal</h1>  // gebruik branding.displayName
+<div style={{ color: '#0072b9' }} />  // gebruik brand-* of CSS var
+<div className="bg-purple-600" />  // purple-* is verwijderd — gebruik brand-*
+```
+
+| Actie | Hoe |
+|-------|-----|
+| Thema lezen | `useBranding()`, `useThemeColorsInit` (root), admin: `useThemeColorsAdmin` |
+| Thema wijzigen | Admin settings → slaat op in `application_settings` |
+| Nieuwe tenant | Migratie/seed: `application_settings` + `organizations.branding_settings` |
+| Document/meta | `applyThemeToDocument`, `useRouteMeta` + `branding.meta` |
+
+---
+
+## Typografie & spacing
+
+- **Font:** systeem-stack via Tailwind/shadcn (geen custom webfont zonder productbesluit)
+- **Schaal:** `text-xs` minimaal voor primaire content op mobiel; koppen `text-lg`–`text-2xl`
+- **Containers:** `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8` op pagina's
+- **Spacing:** consistent `gap-2`/`gap-4`; secties `py-6`–`py-8`
+
+---
+
+## Iconen & visueel
+
+- **Iconen:** Lucide (`lucide-react`) — geen emoji als UI-icoon
+- **Logo's:** paden uit `branding_settings`; fallback `/images/logos/`
+- **Schaduwen:** `--color-shadow-primary-*` — niet handmatig rgba(primary) in componenten
+
+Zie ook `ui-ux-pro-max` skill voor stijl-inspiratie; pas altijd projecttokens toe.
+
+---
+
+## Anti-patterns
+
+- Hex-kleuren of `style={{ color: … }}` in feature-componenten
+- Harelbeke-naam/logo hardcoded zonder `useBranding()`
+- Tenant A-kleuren tonen na org-switch (query keys zonder `organizationId`)
+- `index.css` en `DEFAULT_THEME` uit sync laten na palet-wijziging
+- Losse paars-palet (`#60368c`) — legacy; migratie `20260630200000` zet Harelbeke op blauw
+- `purple-*` Tailwind/CSS classes — gebruik `brand-*`

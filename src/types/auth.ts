@@ -9,6 +9,7 @@ export interface User {
   teamId?: number;
   email?: string;
   isSuperAdmin?: boolean;
+  organizationId?: number;
 }
 
 export interface TeamData {

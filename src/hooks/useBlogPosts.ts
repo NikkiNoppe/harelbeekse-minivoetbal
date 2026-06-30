@@ -1,11 +1,16 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { blogService } from "@/services";
 import { useMinLoadingGate } from "@/hooks/useMinLoadingGate";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export const useBlogPosts = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   const query = useQuery({
-    queryKey: ["blogPosts"],
-    queryFn: () => blogService.getPublishedBlogPosts(),
+    queryKey: withOrgQueryKey(["blogPosts"], organizationId),
+    queryFn: () => blogService.getPublishedBlogPosts(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,

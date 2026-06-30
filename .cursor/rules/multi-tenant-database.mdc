@@ -1,0 +1,85 @@
+---
+description: Multi-tenant database — organization_id, RLS en migratieregels voor Supabase
+globs: supabase/**
+alwaysApply: false
+---
+
+# Multi-tenant — database & RLS
+
+**Lees vóór elke migratie, RPC of RLS-wijziging die tenant-data raakt.** Combineer met `supabase-schema.mdc`, `session-rpc-beveiliging.mdc` en `custom-auth-architectuur.mdc`.
+
+## Kernregel
+
+**Elke `public`-tabel met organisatie-specifieke data MOET `organization_id uuid NOT NULL` hebben** (FK naar `organizations`).
+
+Uitzonderingen (geen `organization_id`):
+
+| Categorie | Voorbeelden |
+|-----------|-------------|
+| Globale rollen / auth-meta | `user_sessions`, `password_reset_tokens`, `auth_rate_limits` |
+| Platform-meta | `organizations` zelf, migratie-/systeemtabellen |
+| Expliciet cross-tenant | Alleen na productbesluit + RLS-documentatie |
+
+Nieuwe tabellen zonder `organization_id` zijn **niet toegestaan** tenzij ze in bovenstaande lijst passen.
+
+---
+
+## RLS (verplicht)
+
+Tenant-scheiding is **defense-in-depth naast session-RPC's**:
+
+```sql
+-- Voorbeeld: rijen alleen binnen actieve organisatie
+USING (
+  organization_id = (SELECT organization_id FROM private.resolve_app_session(p_session_token))
+)
+```
+
+| Regel | Detail |
+|-------|--------|
+| Geen cross-tenant reads | Harelbeke mag nooit data van Kuurne (of andere org) zien |
+| Publieke RPC's | `get_public_*` filtert expliciet op `organization_id` (host, slug of config) |
+| Session-RPC's | `private.resolve_app_session` moet `organization_id` kunnen teruggeven zodra beschikbaar |
+| Indexen | Composiet `(organization_id, …)` op veelgebruikte filters |
+
+---
+
+## Migraties (stap-voor-stap)
+
+1. **Nieuwe kolom nullable** → backfill Harelbeke-default → `NOT NULL` + FK
+2. **Nooit** bestaande kolommen droppen vóór nieuwe structuur 100% werkt
+3. **Idempotent** waar mogelijk; lokaal `supabase db reset` / `migration up`
+4. Na schema-change: `npm run update-types` + `npm run test:security`
+
+### Backfill-patroon (bestaande Harelbeke-data)
+
+```sql
+-- 1. Kolom toevoegen (nullable)
+ALTER TABLE public.matches ADD COLUMN IF NOT EXISTS organization_id uuid;
+
+-- 2. Backfill vaste default-org (Harelbeke, id = 1)
+UPDATE public.matches SET organization_id = 1
+WHERE organization_id IS NULL;
+
+-- 3. Afdwingen
+ALTER TABLE public.matches ALTER COLUMN organization_id SET NOT NULL;
+ALTER TABLE public.matches ADD CONSTRAINT matches_organization_id_fkey
+  FOREIGN KEY (organization_id) REFERENCES public.organizations(id);
+```
+
+---
+
+## Session-RPC's
+
+- Nieuwe/gewijzigde RPC's: filter **altijd** op `organization_id` uit sessie-context
+- Geen spoofable `p_organization_id` vanuit de client zonder servervalidatie
+- Edge functions: zelfde tenant-check via sessie + service_role queries met `organization_id`-filter
+
+---
+
+## Anti-patterns
+
+- Tabellen zonder tenant-kolom "voor later"
+- RLS die alleen op `get_current_user_role()` leunt zonder `organization_id`
+- Cross-org joins in DEFINER-RPC's
+- Remote schema-wijzigingen buiten migratiebestanden

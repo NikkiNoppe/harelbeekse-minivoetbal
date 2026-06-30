@@ -759,10 +759,10 @@ const CompetitionDataSettings: React.FC = () => {
                   Seizoensperiode
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 border border-purple-200 rounded-lg bg-white">
+                  <div className="p-4 border border-brand-200 rounded-lg bg-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-purple-600">Startdatum</h4>
+                        <h4 className="font-medium text-brand-600">Startdatum</h4>
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_start_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button
@@ -773,10 +773,10 @@ const CompetitionDataSettings: React.FC = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="p-4 border border-purple-200 rounded-lg bg-white">
+                  <div className="p-4 border border-brand-200 rounded-lg bg-white">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-purple-600">Einddatum</h4>
+                        <h4 className="font-medium text-brand-600">Einddatum</h4>
                         <p className="text-sm text-gray-600">{new Date(seasonData.season_end_date).toLocaleDateString('nl-NL')}</p>
                       </div>
                       <Button

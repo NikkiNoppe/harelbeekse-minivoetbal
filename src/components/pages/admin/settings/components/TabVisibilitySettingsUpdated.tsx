@@ -187,8 +187,8 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     return (
       <div className="space-y-2">
         {groupTabs.map(({ key, setting, displayName }) => (
-          <div key={key} className="bg-white rounded-lg p-2 sm:p-4 border border-purple-200">
-            <div className="font-medium mb-2 flex items-center justify-between text-purple-800">
+          <div key={key} className="bg-white rounded-lg p-2 sm:p-4 border border-brand-200">
+            <div className="font-medium mb-2 flex items-center justify-between text-brand-800">
               <span className="text-sm">{displayName}</span>
               {!setting && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">N/A</Badge>
@@ -199,10 +199,10 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
                 const isVisible = setting?.visibility?.[role.key] ?? false;
                 const isCurrentlyUpdating = isUpdating(key, role.key);
                 return (
-                  <div key={role.key} className="flex items-center justify-between bg-purple-50 rounded px-1.5 py-1">
+                  <div key={role.key} className="flex items-center justify-between bg-brand-50 rounded px-1.5 py-1">
                     <div className="flex items-center gap-1">
-                      <role.icon className="h-2.5 w-2.5 text-purple-600" />
-                      <span className="text-[10px] text-purple-700">{role.label}</span>
+                      <role.icon className="h-2.5 w-2.5 text-brand-600" />
+                      <span className="text-[10px] text-brand-700">{role.label}</span>
                     </div>
                     <Switch
                       checked={isVisible}

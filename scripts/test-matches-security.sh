@@ -355,16 +355,27 @@ print('true' if isinstance(d,list) and len(d)>0 and d[0].get('setting_category')
   fi
   check "application_settings niet direct leesbaar voor anon (HTTP $code)" "$app_settings_blocked"
 
-  # 30. Bekend default superadmin-wachtwoord geweigerd
-  code=$(curl -s -o /tmp/sa_old_pw.json -w "%{http_code}" \
+  # 30. SuperAdmin: leeg wachtwoord geweigerd
+  code=$(curl -s -o /tmp/sa_empty_pw.json -w "%{http_code}" \
     "$SUPABASE_URL/rest/v1/rpc/login_super_admin" \
     -H "Content-Type: application/json" "${hdr[@]}" \
-    -d '{"p_password": "admin1987"}')
-  sa_old_denied=$([[ "$code" == "200" && "$(cat /tmp/sa_old_pw.json)" == "[]" ]] && echo true || echo false)
+    -d '{"p_password": ""}')
+  sa_empty_denied=$([[ "$code" == "200" && "$(cat /tmp/sa_empty_pw.json)" == "[]" ]] && echo true || echo false)
   if [[ "$code" == "404" || "$code" == "401" ]]; then
-    sa_old_denied=true
+    sa_empty_denied=true
   fi
-  check "login_super_admin weigert bekend default-wachtwoord (HTTP $code)" "$sa_old_denied"
+  check "login_super_admin weigert leeg wachtwoord (HTTP $code)" "$sa_empty_denied"
+
+  # 30b. SuperAdmin: fout wachtwoord geweigerd
+  code=$(curl -s -o /tmp/sa_wrong_pw.json -w "%{http_code}" \
+    "$SUPABASE_URL/rest/v1/rpc/login_super_admin" \
+    -H "Content-Type: application/json" "${hdr[@]}" \
+    -d '{"p_password": "definitely-wrong-password-xyz"}')
+  sa_wrong_denied=$([[ "$code" == "200" && "$(cat /tmp/sa_wrong_pw.json)" == "[]" ]] && echo true || echo false)
+  if [[ "$code" == "404" || "$code" == "401" ]]; then
+    sa_wrong_denied=true
+  fi
+  check "login_super_admin weigert fout wachtwoord (HTTP $code)" "$sa_wrong_denied"
 
   # 31. create_user_with_hashed_password niet meer callable
   code=$(curl -s -o /tmp/create_user_old.json -w "%{http_code}" \

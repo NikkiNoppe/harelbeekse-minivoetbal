@@ -32,9 +32,9 @@ const RankPreview: React.FC<{
       <Badge variant="outline" className={cn('text-[10px] uppercase tracking-wider', accent)}>
         {title}
       </Badge>
-      <div className="max-h-40 overflow-y-auto border border-purple-100 rounded-md">
+      <div className="max-h-40 overflow-y-auto border border-brand-100 rounded-md">
         <table className="w-full text-sm">
-          <thead className="bg-purple-50 text-purple-900 text-xs uppercase">
+          <thead className="bg-brand-50 text-brand-900 text-xs uppercase">
             <tr>
               <th className="px-2 py-1 text-left w-8">#</th>
               <th className="px-2 py-1 text-left">Team</th>
@@ -43,7 +43,7 @@ const RankPreview: React.FC<{
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={`${variant}-${r.position}`} className="border-t border-purple-50">
+              <tr key={`${variant}-${r.position}`} className="border-t border-brand-50">
                 <td className="px-2 py-1 font-semibold">{r.position}</td>
                 <td className="px-2 py-1">{r.team_name}</td>
                 <td className="px-2 py-1 text-center font-bold">{r.total_points ?? 0}</td>
@@ -140,7 +140,7 @@ const ArchivePlayoffModal: React.FC<Props> = ({ open, onOpenChange }) => {
         )}
 
         <div>
-          <div className="flex items-center gap-2 text-sm font-medium text-purple-800 mb-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-brand-800 mb-2">
             <Target className="w-4 h-4" />
             Preview playoff-archief
           </div>

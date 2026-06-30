@@ -9,6 +9,8 @@ import {
   type TeamStats,
 } from "@/services/standings/standingsService";
 import { fetchPublicMatches, isPlayoffMatch } from "@/services/public/publicScheduleFetch";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface PlayoffTeam {
   team_id: number;
@@ -64,8 +66,8 @@ export interface HeadToHeadMatch {
   is_playoff: boolean;
 }
 
-const fetchPlayoffMatches = async (): Promise<any[]> => {
-  return (await fetchPublicMatches())
+const fetchPlayoffMatches = async (organizationId: number): Promise<any[]> => {
+  return (await fetchPublicMatches(organizationId))
     .filter(isPlayoffMatch)
     .sort(
       (a, b) =>
@@ -73,11 +75,11 @@ const fetchPlayoffMatches = async (): Promise<any[]> => {
     );
 };
 
-export const fetchPublicPlayoffData = async () => {
+export const fetchPublicPlayoffData = async (organizationId: number) => {
   const [regularMatches, playoffMatchesRaw, teamMap] = await Promise.all([
-    fetchRegularMatches(),
-    fetchPlayoffMatches(),
-    fetchTeams(),
+    fetchRegularMatches(organizationId),
+    fetchPlayoffMatches(organizationId),
+    fetchTeams(organizationId),
   ]);
 
   const allTeamIds = new Set(teamMap.keys());
@@ -256,9 +258,12 @@ export const fetchPublicPlayoffData = async () => {
 };
 
 export const usePublicPlayoffData = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: ['publicPlayoffData'],
-    queryFn: fetchPublicPlayoffData,
+    queryKey: withOrgQueryKey(['publicPlayoffData'], organizationId),
+    queryFn: () => fetchPublicPlayoffData(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });

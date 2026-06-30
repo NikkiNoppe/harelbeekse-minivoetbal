@@ -1,0 +1,117 @@
+import type { Organization } from '@/services/organization/organizationService';
+import { resolveOrganizationPublicContent } from '@/config/organizationContent';
+import {
+  parseBrandingSettings,
+  type OrganizationExternalLink,
+} from '@/types/branding';
+
+export interface SuperAdminOrgFormState {
+  organizationId: number;
+  slug: string;
+  name: string;
+  displayName: string;
+  shortName: string;
+  siteUrl: string;
+  hostnamesText: string;
+  logoPath: string;
+  logoIconPath: string;
+  faviconPath: string;
+  metaTitle: string;
+  metaDescription: string;
+  algemeenTitle: string;
+  algemeenSubtitle: string;
+  algemeenAbout: string;
+  footerTagline: string;
+  externalLinks: OrganizationExternalLink[];
+}
+
+export function organizationToFormState(org: Organization): SuperAdminOrgFormState {
+  const branding = parseBrandingSettings(org.brandingSettings);
+  const content = resolveOrganizationPublicContent(org.slug, org.brandingSettings);
+
+  return {
+    organizationId: org.id,
+    slug: org.slug,
+    name: org.name,
+    displayName: branding.displayName,
+    shortName: branding.shortName,
+    siteUrl: branding.siteUrl,
+    hostnamesText: (branding.hostnames ?? []).join('\n'),
+    logoPath: branding.logoPath,
+    logoIconPath: branding.logoIconPath,
+    faviconPath: branding.faviconPath,
+    metaTitle: branding.meta?.defaultTitle ?? '',
+    metaDescription: branding.meta?.defaultDescription ?? '',
+    algemeenTitle: content.algemeen.title,
+    algemeenSubtitle: content.algemeen.subtitle,
+    algemeenAbout: content.algemeen.aboutParagraph,
+    footerTagline: content.footerTagline,
+    externalLinks: branding.links?.length ? [...branding.links] : [],
+  };
+}
+
+export function formStateToBrandingSettings(
+  form: SuperAdminOrgFormState,
+  existing: Record<string, unknown>,
+): Record<string, unknown> {
+  const hostnames = form.hostnamesText
+    .split(/[\n,]+/)
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+
+  const links = form.externalLinks
+    .map((link) => ({
+      label: link.label.trim(),
+      url: link.url.trim(),
+    }))
+    .filter((link) => link.label && link.url);
+
+  const existingBranding = parseBrandingSettings(existing);
+
+  return {
+    ...existing,
+    displayName: form.displayName.trim(),
+    shortName: form.shortName.trim(),
+    siteUrl: form.siteUrl.trim(),
+    hostnames,
+    logoPath: form.logoPath.trim(),
+    logoIconPath: form.logoIconPath.trim(),
+    faviconPath: form.faviconPath.trim(),
+    meta: {
+      defaultTitle: form.metaTitle.trim(),
+      defaultDescription: form.metaDescription.trim(),
+    },
+    content: {
+      algemeen: {
+        title: form.algemeenTitle.trim(),
+        subtitle: form.algemeenSubtitle.trim(),
+        aboutParagraph: form.algemeenAbout.trim(),
+      },
+      footerTagline: form.footerTagline.trim(),
+    },
+    links,
+    themeColors: existingBranding.themeColors ?? existing.themeColors,
+  };
+}
+
+export function createEmptyOrgFormState(nextId: number): SuperAdminOrgFormState {
+  return {
+    organizationId: nextId,
+    slug: '',
+    name: '',
+    displayName: '',
+    shortName: 'Minivoetbal',
+    siteUrl: '',
+    hostnamesText: '',
+    logoPath: '/images/logos/minivoetbal-text.png',
+    logoIconPath: '/images/logos/minivoetbal-icon.png',
+    faviconPath: '/favicon.ico',
+    metaTitle: '',
+    metaDescription: '',
+    algemeenTitle: '',
+    algemeenSubtitle: '',
+    algemeenAbout: '',
+    footerTagline: '',
+    externalLinks: [],
+  };
+}

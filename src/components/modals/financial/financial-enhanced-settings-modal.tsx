@@ -204,7 +204,7 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
       case 'field_cost':
         return 'bg-green-50 text-green-700 border-green-200';
       case 'referee_cost':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-brand-50 text-brand-700 border-brand-200';
       default:
         return 'bg-muted text-card-foreground';
     }

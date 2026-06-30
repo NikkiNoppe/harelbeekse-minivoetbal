@@ -88,7 +88,7 @@ const PlayoffRankingSection: React.FC<{
         <div className="overflow-x-auto bg-white">
           <table className="w-full min-w-[16rem] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-purple-100 text-xs text-muted-foreground">
+              <tr className="border-b border-brand-100 text-xs text-muted-foreground">
                 <th scope="col" className="w-12 py-2 px-3 text-center font-medium">
                   #
                 </th>

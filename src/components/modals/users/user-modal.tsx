@@ -236,7 +236,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Username */}
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Gebruikersnaam *</label>
+            <label className="text-brand-dark font-medium">Gebruikersnaam *</label>
             <Input
               placeholder="Voer gebruikersnaam in"
               className="modal__input"
@@ -249,7 +249,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           {/* Email */}
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">E-mail (optioneel)</label>
+            <label className="text-brand-dark font-medium">E-mail (optioneel)</label>
             <Input
               type="email"
               placeholder="E-mailadres (optioneel)"
@@ -262,7 +262,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           {/* Password */}
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">
+            <label className="text-brand-dark font-medium">
               {passwordLabel}
             </label>
             <Input
@@ -279,7 +279,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           {/* Role */}
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">Rol *</label>
+            <label className="text-brand-dark font-medium">Rol *</label>
             <select
               className="modal__input"
               value={formData.role}
@@ -295,7 +295,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           {/* Team Selection */}
           <div className="space-y-2">
-            <label className="text-purple-dark font-medium">
+            <label className="text-brand-dark font-medium">
               {teamLabel}
             </label>
             <select
@@ -312,7 +312,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           {/* Password email note (appears in welcome email) */}
           {!editingUser && (
             <div className="space-y-2">
-              <label className="text-purple-dark font-medium">Wachtwoord: </label>
+              <label className="text-brand-dark font-medium">Wachtwoord: </label>
               <Input
                 placeholder="standaardwachtwoord"
                 className="modal__input"

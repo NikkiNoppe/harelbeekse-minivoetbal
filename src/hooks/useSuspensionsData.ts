@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { suspensionService, type PlayerCard, type Suspension } from "@/domains/cards-suspensions";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface SuspensionStats {
   totalSuspensions: number;
@@ -12,9 +14,10 @@ export interface SuspensionStats {
 export const useSuspensionsData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
 
   const playerCardsQuery = useQuery({
-    queryKey: ['playerCards'],
+    queryKey: withOrgQueryKey(['playerCards'], organizationId),
     queryFn: suspensionService.getPlayerCards,
     staleTime: 2 * 60 * 1000, // 2 minutes - player cards can change during matches
     gcTime: 10 * 60 * 1000, // 10 minutes cache
@@ -24,7 +27,10 @@ export const useSuspensionsData = () => {
   });
 
   const suspensionsQuery = useQuery({
-    queryKey: ['suspensions', playerCardsQuery.dataUpdatedAt],
+    queryKey: withOrgQueryKey(
+      ['suspensions', playerCardsQuery.dataUpdatedAt],
+      organizationId,
+    ),
     queryFn: () => suspensionService.getActiveSuspensions(playerCardsQuery.data || []),
     enabled: playerCardsQuery.isSuccess,
     staleTime: 2 * 60 * 1000, // 2 minutes - suspensions can be updated

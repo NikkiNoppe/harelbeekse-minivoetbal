@@ -75,7 +75,7 @@ export const AdminMatchDataSection: React.FC<AdminMatchDataSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-2xl text-center text-purple-light">Admin: Wedstrijdgegevens</h3>
+      <h3 className="text-2xl text-center text-brand-light">Admin: Wedstrijdgegevens</h3>
       
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import {
   fetchPublicApplicationSettings,
   findPublicSetting,
@@ -14,6 +15,7 @@ import {
  */
 export const usePlayerListLockFallback = () => {
   const { user } = useAuth();
+  const { organizationId } = useOrgQueryScope();
   const [isLocked, setIsLocked] = useState(false);
   const [lockDate, setLockDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,10 @@ export const usePlayerListLockFallback = () => {
       console.log('🔒 Lock function result:', data);
       setIsLocked(data);
 
-      const lockRows = await fetchPublicApplicationSettings(['player_list_lock']);
+      const lockRows = await fetchPublicApplicationSettings(
+        ['player_list_lock'],
+        organizationId ?? undefined,
+      );
       const settings = findPublicSetting(lockRows, 'player_list_lock', 'global_lock');
 
       if (settings?.setting_value) {
@@ -49,7 +54,7 @@ export const usePlayerListLockFallback = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [organizationId]);
 
   useEffect(() => {
     checkLockStatus();

@@ -143,6 +143,14 @@ export const ADMIN_ROUTES = {
   profile: '/profile',
 } as const;
 
+// SuperAdmin platform (tenant-keuze id=1 / id=2)
+export const SUPERADMIN_ROUTES = {
+  platform: '/superadmin',
+  beheer: '/superadmin/beheer',
+  harelbeke: '/superadmin/harelbeke',
+  kuurne: '/superadmin/kuurne',
+} as const;
+
 // Route groupings for mobile navigation
 export const MATCHDAY_ROUTES = {
   'match-forms-league': ADMIN_ROUTES['match-forms-league'],
@@ -172,6 +180,16 @@ export const ALL_ROUTES = {
   ...PUBLIC_ROUTES,
   ...ADMIN_ROUTES,
 } as const;
+
+// SuperAdmin-only routes (speelformaten + instellingen/systeem)
+export const SUPERADMIN_ONLY_ROUTES = [
+  ADMIN_ROUTES.competition,
+  ADMIN_ROUTES.cup,
+  ADMIN_ROUTES.playoffs,
+  ADMIN_ROUTES.settings,
+  ADMIN_ROUTES['blog-management'],
+  ADMIN_ROUTES.notification,
+] as const;
 
 // Route guards configuratie
 export const ROUTE_GUARDS = {
@@ -246,6 +264,16 @@ export function requiresAuth(path: string): boolean {
 export function requiresAdmin(path: string): boolean {
   return ROUTE_GUARDS.requiresAdmin.includes(path as any);
 }
+
+/**
+ * Speelformaten (competitie/beker/play-off) + instellingen/systeem — enkel SuperAdmin.
+ */
+export function requiresSuperAdmin(path: string): boolean {
+  return SUPERADMIN_ONLY_ROUTES.includes(path as (typeof SUPERADMIN_ONLY_ROUTES)[number]);
+}
+
+/** Fallback na geweigerde SuperAdmin-route (ingelogde admin). */
+export const DEFAULT_ADMIN_REDIRECT = ADMIN_ROUTES['match-forms-league'];
 
 // Route metadata interface
 export interface RouteMeta {

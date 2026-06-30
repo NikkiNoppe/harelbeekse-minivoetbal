@@ -21,9 +21,9 @@ export interface Team {
 
 export const teamService = {
   // Public-safe method - only returns basic team info (id and name only)
-  async getPublicTeams(): Promise<Pick<Team, 'team_id' | 'team_name'>[]> {
+  async getPublicTeams(organizationId?: number): Promise<Pick<Team, 'team_id' | 'team_name'>[]> {
     try {
-      const teams = await fetchPublicTeams();
+      const teams = await fetchPublicTeams(organizationId);
       return teams.map((t) => ({
         team_id: t.team_id,
         team_name: t.team_name,
@@ -35,8 +35,8 @@ export const teamService = {
   },
 
   /** team_id → team_name map voor publieke pagina's (competitie, playoff, beker). */
-  async getPublicTeamMap(): Promise<Map<number, string>> {
-    const teams = await teamService.getPublicTeams();
+  async getPublicTeamMap(organizationId?: number): Promise<Map<number, string>> {
+    const teams = await teamService.getPublicTeams(organizationId);
     return new Map(teams.map((t) => [t.team_id, t.team_name]));
   },
 

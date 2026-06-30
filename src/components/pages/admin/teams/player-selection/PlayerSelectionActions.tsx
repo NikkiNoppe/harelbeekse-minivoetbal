@@ -18,14 +18,14 @@ const PlayerSelectionActions: React.FC<PlayerSelectionActionsProps> = ({
         type="button"
         variant="outline"
         onClick={onComplete}
-        className="bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
+        className="bg-white text-brand-dark border-brand-dark hover:bg-brand-dark hover:text-white"
       >
         Annuleren
       </Button>
       <Button 
         type="submit"
         disabled={submitting}
-        className="flex items-center gap-2 bg-white text-purple-dark border-purple-dark hover:bg-purple-dark hover:text-white"
+        className="flex items-center gap-2 bg-white text-brand-dark border-brand-dark hover:bg-brand-dark hover:text-white"
       >
         {submitting ? (
           <>

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_ORGANIZATION_ID } from "@/config/organization";
 
 export interface PublicMatchRow {
   match_id: number;
@@ -29,8 +30,12 @@ export interface PublicTeamRow {
   club_colors: string | null;
 }
 
-export async function fetchPublicMatches(): Promise<PublicMatchRow[]> {
-  const { data, error } = await supabase.rpc("get_public_matches");
+export async function fetchPublicMatches(
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
+): Promise<PublicMatchRow[]> {
+  const { data, error } = await supabase.rpc("get_public_matches", {
+    p_organization_id: organizationId,
+  });
   if (error) {
     console.error("[fetchPublicMatches] RPC error:", error);
     throw error;
@@ -38,8 +43,12 @@ export async function fetchPublicMatches(): Promise<PublicMatchRow[]> {
   return (data ?? []) as PublicMatchRow[];
 }
 
-export async function fetchPublicTeams(): Promise<PublicTeamRow[]> {
-  const { data, error } = await supabase.rpc("get_public_teams");
+export async function fetchPublicTeams(
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
+): Promise<PublicTeamRow[]> {
+  const { data, error } = await supabase.rpc("get_public_teams", {
+    p_organization_id: organizationId,
+  });
   if (error) {
     console.error("[fetchPublicTeams] RPC error:", error);
     throw error;

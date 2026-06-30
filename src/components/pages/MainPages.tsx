@@ -167,8 +167,8 @@ const MainPages: React.FC<MainPagesProps> = ({ activeTab, setActiveTab }) => {
         <div className="max-w-7xl mx-auto">
           <div className="space-y-6">
             <div className="flex justify-center items-center py-8">
-              <div className="text-purple-600 flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+              <div className="text-brand-600 flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand-600"></div>
                 <span>Tabs laden...</span>
               </div>
             </div>

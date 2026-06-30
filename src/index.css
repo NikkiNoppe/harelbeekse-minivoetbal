@@ -15,8 +15,8 @@
    KAN BLIJVEN: --color-white, --color-destructive-* (rood), 
                 --color-success-* (groen), --color-shadow-destructive-*.
    
-   BACKWARDS COMPATIBILITY: --purple-* en --main-color-* verwijzen 
-                            automatisch naar nieuwe variabelen.
+   BACKWARDS COMPATIBILITY: legacy --purple-* / --main-color-* zijn verwijderd;
+                            gebruik --color-* of Tailwind brand-* utilities.
    
    ============================================================================ */
 
@@ -172,20 +172,9 @@
     --color-shadow-destructive-07: rgba(239, 68, 68, 0.07);
     --color-shadow-destructive-15: rgba(239, 68, 68, 0.15);
     
-    /* 🔄 BACKWARDS COMPATIBILITY - Automatisch aangepast */
-    --main-color-dark: var(--color-primary-base);
-    --main-color-light: var(--color-primary-light);
-    --purple-light: var(--color-primary-light);
-    --purple-50: var(--color-50);
-    --purple-100: var(--color-100);
-    --purple-200: var(--color-200);
-    --purple-300: var(--color-300);
-    --purple-400: var(--color-400);
-    --purple-500: var(--color-500);
-    --purple-600: var(--color-600);
-    --purple-700: var(--color-700);
-    --purple-800: var(--color-800);
-    --purple-900: var(--color-900);
+    /* Brand aliases (optioneel voor var() in inline styles) */
+    --brand-dark: var(--color-primary-base);
+    --brand-light: var(--color-primary-light);
     
     /* Shadcn Theme */
     --background: var(--color-white); --foreground: var(--color-600);
@@ -1172,7 +1161,7 @@ select:disabled {
   contain: layout style paint !important;
 }
 
-.input-purple {
+.input-brand {
   background-color: var(--color-white);
   color: var(--color-600);
   border: 1.5px solid var(--color-400);
@@ -1186,20 +1175,20 @@ select:disabled {
   transition: border-color var(--transition-fast) var(--transition-timing), 
               background-color var(--transition-fast) var(--transition-timing);
 }
-.input-purple::placeholder {
+.input-brand::placeholder {
   color: var(--muted-foreground);
   opacity: 0.7;
 }
-.input-purple:focus {
+.input-brand:focus {
   border-color: var(--focus-ring-color);
   outline: none;
   box-shadow: 0 0 0 var(--focus-ring-width) var(--color-200);
 }
-.input-purple:focus-visible {
+.input-brand:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-.input-purple:disabled {
+.input-brand:disabled {
   background-color: var(--color-disabled-bg);
   color: var(--color-disabled-text);
   border-color: var(--color-disabled-border);
@@ -1452,12 +1441,12 @@ tbody tr:hover { background: var(--color-50); }
 .soccer-pattern { background: var(--color-600); background-image: linear-gradient(rgba(255,255,255,0.1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.1) 1px,transparent 1px); background-size: 20px 20px; background-position: -1px -1px; }
 
 /* 14. RADIX OVERRIDES */
-.border-var-purple-400 { border-color: var(--color-400) !important; }
-[data-radix-select-item][value="no-player"].border-var-purple-400:hover,
-[data-radix-select-item][value="no-player"].border-var-purple-400:focus {
+.border-var-brand-400 { border-color: var(--color-400) !important; }
+[data-radix-select-item][value="no-player"].border-var-brand-400:hover,
+[data-radix-select-item][value="no-player"].border-var-brand-400:focus {
   background: var(--color-200) !important;
 }
-[data-radix-select-item][value="no-player"].border-var-purple-400,
+[data-radix-select-item][value="no-player"].border-var-brand-400,
 [data-radix-select-item][value="no-player"] {
   border-color: var(--color-400) !important;
   border-width: 2px !important;
@@ -1475,29 +1464,29 @@ tbody tr:hover { background: var(--color-50); }
   background: var(--color-200) !important;
   color: var(--color-primary-base) !important;
 }
-[data-radix-popper-content-wrapper] .bg-var-purple-200 {
+[data-radix-popper-content-wrapper] .bg-var-brand-200 {
   background: var(--color-200) !important;
   color: var(--color-primary-base) !important;
 }
-[data-radix-popper-content-wrapper] .border-var-main-color-dark {
+[data-radix-popper-content-wrapper] .border-var-brand-dark {
   border-color: var(--color-primary-base) !important;
 }
 [data-radix-popper-content-wrapper] .shadow-lg,
 [data-radix-popper-content-wrapper] .shadow-md {
   box-shadow: 0 8px 24px 0 var(--color-shadow-primary-09), 0 1.5px 4px 0 var(--color-shadow-primary-12) !important;
 }
-[data-radix-popper-content-wrapper] .data-highlighted-bg-main-color-dark {
+[data-radix-popper-content-wrapper] .data-highlighted-bg-brand-dark {
   background: var(--color-primary-base) !important;
   color: var(--color-white) !important;
 }
 
 /* 15. KLEUR UTILITIES */
-.bg-var-main-color-dark { background: var(--color-primary-base) !important; }
-.text-var-main-color-dark { color: var(--color-primary-base) !important; }
-.bg-var-purple-100 { background: var(--color-100) !important; }
-.bg-var-purple-200 { background: var(--color-200) !important; }
-.text-var-purple-200 { color: var(--color-200) !important; }
-.text-var-purple-600 { color: var(--color-600) !important; }
+.bg-var-brand-dark { background: var(--color-primary-base) !important; }
+.text-var-brand-dark { color: var(--color-primary-base) !important; }
+.bg-var-brand-100 { background: var(--color-100) !important; }
+.bg-var-brand-200 { background: var(--color-200) !important; }
+.text-var-brand-200 { color: var(--color-200) !important; }
+.text-var-brand-600 { color: var(--color-600) !important; }
 
 /* 16. RESPONSIVE TEAM & MATCH CARDS */
 .text-responsive-team { 

@@ -53,7 +53,7 @@ const CupMatchCard: React.FC<CupMatchCardProps> = ({
       {/* Tournament round badge - positioned absolutely at top right */}
       {tournamentRound && (
         <div className="absolute top-2 right-2">
-          <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 border-purple-300 shadow-sm">
+          <Badge variant="outline" className="text-xs bg-brand-100 text-brand-700 border-brand-300 shadow-sm">
             {tournamentRound}
           </Badge>
         </div>

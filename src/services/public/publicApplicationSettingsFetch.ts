@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_ORGANIZATION_ID } from "@/config/organization";
 
 export interface PublicApplicationSettingRow {
   id: number;
@@ -9,9 +10,11 @@ export interface PublicApplicationSettingRow {
 
 export async function fetchPublicApplicationSettings(
   categories?: string[],
+  organizationId: number = DEFAULT_ORGANIZATION_ID,
 ): Promise<PublicApplicationSettingRow[]> {
   const { data, error } = await supabase.rpc("get_public_application_settings", {
     p_categories: categories ?? null,
+    p_organization_id: organizationId,
   });
 
   if (error) {

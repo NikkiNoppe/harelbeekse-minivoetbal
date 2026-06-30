@@ -22,6 +22,8 @@ export interface NavItem {
   icon: LucideIcon;
   adminOnly?: boolean;
   teamManagerOnly?: boolean;
+  /** Alleen zichtbaar voor SuperAdmin (user id -1). */
+  superAdminOnly?: boolean;
 }
 
 export const PUBLIC_NAV_ORDER = [
@@ -83,13 +85,13 @@ export const FINANCIEEL_ITEMS: NavItem[] = [
 ];
 
 export const HEADER_SYSTEEM_ITEMS: NavItem[] = [
-  { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
-  { key: "blog-management", label: "Blog Beheer", icon: BookOpen, adminOnly: true },
-  { key: "notification", label: "Berichten", icon: MessageSquare, adminOnly: true },
+  { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true, superAdminOnly: true },
+  { key: "blog-management", label: "Blog Beheer", icon: BookOpen, adminOnly: true, superAdminOnly: true },
+  { key: "notification", label: "Berichten", icon: MessageSquare, adminOnly: true, superAdminOnly: true },
 ];
 
 export const SIDEBAR_SYSTEEM_ITEMS: NavItem[] = [
-  { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
+  { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true, superAdminOnly: true },
 ];
 
 export const NAV_ROUTE_MAP: Record<string, string> = {
@@ -146,6 +148,7 @@ export function getOrderedPublicNavItems(
 interface FilterNavItemsOptions {
   isTabVisible: (key: string) => boolean;
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
   normalizedRole: string;
   userRole?: string;
   variant: "header" | "sidebar";
@@ -188,15 +191,20 @@ export function filterBeheerItems(
 
 export function filterAdminOnlyItems(
   items: NavItem[],
-  { isTabVisible, isAdmin }: Pick<FilterNavItemsOptions, "isTabVisible" | "isAdmin">
+  {
+    isTabVisible,
+    isAdmin,
+    isSuperAdmin = false,
+  }: Pick<FilterNavItemsOptions, "isTabVisible" | "isAdmin" | "isSuperAdmin">,
 ): NavItem[] {
   return items.filter((item) => {
     if (!isTabVisible(item.key)) return false;
+    if (item.superAdminOnly && !isSuperAdmin) return false;
     if (item.adminOnly && !isAdmin) return false;
     return true;
   });
 }
 
-export function filterSpeelformatenItems(isAdmin: boolean): NavItem[] {
-  return isAdmin ? SPEELFORMATEN_ITEMS : [];
+export function filterSpeelformatenItems(isSuperAdmin: boolean): NavItem[] {
+  return isSuperAdmin ? SPEELFORMATEN_ITEMS : [];
 }

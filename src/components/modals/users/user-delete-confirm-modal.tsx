@@ -30,7 +30,7 @@ const UserDeleteConfirmModal: React.FC<ConfirmDeleteModalProps> = ({
       title="Gebruiker permanent verwijderen"
       description={
         <div className="space-y-3 text-center">
-          <p className="text-purple-dark font-medium">
+          <p className="text-brand-dark font-medium">
             Weet je zeker dat je de gebruiker <span className="font-bold">"{user?.username}"</span> permanent wilt verwijderen?
           </p>
           <p className="text-sm text-red-600 font-medium">

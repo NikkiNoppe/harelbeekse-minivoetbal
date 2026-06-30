@@ -1,0 +1,86 @@
+---
+description: Toegankelijkheid — focus, contrast, semantiek, reduced motion
+alwaysApply: true
+---
+
+# Toegankelijkheid (a11y)
+
+**Elke UI-wijziging moet bruikbaar zijn met toetsenbord, screenreader en op mobiel.** Combineer met `ui-mobile-first.mdc` (touch targets) en `ui-design-system.mdc` (contrast via thema).
+
+## Semantiek & structuur
+
+- Gebruik **semantische HTML**: `header`, `nav`, `main`, `footer`, `section`, `button` (geen `div` met `onClick` voor acties)
+- **Één** `h1` per pagina; koppen niet overslaan (`h1` → `h2` → `h3`)
+- **Landmarks:** `aria-label` op `nav`/`footer` waar label niet zichtbaar is (zie `Footer`)
+- Lijsten: `ul`/`ol` — niet alleen `div`-stacks
+
+---
+
+## Focus & toetsenbord
+
+- Alle interactieve elementen bereikbaar via **Tab**
+- **Focus zichtbaar:** `focus-visible:ring-2` (shadcn default) — nooit `outline-none` zonder alternatief
+- Modals: focus naar modal bij open; terug naar trigger bij sluiten (Dialog/Sheet)
+- Skip-link niet verplicht (kleine app); wel logische tab-volgorde
+
+---
+
+## Labels & ARIA
+
+| Element | Vereist |
+|---------|---------|
+| Form inputs | Zichtbaar `<Label>` of `aria-label` |
+| Icon-only knoppen | `aria-label` (NL) |
+| Afbeeldingen | `alt` — decoratief: `alt=""` |
+| Live updates | `aria-live="polite"` voor toast/status waar nodig |
+| Laadstatus | `aria-busy` of sr-only "Laden…" bij skeletons |
+
+**Vermijd:** `aria-hidden` op focusbare kinderen; overmatig `role` waar native HTML volstaat.
+
+---
+
+## Kleur & contrast
+
+- Tekst op achtergrond: min. **4.5:1** (WCAG AA) — primair op wit voldoet (`#0072b9` op `#fff`)
+- **Kleur niet enige signaal** — fouten ook met tekst/icoon; status met label
+- Muted tekst: min. `text-muted-foreground` / slate-600 — geen gray-400 voor body
+- `prefers-contrast: more` — respecteer bestaande overrides in `index.css`
+
+---
+
+## Beweging & animatie
+
+- **`prefers-reduced-motion: reduce`:** geen verplichte animaties (`index.css` schakelt page-transitions uit)
+- Framer Motion: `motion-safe:` prefix of `useReducedMotion()`
+- Geen flitsende content (>3 Hz)
+- Autoplay video/GIF vermijden
+
+---
+
+## Touch & mobiel (overlap mobile-first)
+
+- Min. **44×44px** touch targets op primaire acties
+- Voldoende ruimte tussen klikbare elementen (`gap-2+`)
+- Inputs: grote hit area; geen `text-xs` voor primaire formuliertekst
+
+---
+
+## Checklist vóór oplevering
+
+- [ ] Tab door primaire flow zonder vast te lopen
+- [ ] Focus ring zichtbaar op knoppen/links/inputs
+- [ ] Formuliervelden hebben labels
+- [ ] Icon-knoppen hebben `aria-label`
+- [ ] Afbeeldingen hebben passende `alt`
+- [ ] Werkt met reduced motion aan
+- [ ] Contrast gecontroleerd op primary + destructive states
+
+---
+
+## Anti-patterns
+
+- `onClick` op `div`/`span` zonder `role` + keyboard handler
+- Placeholder als enige veldlabel
+- Kleur alleen voor fout/succes (zonder tekst)
+- `outline-none` op interactieve elementen zonder focus-visible
+- Essentiële info alleen via hover/tooltip

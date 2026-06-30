@@ -744,7 +744,7 @@ const SuspensionRow: React.FC<{
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-base truncate">{suspension.playerName}</h3>
-            <Badge variant="outline" className={suspension.type === 'automatic' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
+            <Badge variant="outline" className={suspension.type === 'automatic' ? 'bg-brand-50 text-brand-700 border-brand-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
               {suspension.type === 'automatic' ? 'Automatisch' : 'Handmatig'}
             </Badge>
           </div>

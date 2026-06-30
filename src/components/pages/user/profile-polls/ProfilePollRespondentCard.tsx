@@ -15,6 +15,7 @@ import {
   type ProfilePollRespondentView,
 } from "@/services/profilePoll/profilePollService";
 import { useQueryClient } from "@tanstack/react-query";
+import { useOrganization } from "@/hooks/useOrganization";
 import { PROFILE_POLLS_QUERY_KEY } from "@/services/profilePoll/profilePollService";
 
 interface ProfilePollRespondentCardProps {
@@ -92,6 +93,7 @@ function PollOptionRow({
 
 export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardProps) {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrganization();
   const initialIds = poll.my_response?.option_ids ?? [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
   const [pending, setPending] = useState(false);
@@ -113,11 +115,11 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
 
   const saveResponse = useCallback(
     async (optionIds: string[]) => {
-      if (optionIds.length === 0) return;
+      if (optionIds.length === 0 || organizationId == null) return;
       setPending(true);
       setError(null);
       try {
-        await profilePollService.submitResponse(poll.id, optionIds);
+        await profilePollService.submitResponse(organizationId, poll.id, optionIds);
         setSaved(true);
         setShowSavedConfirm(true);
         await queryClient.invalidateQueries({ queryKey: PROFILE_POLLS_QUERY_KEY });
@@ -129,7 +131,7 @@ export function ProfilePollRespondentCard({ poll }: ProfilePollRespondentCardPro
         setPending(false);
       }
     },
-    [poll.id, poll.my_response, queryClient],
+    [poll.id, poll.my_response, queryClient, organizationId],
   );
 
   const handleRadioChange = (optionId: string) => {

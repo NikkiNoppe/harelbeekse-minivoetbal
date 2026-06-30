@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { teamService } from '@/services/core/teamService';
 import { fetchTeamForSession } from '@/services/core/teamsSessionFetch';
 import { getSessionToken } from '@/lib/authSession';
+import { useOrgQueryScope } from '@/hooks/useOrganization';
+import { withOrgQueryKey } from '@/lib/orgQueryKey';
 
 export interface Team {
   team_id: number;
@@ -38,9 +40,12 @@ export const useTeams = () => {
 
 // Fetch public teams (safe for public access - no contact info)
 export const usePublicTeams = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: [...teamQueryKeys.all, 'public'],
-    queryFn: () => teamService.getPublicTeams(),
+    queryKey: withOrgQueryKey([...teamQueryKeys.all, 'public'], organizationId),
+    queryFn: () => teamService.getPublicTeams(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

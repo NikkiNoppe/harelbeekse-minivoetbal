@@ -13,11 +13,17 @@ Overzicht van projectconfiguratie voor Cursor-agents.
 | `supabase-schema.mdc` | `supabase/**` | Migraties, RLS, triggers, edge functions |
 | `supabase-client.mdc` | `src/services`, hooks, domains | Session-RPC fetch-lagen, legacy `withUserContext` |
 | `ui-mobile-first.mdc` | altijd | Mobiel als hoofdplatform, touch targets |
+| `ui-accessibility.mdc` | altijd | Focus, contrast, semantiek, reduced motion |
 | `data-snel-laden.mdc` | altijd | TanStack Query, skeletons, achtergrond-sync |
+| `ui-design-system.mdc` | components, thema-hooks | Kleuren/branding per org (`application_settings`) |
+| `ui-ux-principles.mdc` | `src/components/**` | Feedback, formulieren, leeg/fout-states |
 | `ui-21st-dev.mdc` | `src/components/**` | UI-voorbeelden via 21st.dev |
 | `project-footer-versie.mdc` | altijd | Footer buildversie `v1.YYMMDD` |
+| `multi-tenant-visie.mdc` | **altijd** | Platformvisie, één codebase, stap-voor-stap migratie |
+| `multi-tenant-database.mdc` | `supabase/**` | `organization_id`, RLS, migratie-backfill |
+| `multi-tenant-frontend.mdc` | `src/**` | Actieve org-filter, config, query keys |
 
-**Naamgeving:** `<domein>-<onderwerp>.mdc` — domeinen: `supabase`, `ui`, `data`, `project`.
+**Naamgeving:** `<domein>-<onderwerp>.mdc` — domeinen: `supabase`, `ui`, `data`, `project`, `multi-tenant`.
 
 ## Hooks (`.cursor/hooks/`)
 

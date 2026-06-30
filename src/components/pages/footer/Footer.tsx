@@ -1,27 +1,32 @@
 import React from "react";
 import { Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/hooks/useBranding";
+import { useOrganizationContent } from "@/hooks/useOrganizationContent";
 
 const contactLinkClass = cn(
   "flex items-center gap-1.5 text-xs text-white/90 hover:text-white transition-colors",
   "min-h-[44px] sm:min-h-0",
-  "rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-purple-600"
+  "rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600"
 );
 
 const Footer: React.FC = () => {
+  const branding = useBranding();
+  const { footerTagline } = useOrganizationContent();
+
   return (
     <footer
       aria-label="Paginavoettekst"
-      className="bg-purple-600 py-4 sm:py-3 mt-auto pb-[max(1rem,env(safe-area-inset-bottom))]"
+      className="bg-brand-600 py-4 sm:py-3 mt-auto pb-[max(1rem,env(safe-area-inset-bottom))]"
     >
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-3">
           <div>
             <h3 className="font-semibold text-white mb-0.5 text-xs">
-              Harelbeekse Minivoetbal Competitie
+              {branding.displayName}
             </h3>
             <p className="text-xs text-white/90 leading-relaxed">
-              Minivoetbalcompetitie sinds 1979.
+              {footerTagline}
             </p>
           </div>
 
@@ -63,8 +68,8 @@ const Footer: React.FC = () => {
 
         <div className="mt-4 sm:mt-3 pt-3 sm:pt-2 border-t border-white/20 text-center">
           <p className="text-xs text-white/80 leading-relaxed">
-            © {new Date().getFullYear()} Harelbeekse Minivoetbal Competitie. Alle rechten voorbehouden.{" "}
-            <span className="opacity-60">v1.260613</span>
+            © {new Date().getFullYear()} {branding.displayName}. Alle rechten voorbehouden.{" "}
+            <span className="opacity-60">v1.260630</span>
           </p>
         </div>
       </div>

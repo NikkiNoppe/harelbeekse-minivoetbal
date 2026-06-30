@@ -250,7 +250,7 @@ const AdminCompetitionPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => setShowArchiveModal(true)}
-            className="border-purple-300 text-purple-800 hover:bg-purple-50"
+            className="border-brand-300 text-brand-800 hover:bg-brand-50"
           >
             <Archive className="w-4 h-4 mr-2" />
             Seizoen archiveren

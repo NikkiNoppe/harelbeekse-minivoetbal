@@ -115,8 +115,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {isSeasonsFetched && !isSeasonsLoading && (!availableSeasons || availableSeasons.length === 0) && (
             <div className="text-center py-8">
-              <p className="text-purple-dark">Geen seizoenen met wedstrijdgegevens gevonden.</p>
-              <p className="text-sm text-purple-dark opacity-70">
+              <p className="text-brand-dark">Geen seizoenen met wedstrijdgegevens gevonden.</p>
+              <p className="text-sm text-brand-dark opacity-70">
                 Voeg eerst wedstrijden toe of synchroniseer wedstrijdkosten op het financiële overzicht.
               </p>
             </div>
@@ -127,7 +127,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
             <>
               <div className="filters-row">
                 <div className="filter-item filter-select">
-                  <label className="text-sm font-medium mb-2 block text-purple-dark">Seizoen</label>
+                  <label className="text-sm font-medium mb-2 block text-brand-dark">Seizoen</label>
                   <Select value={selectedSeasonYear.toString()} onValueChange={(value) => setSelectedSeasonYear(parseInt(value))}>
                     <SelectTrigger className="w-full dropdown-login-style">
                       <SelectValue />
@@ -143,7 +143,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 </div>
 
                 <div className="filter-item filter-select">
-                  <label className="text-sm font-medium mb-2 block text-purple-dark">Maand</label>
+                  <label className="text-sm font-medium mb-2 block text-brand-dark">Maand</label>
                   <Select value={selectedMonth?.toString() || "all"} onValueChange={(value) => setSelectedMonth(value === "all" ? null : parseInt(value))}>
                     <SelectTrigger className="w-full dropdown-login-style">
                       <SelectValue placeholder="Alle maanden" />
@@ -160,7 +160,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 </div>
 
                 <div className="filter-item filter-button">
-                  <label className="text-sm font-medium mb-2 block text-purple-dark opacity-0 pointer-events-none">Export</label>
+                  <label className="text-sm font-medium mb-2 block text-brand-dark opacity-0 pointer-events-none">Export</label>
                   <Button className="btn btn--secondary flex items-center justify-center gap-2 w-full">
                     <Download className="h-4 w-4" />
                     Export
@@ -253,7 +253,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
           {isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <Card key={index} className="border-purple-light">
+                <Card key={index} className="border-brand-light">
                   <CardHeader className="bg-muted p-3">
                     <div className="mx-auto h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
                   </CardHeader>
@@ -273,7 +273,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   Vernieuwen…
                 </div>
               )}
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader 
                   className="bg-muted p-3"
                   style={{ 
@@ -286,19 +286,19 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: 'center'
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Users className="h-3 w-3" />
                     Wedstrijden
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-xl font-bold text-purple-dark text-center">
+                  <div className="text-xl font-bold text-brand-dark text-center">
                     {report.totalMatches}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader 
                   className="bg-muted p-3"
                   style={{ 
@@ -311,19 +311,19 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: 'center'
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Euro className="h-3 w-3" />
                     Veldkosten
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-lg font-bold text-purple-dark text-center">
+                  <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalFieldCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader 
                   className="bg-muted p-3"
                   style={{ 
@@ -336,19 +336,19 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: 'center'
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Euro className="h-3 w-3" />
                     Scheidsrechters
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-lg font-bold text-purple-dark text-center">
+                  <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalRefereeCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader 
                   className="bg-muted p-3"
                   style={{ 
@@ -361,19 +361,19 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: 'center'
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Euro className="h-3 w-3" />
                     Administratie
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-lg font-bold text-purple-dark text-center">
+                  <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalAdminCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader 
                   className="bg-muted p-3"
                   style={{ 
@@ -386,19 +386,19 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: 'center'
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Euro className="h-3 w-3" />
                     Boetes
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-lg font-bold text-purple-dark text-center">
+                  <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-purple-light">
+              <Card className="border-brand-light">
                 <CardHeader
                   className="bg-muted p-3"
                   style={{
@@ -411,13 +411,13 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                     justifyContent: "center",
                   }}
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-purple-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
                     <Ban className="h-3 w-3" />
                     Forfaits
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="bg-white p-3">
-                  <div className="text-xl font-bold text-purple-dark text-center">
+                  <div className="text-xl font-bold text-brand-dark text-center">
                     {report.totalForfaits}
                   </div>
                 </CardContent>
@@ -427,9 +427,9 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Scheidsrechter Betalingen - Improved with expandable match details */}
           {report && !isInitialLoad && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100">
-                <CardTitle className="text-purple-light flex items-center gap-2">
+            <Card className="border-brand-light">
+              <CardHeader className="bg-brand-100">
+                <CardTitle className="text-brand-light flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Scheidsrechter Betalingen
                 </CardTitle>
@@ -446,11 +446,11 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                       <CollapsibleTrigger className="w-full p-4 hover:bg-muted transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="text-left">
-                            <p className="font-medium text-purple-dark">{referee.referee}</p>
+                            <p className="font-medium text-brand-dark">{referee.referee}</p>
                             <p className="text-sm text-muted-foreground">{referee.matchCount} wedstrijden</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-purple-dark">{formatCurrency(referee.totalCost)}</span>
+                            <span className="font-semibold text-brand-dark">{formatCurrency(referee.totalCost)}</span>
                             {expandedReferees.has(referee.referee) ? (
                               <ChevronDown className="h-4 w-4 text-muted-foreground" />
                             ) : (
@@ -482,12 +482,12 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   <div className="p-4 bg-muted">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-purple-dark">Totaal</p>
+                        <p className="font-bold text-brand-dark">Totaal</p>
                         <p className="text-sm text-muted-foreground">
                           {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)} wedstrijden
                         </p>
                       </div>
-                      <span className="font-bold text-purple-dark">
+                      <span className="font-bold text-brand-dark">
                         {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
                       </span>
                     </div>
@@ -499,10 +499,10 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   <Table className="table">
                     <TableHeader>
                       <TableRow className="bg-muted">
-                        <TableHead className="text-purple-dark w-8"></TableHead>
-                        <TableHead className="text-purple-dark">Scheidsrechter</TableHead>
-                        <TableHead className="text-center text-purple-dark">Aantal Wedstrijden</TableHead>
-                        <TableHead className="text-right text-purple-dark">Te Betalen Bedrag</TableHead>
+                        <TableHead className="text-brand-dark w-8"></TableHead>
+                        <TableHead className="text-brand-dark">Scheidsrechter</TableHead>
+                        <TableHead className="text-center text-brand-dark">Aantal Wedstrijden</TableHead>
+                        <TableHead className="text-right text-brand-dark">Te Betalen Bedrag</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="bg-white">
@@ -522,9 +522,9 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                                 )
                               )}
                             </TableCell>
-                            <TableCell className="font-medium text-purple-dark">{referee.referee}</TableCell>
-                            <TableCell className="text-center text-purple-dark">{referee.matchCount}</TableCell>
-                            <TableCell className="text-right font-semibold text-purple-dark">
+                            <TableCell className="font-medium text-brand-dark">{referee.referee}</TableCell>
+                            <TableCell className="text-center text-brand-dark">{referee.matchCount}</TableCell>
+                            <TableCell className="text-right font-semibold text-brand-dark">
                               {formatCurrency(referee.totalCost)}
                             </TableCell>
                           </TableRow>
@@ -558,13 +558,13 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                         </React.Fragment>
                       ))}
                       {/* Totaal row */}
-                      <TableRow className="bg-purple-100 border-t-2 border-purple-light">
+                      <TableRow className="bg-brand-100 border-t-2 border-brand-light">
                         <TableCell></TableCell>
-                        <TableCell className="font-bold text-purple-dark">Totaal</TableCell>
-                        <TableCell className="text-center font-bold text-purple-dark">
+                        <TableCell className="font-bold text-brand-dark">Totaal</TableCell>
+                        <TableCell className="text-center font-bold text-brand-dark">
                           {report.refereeCosts.reduce((sum, ref) => sum + ref.matchCount, 0)}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-purple-dark">
+                        <TableCell className="text-right font-bold text-brand-dark">
                           {formatCurrency(report.refereeCosts.reduce((sum, ref) => sum + ref.totalCost, 0))}
                         </TableCell>
                       </TableRow>
@@ -577,9 +577,9 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Boetes — compact: totaal per periode + detail per regel */}
           {report && !isInitialLoad && report.fines && report.fines.length > 0 && (
-            <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100 py-3">
-                <CardTitle className="text-purple-light text-sm font-semibold">
+            <Card className="border-brand-light">
+              <CardHeader className="bg-brand-100 py-3">
+                <CardTitle className="text-brand-light text-sm font-semibold">
                   {selectedMonth != null ? "Boetes (maand)" : "Boetes (seizoen)"}
                 </CardTitle>
               </CardHeader>
@@ -587,7 +587,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 {report.fines.map((bucket, index) => (
                   <div key={index} className="space-y-2 px-3 py-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
-                      <span className="font-medium text-purple-dark">{bucket.month}</span>
+                      <span className="font-medium text-brand-dark">{bucket.month}</span>
                       <span className="tabular-nums text-muted-foreground">
                         {bucket.fineCount}× · {formatCurrency(bucket.totalFines)}
                       </span>
@@ -605,7 +605,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                               <th className="px-2 py-1.5 text-right font-medium">€</th>
                             </tr>
                           </thead>
-                          <tbody className="text-purple-dark">
+                          <tbody className="text-brand-dark">
                             {bucket.lines.map((line, li) => (
                               <tr key={li} className="border-b border-border/50 last:border-0">
                                 <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
@@ -642,9 +642,9 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Veldkosten — compact: totaal per periode + welke wedstrijden / welke ploeg */}
           {report && !isInitialLoad && report.fieldCosts && report.fieldCosts.length > 0 && (
-            <Card className="border-purple-light">
-              <CardHeader className="bg-purple-100 py-3">
-                <CardTitle className="text-purple-light text-sm font-semibold">
+            <Card className="border-brand-light">
+              <CardHeader className="bg-brand-100 py-3">
+                <CardTitle className="text-brand-light text-sm font-semibold">
                   {selectedMonth != null ? "Veldkosten (maand)" : "Veldkosten (seizoen)"}
                 </CardTitle>
               </CardHeader>
@@ -652,7 +652,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 {report.fieldCosts.map((bucket, index) => (
                   <div key={index} className="space-y-2 px-3 py-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
-                      <span className="font-medium text-purple-dark">{bucket.month}</span>
+                      <span className="font-medium text-brand-dark">{bucket.month}</span>
                       <span className="tabular-nums text-muted-foreground">
                         {bucket.matchCount} wd · {bucket.bookingLines ?? "—"} lijnen · {formatCurrency(bucket.totalCost)}
                       </span>
@@ -669,7 +669,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                               <th className="px-2 py-1.5 text-right font-medium">€</th>
                             </tr>
                           </thead>
-                          <tbody className="text-purple-dark">
+                          <tbody className="text-brand-dark">
                             {bucket.lines.map((line, li) => (
                               <tr key={li} className="border-b border-border/50 last:border-0">
                                 <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
@@ -703,20 +703,20 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Error state */}
           {error && (
-            <Card className="border-purple-light">
+            <Card className="border-brand-light">
               <CardContent className="text-center py-8 bg-white">
-                <p className="text-purple-dark mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
-                <p className="text-sm text-purple-dark opacity-70">{(error as Error).message}</p>
+                <p className="text-brand-dark mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
+                <p className="text-sm text-brand-dark opacity-70">{(error as Error).message}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Show message when no data but seasons are available */}
           {report && !isInitialLoad && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-purple-light">
+            <Card className="border-brand-light">
               <CardContent className="text-center py-8 bg-white">
-                <p className="text-purple-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>
-                <p className="text-sm text-purple-dark opacity-70">
+                <p className="text-brand-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>
+                <p className="text-sm text-brand-dark opacity-70">
                   Selecteer een andere maand of bekijk het hele seizoen.
                 </p>
               </CardContent>

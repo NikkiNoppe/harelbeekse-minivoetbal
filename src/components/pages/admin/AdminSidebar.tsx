@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useNavigate } from "react-router-dom";
+import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { getPathFromTab } from "@/config/routes";
 import {
   type NavItem,
@@ -26,18 +26,19 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ activeTab }: AdminSidebarProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const normalizedRole = normalizeRole(user?.role || "");
   const isAdmin = normalizedRole === "admin";
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { isTabVisible } = useTabVisibility();
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
+  const navigate = useOrgAwareNavigate();
 
   const filterOpts = {
     isTabVisible,
     isAdmin,
+    isSuperAdmin,
     normalizedRole,
     userRole: user?.role,
     variant: "sidebar" as const,
@@ -50,7 +51,7 @@ export function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const visibleBeheerItems = filterBeheerItems(SIDEBAR_BEHEER_ITEMS, filterOpts);
   const visibleFinancieelItems = filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts);
   const visibleSysteemItems = filterAdminOnlyItems(SIDEBAR_SYSTEEM_ITEMS, filterOpts);
-  const visibleSpeelformatenItems = filterSpeelformatenItems(isAdmin);
+  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin);
 
   const isActive = (key: string) => activeTab === key;
 
@@ -92,16 +93,16 @@ export function AdminSidebar({ activeTab }: AdminSidebarProps) {
   return (
     <div
       className={`${collapsed ? "w-14" : "w-64"} flex flex-col h-full ${isMobile ? "px-4 py-6" : "p-3"}`}
-      style={{ background: "var(--purple-100)" }}
+      style={{ background: "var(--color-100)" }}
     >
       <div className="mb-6">
         {collapsed ? (
           <div className="flex items-center justify-center">
-            <Shield className="h-4 w-4" style={{ color: "var(--main-color-dark)" }} />
+            <Shield className="h-4 w-4" style={{ color: "var(--color-primary-base)" }} />
           </div>
         ) : (
           <div className={`${isMobile ? "px-2" : "px-1"}`}>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--main-color-dark)" }}>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-primary-base)" }}>
               {isAdmin
                 ? "Admin"
                 : normalizedRole === "referee"
@@ -112,7 +113,7 @@ export function AdminSidebar({ activeTab }: AdminSidebarProps) {
                       ? normalizedRole.toUpperCase()
                       : "GEBRUIKER"}
             </div>
-            <div className="text-base font-semibold" style={{ color: "var(--main-color-dark)" }}>
+            <div className="text-base font-semibold" style={{ color: "var(--color-primary-base)" }}>
               {isAdmin
                 ? "Administrator"
                 : normalizedRole === "referee"

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getRpcSessionArgs } from '@/lib/authSession';
+import { DEFAULT_ORGANIZATION_ID } from '@/config/organization';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 import { fetchPublicMatches, type PublicMatchRow } from '@/services/public/publicScheduleFetch';
 
@@ -224,8 +225,8 @@ function mapArchiveRow(row: {
 }
 
 export const archiveService = {
-  async listArchives(): Promise<SeasonArchive[]> {
-    const rows = await fetchPublicApplicationSettings([ARCHIVE_CATEGORY]);
+  async listArchives(organizationId?: number): Promise<SeasonArchive[]> {
+    const rows = await fetchPublicApplicationSettings([ARCHIVE_CATEGORY], organizationId);
     return rows
       .map((row) =>
         mapArchiveRow({
@@ -250,9 +251,9 @@ export const archiveService = {
   },
 
   /** Pull the current live standings and shape them for archiving. */
-  async snapshotCurrentStandings(): Promise<ArchivedStanding[]> {
+  async snapshotCurrentStandings(organizationId?: number): Promise<ArchivedStanding[]> {
     const { fetchRegularStandings } = await import('@/services/standings/standingsService');
-    const standings = await fetchRegularStandings();
+    const standings = await fetchRegularStandings(organizationId);
     return standings.map((s) => ({
       position: s.position,
       team_name: s.team_name,
@@ -268,8 +269,8 @@ export const archiveService = {
   },
 
   /** Auto-detect the cup final (and halve finales) and shape them for archiving. */
-  async snapshotCurrentCupFinal(): Promise<ArchivedCupWinner | null> {
-    const matches = await fetchPublicMatches();
+  async snapshotCurrentCupFinal(organizationId?: number): Promise<ArchivedCupWinner | null> {
+    const matches = await fetchPublicMatches(organizationId);
     const cupMatches = matches.filter((m) => m.is_cup_match);
     const data = cupMatches.find((m) => m.unique_number === 'FINAL');
     if (!data) return null;
@@ -315,9 +316,9 @@ export const archiveService = {
   },
 
   /** Snapshot playoff rankings using the same logic as the public /playoff page. */
-  async snapshotCurrentPlayoff(): Promise<ArchivedPlayoff> {
+  async snapshotCurrentPlayoff(organizationId?: number): Promise<ArchivedPlayoff> {
     const { fetchPublicPlayoffData } = await import('@/hooks/usePublicPlayoffData');
-    const data = await fetchPublicPlayoffData();
+    const data = await fetchPublicPlayoffData(organizationId ?? DEFAULT_ORGANIZATION_ID);
 
     return {
       top_ranking: data.po1Teams.map((team, idx) => ({

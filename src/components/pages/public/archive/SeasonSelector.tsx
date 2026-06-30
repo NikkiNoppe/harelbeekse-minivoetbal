@@ -20,8 +20,8 @@ const SeasonSelector: React.FC<Props> = ({ seasons, selected, onSelect }) => {
             className={cn(
               'flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold border-[1.5px] transition-all',
               active
-                ? 'bg-purple-700 text-white border-purple-700 shadow-md'
-                : 'bg-white text-purple-800 border-purple-200 hover:bg-purple-50'
+                ? 'bg-brand-700 text-white border-brand-700 shadow-md'
+                : 'bg-white text-brand-800 border-brand-200 hover:bg-brand-50'
             )}
           >
             {s}

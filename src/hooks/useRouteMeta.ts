@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { getRouteMeta, PUBLIC_ROUTES } from "@/config/routes";
-import { NOINDEX_PATHS, SITE_URL } from "@/config/site";
+import { NOINDEX_PATHS } from "@/config/site";
+import { useBranding } from "@/hooks/useBranding";
+import { resolveOrganizationPublicContent } from "@/config/organizationContent";
+import { useOrganization } from "@/hooks/useOrganization";
 
 const DEFAULT_ROBOTS = "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
 const NOINDEX_ROBOTS = "noindex, nofollow";
@@ -48,11 +51,16 @@ function upsertMetaProperty(property: string, content: string) {
   );
 }
 
-function buildDocumentTitle(pathname: string, metaTitle: string): string {
+function buildDocumentTitle(
+  pathname: string,
+  metaTitle: string,
+  brandingDisplayName: string,
+  defaultTitle: string,
+): string {
   if (pathname === PUBLIC_ROUTES.algemeen || pathname === "/") {
-    return "Minivoetbal Harelbeke | Competitie, standen & uitslagen";
+    return defaultTitle;
   }
-  return `${metaTitle} | Harelbeekse Minivoetbal`;
+  return `${metaTitle} | ${brandingDisplayName}`;
 }
 
 function upsertCanonical(href: string) {
@@ -69,21 +77,47 @@ function upsertCanonical(href: string) {
   );
 }
 
+function upsertFavicon(href: string) {
+  upsertMeta(
+    'link[rel="icon"]',
+    () => {
+      const link = document.createElement("link");
+      link.setAttribute("rel", "icon");
+      return link;
+    },
+    (el) => {
+      (el as HTMLLinkElement).href = href;
+    },
+  );
+}
+
 /**
  * Hook to update document title, meta tags and canonical URL based on current route.
  */
 export const useRouteMeta = () => {
   const location = useLocation();
+  const branding = useBranding();
+  const { organization, organizationSlug } = useOrganization();
+  const publicContent = resolveOrganizationPublicContent(
+    organizationSlug,
+    organization?.brandingSettings,
+  );
   const meta = getRouteMeta(location.pathname);
   const isNoIndex = NOINDEX_PATHS.includes(location.pathname as (typeof NOINDEX_PATHS)[number]);
-  const canonicalUrl = `${SITE_URL}${location.pathname}`;
+  const origin = typeof window !== "undefined" ? window.location.origin : branding.siteUrl;
+  const canonicalUrl = `${origin}${location.pathname}`;
+  const defaultTitle =
+    branding.meta?.defaultTitle ?? `${branding.shortName} | ${branding.displayName}`;
+  const siteSuffix = branding.displayName;
 
   useEffect(() => {
+    upsertFavicon(branding.faviconPath);
+
     if (isNoIndex) {
       const utilityTitle = UTILITY_PAGE_TITLES[location.pathname];
       document.title = utilityTitle
-        ? `${utilityTitle} - Harelbeekse Minivoetbal`
-        : "Harelbeekse Minivoetbal";
+        ? `${utilityTitle} - ${siteSuffix}`
+        : siteSuffix;
       upsertMetaName("robots", NOINDEX_ROBOTS);
       upsertCanonical(canonicalUrl);
       return;
@@ -92,20 +126,46 @@ export const useRouteMeta = () => {
     upsertMetaName("robots", DEFAULT_ROBOTS);
 
     if (meta) {
-      const pageTitle = buildDocumentTitle(location.pathname, meta.title);
+      const routeDescription =
+        location.pathname === PUBLIC_ROUTES.algemeen
+          ? branding.meta?.defaultDescription ?? publicContent.algemeen.subtitle
+          : meta.description;
+      const routeTitle =
+        location.pathname === PUBLIC_ROUTES.algemeen
+          ? publicContent.algemeen.title
+          : meta.title;
+
+      const pageTitle = buildDocumentTitle(
+        location.pathname,
+        routeTitle,
+        siteSuffix,
+        defaultTitle,
+      );
       document.title = pageTitle;
 
-      upsertMetaName("description", meta.description);
+      upsertMetaName("description", routeDescription);
       upsertMetaProperty("og:title", pageTitle);
-      upsertMetaProperty("og:description", meta.description);
+      upsertMetaProperty("og:description", routeDescription);
       upsertMetaProperty("og:url", canonicalUrl);
       upsertMetaName("twitter:title", pageTitle);
-      upsertMetaName("twitter:description", meta.description);
+      upsertMetaName("twitter:description", routeDescription);
       upsertMetaName("twitter:url", canonicalUrl);
     } else {
-      document.title = "Harelbeekse Minivoetbal";
+      document.title = defaultTitle;
     }
 
     upsertCanonical(canonicalUrl);
-  }, [meta, location.pathname, canonicalUrl, isNoIndex]);
+  }, [
+    meta,
+    location.pathname,
+    canonicalUrl,
+    isNoIndex,
+    branding.faviconPath,
+    defaultTitle,
+    siteSuffix,
+    organizationSlug,
+    organization?.brandingSettings,
+    publicContent.algemeen.subtitle,
+    publicContent.algemeen.title,
+  ]);
 };

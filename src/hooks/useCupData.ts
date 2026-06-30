@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { cupService } from "@/services";
 import { isoToLocalDateTime } from "@/lib/dateUtils";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface CupMatchDisplay {
   id: string;
@@ -38,9 +40,12 @@ const formatMatchForDisplay = (match: any): CupMatchDisplay => {
 };
 
 export const useCupData = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   const query = useQuery({
-    queryKey: ['cupMatches'],
-    queryFn: cupService.getCupMatches,
+    queryKey: withOrgQueryKey(['cupMatches'], organizationId),
+    queryFn: () => cupService.getCupMatches(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 3 * 60 * 1000, // 3 minutes - tournament data doesn't change often
     gcTime: 15 * 60 * 1000, // 15 minutes cache
     retry: 2,

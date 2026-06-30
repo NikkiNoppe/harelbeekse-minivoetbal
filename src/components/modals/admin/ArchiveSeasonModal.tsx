@@ -97,7 +97,7 @@ const ArchiveSeasonModal: React.FC<Props> = ({ open, onOpenChange }) => {
         )}
 
         <div>
-          <div className="text-sm font-medium text-purple-800 mb-2">Preview eindklassement</div>
+          <div className="text-sm font-medium text-brand-800 mb-2">Preview eindklassement</div>
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" /> Laden...
@@ -105,9 +105,9 @@ const ArchiveSeasonModal: React.FC<Props> = ({ open, onOpenChange }) => {
           ) : standings.length === 0 ? (
             <p className="text-sm text-muted-foreground">Geen klassementgegevens beschikbaar.</p>
           ) : (
-            <div className="max-h-64 overflow-y-auto border border-purple-100 rounded-md">
+            <div className="max-h-64 overflow-y-auto border border-brand-100 rounded-md">
               <table className="w-full text-sm">
-                <thead className="bg-purple-50 text-purple-900 text-xs uppercase">
+                <thead className="bg-brand-50 text-brand-900 text-xs uppercase">
                   <tr>
                     <th className="px-2 py-1 text-left w-8">#</th>
                     <th className="px-2 py-1 text-left">Team</th>
@@ -117,7 +117,7 @@ const ArchiveSeasonModal: React.FC<Props> = ({ open, onOpenChange }) => {
                 </thead>
                 <tbody>
                   {standings.map((s) => (
-                    <tr key={s.position} className="border-t border-purple-50">
+                    <tr key={s.position} className="border-t border-brand-50">
                       <td className="px-2 py-1 font-semibold">{s.position}</td>
                       <td className="px-2 py-1">{s.team_name}</td>
                       <td className="px-2 py-1 text-center">{s.played}</td>

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { fetchUpcomingMatches } from "@/components/pages/admin/matches/services/matchesFormService";
 import type { MatchFormData } from "@/components/pages/admin/matches/types";
 
@@ -34,6 +36,7 @@ export const useMatchFormsData = (
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   
   // Loading time management: minimum 250ms, maximum 5000ms timeout
   const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
@@ -67,7 +70,10 @@ export const useMatchFormsData = (
 
   // League matches query
   const leagueQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'league', refereeFilter?.userId],
+    queryKey: withOrgQueryKey(
+      ['teamMatches', teamId, hasElevatedPermissions, 'league', refereeFilter?.userId],
+      organizationId,
+    ),
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
@@ -82,7 +88,10 @@ export const useMatchFormsData = (
 
   // Cup matches query
   const cupQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'cup', refereeFilter?.userId],
+    queryKey: withOrgQueryKey(
+      ['teamMatches', teamId, hasElevatedPermissions, 'cup', refereeFilter?.userId],
+      organizationId,
+    ),
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 
@@ -97,7 +106,10 @@ export const useMatchFormsData = (
 
   // Playoff matches query
   const playoffQuery = useQuery({
-    queryKey: ['teamMatches', teamId, hasElevatedPermissions, 'playoff', refereeFilter?.userId],
+    queryKey: withOrgQueryKey(
+      ['teamMatches', teamId, hasElevatedPermissions, 'playoff', refereeFilter?.userId],
+      organizationId,
+    ),
     queryFn: async () => {
       return fetchUpcomingMatches(
         hasElevatedPermissions ? 0 : teamId, 

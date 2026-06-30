@@ -8,11 +8,11 @@ interface Props {
 }
 
 const THEME = {
-  shellBorder: "border-purple-200",
-  headerBg: "bg-gradient-to-r from-purple-50 via-purple-100 to-purple-50",
-  headerText: "text-purple-900",
-  rowDivider: "divide-purple-100",
-  posDefault: "bg-purple-100 text-purple-800",
+  shellBorder: "border-brand-200",
+  headerBg: "bg-gradient-to-r from-brand-50 via-brand-100 to-brand-50",
+  headerText: "text-brand-900",
+  rowDivider: "divide-brand-100",
+  posDefault: "bg-brand-100 text-brand-800",
   posFirst: "bg-yellow-100 text-yellow-800",
 } as const;
 
@@ -43,7 +43,7 @@ const StandingsArchiveCard: React.FC<Props> = ({ standings }) => {
           <div className="overflow-x-auto bg-white">
             <table className="w-full min-w-[16rem] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-purple-100 text-xs text-muted-foreground">
+                <tr className="border-b border-brand-100 text-xs text-muted-foreground">
                   <th scope="col" className="w-12 py-2 px-3 text-center font-medium">
                     #
                   </th>

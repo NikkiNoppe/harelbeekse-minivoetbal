@@ -184,7 +184,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
       case 'match_cost': return 'bg-blue-100 text-blue-800';
       case 'penalty': return 'bg-red-100 text-red-800';
       case 'field_cost': return 'bg-green-100 text-green-800';
-      case 'referee_cost': return 'bg-purple-100 text-purple-800';
+      case 'referee_cost': return 'bg-brand-100 text-brand-800';
       case 'deposit': return '!bg-green-50 !text-green-700 !border-green-200 hover:!bg-green-100 hover:!border-green-300';
       case 'other': return 'bg-muted text-card-foreground';
       default: return 'bg-muted text-card-foreground';

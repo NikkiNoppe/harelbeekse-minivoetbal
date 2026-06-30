@@ -827,10 +827,10 @@ export const bekerService = {
     }
   },
 
-  async getCupMatches(): Promise<any> {
+  async getCupMatches(organizationId?: number): Promise<any> {
     const [allMatches, teamMap] = await Promise.all([
-      fetchPublicMatches(),
-      teamService.getPublicTeamMap(),
+      fetchPublicMatches(organizationId),
+      teamService.getPublicTeamMap(organizationId),
     ]);
 
     const data = allMatches

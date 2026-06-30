@@ -9,7 +9,7 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-purple-50 border-purple-light text-purple-dark",
+        default: "bg-brand-50 border-brand-light text-brand-dark",
         destructive:
           "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive bg-red-50",
       },
@@ -39,7 +39,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn("mb-1 font-medium leading-none tracking-tight text-purple-dark", className)}
+    className={cn("mb-1 font-medium leading-none tracking-tight text-brand-dark", className)}
     {...props}
   />
 ))
@@ -51,7 +51,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm [&_p]:leading-relaxed text-purple-dark", className)}
+    className={cn("text-sm [&_p]:leading-relaxed text-brand-dark", className)}
     {...props}
   />
 ))

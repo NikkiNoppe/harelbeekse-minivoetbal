@@ -389,7 +389,7 @@ const MatchGroup = memo(({ speeldag, matches, playoffType }: {
         </Badge>
       )}
     </AccordionTrigger>
-    <AccordionContent className="!p-0 border-t border-purple-light bg-card">
+    <AccordionContent className="!p-0 border-t border-brand-light bg-card">
       {matches.map((match) => (
         <MatchListItem key={match.matchId} match={match} />
       ))}

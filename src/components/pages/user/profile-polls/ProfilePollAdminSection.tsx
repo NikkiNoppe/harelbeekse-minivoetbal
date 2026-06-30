@@ -6,6 +6,7 @@ import { ClipboardList, RefreshCw, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useProfilePolls } from "@/hooks/useProfilePolls";
+import { useOrganization } from "@/hooks/useOrganization";
 import { profilePollService } from "@/services/profilePoll/profilePollService";
 import { CreateProfilePollModal } from "./CreateProfilePollModal";
 import { ProfilePollResultsCard } from "./ProfilePollResultsCard";
@@ -18,6 +19,7 @@ export interface ProfilePollAdminSectionHandle {
 export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>(
   function ProfilePollAdminSection(_props, ref) {
     const { toast } = useToast();
+    const { organizationId } = useOrganization();
     const {
       adminPolls,
       isLoading,
@@ -38,22 +40,24 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
     }));
 
     const handleCreate = useCallback(
-      async (payload: Parameters<typeof profilePollService.createPoll>[0]) => {
-        await profilePollService.createPoll(payload);
+      async (payload: Parameters<typeof profilePollService.createPoll>[1]) => {
+        if (organizationId == null) return;
+        await profilePollService.createPoll(organizationId, payload);
         toast({
           title: "Poll gelanceerd",
           description: "De poll is zichtbaar voor de doelgroep.",
         });
         await refresh();
       },
-      [toast, refresh],
+      [toast, refresh, organizationId],
     );
 
     const handleClose = useCallback(
       async (pollId: number) => {
+        if (organizationId == null) return;
         setClosingId(pollId);
         try {
-          await profilePollService.closePoll(pollId);
+          await profilePollService.closePoll(organizationId, pollId);
           toast({ title: "Poll gesloten" });
           await refresh();
         } catch (err) {
@@ -66,14 +70,14 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
           setClosingId(null);
         }
       },
-      [toast, refresh],
+      [toast, refresh, organizationId],
     );
 
     const handleDeleteConfirm = useCallback(async () => {
-      if (deleteId == null) return;
+      if (deleteId == null || organizationId == null) return;
       setDeleting(true);
       try {
-        await profilePollService.deletePoll(deleteId);
+        await profilePollService.deletePoll(organizationId, deleteId);
         toast({ title: "Poll verwijderd" });
         setDeleteId(null);
         await refresh();
@@ -86,7 +90,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
       } finally {
         setDeleting(false);
       }
-    }, [deleteId, toast, refresh]);
+    }, [deleteId, toast, refresh, organizationId]);
 
     const activePolls = adminPolls.filter((p) => p.is_active);
     const inactivePolls = adminPolls.filter((p) => !p.is_active);

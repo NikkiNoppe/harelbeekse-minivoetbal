@@ -141,7 +141,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       size="icon"
                       className={cn(
                         "h-9 border-[var(--color-300)]",
-                        "bg-white hover:bg-purple-50 hover:border-[var(--color-400)]",
+                        "bg-white hover:bg-brand-50 hover:border-[var(--color-400)]",
                         "text-[var(--color-700)] hover:text-[var(--color-900)]",
                         "transition-colors duration-150"
                       )}

@@ -1,8 +1,9 @@
 import React, { memo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useOrganization } from "@/hooks/useOrganization";
 
 interface PageHeaderProps {
   title: string;
@@ -21,7 +22,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   rightAction,
   className
 }) => {
-  const navigate = useNavigate();
+  const navigate = useOrgAwareNavigate();
+  const { organizationSlug } = useOrganization();
+  const useAccentBar = organizationSlug === "kuurne";
 
   const handleBack = () => {
     if (backPath) {
@@ -33,7 +36,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 
   return (
     <div className={cn("mb-6", className)}>
-      {/* Back button row */}
       <div className={cn(
         "mb-2",
         backPath !== undefined ? "flex items-center justify-between" : rightAction ? "w-full" : ""
@@ -57,13 +59,28 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         )}
       </div>
 
-      {/* Title section */}
-      <div>
-        <h1 className="text-2xl font-bold leading-tight text-[var(--color-700)]">
+      <div
+        className={cn(
+          useAccentBar &&
+            "bg-warning -mx-4 px-4 py-3 sm:mx-0 sm:rounded-md",
+        )}
+      >
+        <h1
+          className={cn(
+            useAccentBar
+              ? "text-base sm:text-lg font-bold text-black leading-tight"
+              : "text-2xl font-bold leading-tight text-[var(--color-700)]",
+          )}
+        >
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm text-muted-foreground mt-1">
+          <p
+            className={cn(
+              "text-sm mt-1",
+              useAccentBar ? "text-black/80" : "text-muted-foreground",
+            )}
+          >
             {subtitle}
           </p>
         )}

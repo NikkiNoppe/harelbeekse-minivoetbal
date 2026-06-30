@@ -3,6 +3,8 @@ import {
   fetchPublicApplicationSettings,
   findPublicSetting,
 } from "@/services/public/publicApplicationSettingsFetch";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export interface MatchFormSettings {
   lock_minutes_before: number;
@@ -18,9 +20,9 @@ const DEFAULT_SETTINGS: MatchFormSettings = {
   late_penalty_note: "⚠️ BOETE: Wedstrijdblad te laat ingevuld",
 };
 
-async function fetchMatchFormSettings(): Promise<MatchFormSettings> {
+async function fetchMatchFormSettings(organizationId: number): Promise<MatchFormSettings> {
   try {
-    const rows = await fetchPublicApplicationSettings(["match_form_settings"]);
+    const rows = await fetchPublicApplicationSettings(["match_form_settings"], organizationId);
     const row = findPublicSetting(rows, "match_form_settings", "lock_rules");
 
     if (!row?.setting_value) {
@@ -42,9 +44,12 @@ async function fetchMatchFormSettings(): Promise<MatchFormSettings> {
 }
 
 export function useMatchFormSettings() {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: ["match-form-settings"],
-    queryFn: fetchMatchFormSettings,
+    queryKey: withOrgQueryKey(["match-form-settings"], organizationId),
+    queryFn: () => fetchMatchFormSettings(organizationId!),
+    enabled: orgQueryEnabled,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });

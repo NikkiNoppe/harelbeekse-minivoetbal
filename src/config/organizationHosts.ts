@@ -1,0 +1,165 @@
+import {
+  DEFAULT_ORGANIZATION_SLUG,
+  ORGANIZATION_URL_PARAM,
+} from '@/config/organization';
+
+/** Hostname → organization slug (één centrale mapping). */
+export const HOSTNAME_TO_SLUG: Record<string, string> = {
+  'harelbekeminivoetbal.nikkinoppe.be': 'harelbeke',
+  'kuurneminivoetbal.nikkinoppe.be': 'kuurne',
+  'harelbekeminivoetbal.be': 'harelbeke',
+  'www.harelbekeminivoetbal.be': 'harelbeke',
+};
+
+const LOCAL_DEV_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+
+function getDevDefaultSlug(): string {
+  const fromEnv = import.meta.env.VITE_DEFAULT_ORG_SLUG as string | undefined;
+  return fromEnv?.trim().toLowerCase() || DEFAULT_ORGANIZATION_SLUG;
+}
+
+export function isLocalDevHostname(hostname: string): boolean {
+  return LOCAL_DEV_HOSTNAMES.has(hostname.toLowerCase());
+}
+
+/**
+ * Bepaalt slug uit hostname.
+ * - Bekende hostname → mapping
+ * - localhost/127.0.0.1 → VITE_DEFAULT_ORG_SLUG of harelbeke
+ * - Onbekend → null (geen stille fallback)
+ */
+export function resolveHostnameToSlug(
+  hostname: string = window.location.hostname,
+): string | null {
+  const normalized = hostname.trim().toLowerCase();
+  const mapped = HOSTNAME_TO_SLUG[normalized];
+  if (mapped) {
+    return mapped;
+  }
+  if (isLocalDevHostname(normalized)) {
+    return getDevDefaultSlug();
+  }
+  return null;
+}
+
+/** ?org=slug uit query string (zonder dev/superadmin-check). */
+export function getOrgSlugQueryParam(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get(ORGANIZATION_URL_PARAM)?.trim().toLowerCase();
+  return slug || null;
+}
+
+/** Dev-only: ?org=slug override (niet in productie). */
+export function getDevOrgSlugOverride(): string | null {
+  if (!import.meta.env.DEV) {
+    return null;
+  }
+  return getOrgSlugQueryParam();
+}
+
+/** Slug uit /superadmin/:slug (platform-portal). Niet voor /superadmin/beheer. */
+const SUPERADMIN_RESERVED_SEGMENTS = new Set(['beheer']);
+
+export function getSuperAdminPathSlug(): string | null {
+  const match = window.location.pathname.match(
+    /^\/superadmin\/([a-z0-9-]+)\/?$/i,
+  );
+  const slug = match?.[1]?.toLowerCase() ?? null;
+  if (!slug || SUPERADMIN_RESERVED_SEGMENTS.has(slug)) {
+    return null;
+  }
+  return slug;
+}
+
+/**
+ * Actieve org-slug override: superadmin-pad, daarna ?org= (dev of SuperAdmin).
+ */
+export function getActiveOrgSlugOverride(options: {
+  isSuperAdmin: boolean;
+}): string | null {
+  const pathSlug = getSuperAdminPathSlug();
+  if (pathSlug) {
+    return pathSlug;
+  }
+
+  const querySlug = getOrgSlugQueryParam();
+  if (!querySlug) {
+    return null;
+  }
+
+  if (import.meta.env.DEV || options.isSuperAdmin) {
+    return querySlug;
+  }
+
+  return null;
+}
+
+export function getCurrentHostname(): string {
+  return window.location.hostname;
+}
+
+/** Bekende tenants voor localhost dev-switcher (?org=slug). */
+export const DEV_ORGANIZATION_SLUGS = ['harelbeke', 'kuurne'] as const;
+
+export type DevOrganizationSlug = (typeof DEV_ORGANIZATION_SLUGS)[number];
+
+export const DEV_ORGANIZATION_LABELS: Record<DevOrganizationSlug, string> = {
+  harelbeke: 'Harelbeke',
+  kuurne: 'Kuurne',
+};
+
+/** Dev-switcher via ?org= — alleen tijdens `npm run dev`. */
+export function isDevOrgSwitcherEnabled(): boolean {
+  return import.meta.env.DEV;
+}
+
+/** Zet ?org=slug op bestaande query string (andere params blijven behouden). */
+export function applyDevOrgSlugToSearch(search: string, slug: string): string {
+  const params = new URLSearchParams(search);
+  params.set(ORGANIZATION_URL_PARAM, slug);
+  return params.toString();
+}
+
+/** Voeg ?org=slug toe aan pad (bestaande query params op path blijven behouden). */
+export function withOrganizationSearchParam(path: string, slug: string): string {
+  const [pathname, search = ''] = path.split('?');
+  const params = new URLSearchParams(search);
+  params.set(ORGANIZATION_URL_PARAM, slug);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+/**
+ * Bepaalt of interne links ?org= moeten meenemen.
+ * - localhost: altijd (hostname onderscheidt geen tenant)
+ * - hostname ≠ actieve org: override via ?org= (dev / SuperAdmin)
+ * - URL heeft al ?org= voor actieve tenant
+ */
+export function shouldCarryOrgSearchParam(
+  hostname: string,
+  organizationSlug: string,
+): boolean {
+  if (isLocalDevHostname(hostname)) {
+    return true;
+  }
+
+  const hostSlug = resolveHostnameToSlug(hostname);
+  if (hostSlug != null && hostSlug !== organizationSlug) {
+    return true;
+  }
+
+  const querySlug = getOrgSlugQueryParam();
+  return querySlug != null && querySlug === organizationSlug;
+}
+
+/** Bouwt navigatiepad met ?org= indien nodig. */
+export function buildTenantNavigationPath(
+  path: string,
+  organizationSlug: string,
+  hostname: string = getCurrentHostname(),
+): string {
+  if (!shouldCarryOrgSearchParam(hostname, organizationSlug)) {
+    return path;
+  }
+  return withOrganizationSearchParam(path, organizationSlug);
+}

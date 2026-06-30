@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import {
   insertApplicationSettingForSession,
   listApplicationSettingsForSession,
@@ -43,6 +44,7 @@ const HIDDEN_VISIBILITY: RoleVisibility = {
 
 export const useTabVisibilitySettings = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   // Initialize with safe defaults to prevent redirect loops during loading
   const [settings, setSettings] = useState<TabVisibilitySetting[]>([
     { id: -1, setting_name: 'algemeen', is_visible: true, requires_login: false, visibility: DEFAULT_VISIBILITY },
@@ -59,8 +61,9 @@ export const useTabVisibilitySettings = () => {
   const fetchingRef = useRef(false);
 
   const fetchSettings = useCallback(async () => {
+    if (organizationId == null) return;
     try {
-      const rows = await fetchPublicApplicationSettings(['tab_visibility']);
+      const rows = await fetchPublicApplicationSettings(['tab_visibility'], organizationId);
       const data = [...rows].sort((a, b) => a.setting_name.localeCompare(b.setting_name));
 
       if (process.env.NODE_ENV === 'development') {
@@ -109,7 +112,7 @@ export const useTabVisibilitySettings = () => {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [toast]);
+  }, [toast, organizationId]);
 
   const updateRoleVisibility = async (settingName: string, role: RoleKey, isVisible: boolean) => {
     // Create unique key for this update
@@ -383,6 +386,7 @@ export const useTabVisibilitySettings = () => {
   };
 
   useEffect(() => {
+    if (!orgQueryEnabled) return;
     fetchSettings();
 
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -479,7 +483,7 @@ export const useTabVisibilitySettings = () => {
         }
       }
     };
-  }, [fetchSettings]);
+  }, [fetchSettings, orgQueryEnabled]);
 
   // Check if a specific setting is being updated
   const isUpdating = (settingName: string, role: RoleKey) => {

@@ -31,10 +31,10 @@ export interface CardData {
   uniqueNumber: string;
 }
 
-export const fetchCompetitionMatches = async () => {
+export const fetchCompetitionMatches = async (organizationId: number) => {
   let matchesData;
   try {
-    matchesData = (await fetchPublicMatches()).filter(isRegularMatch);
+    matchesData = (await fetchPublicMatches(organizationId)).filter(isRegularMatch);
   } catch (matchesError) {
     console.error("[fetchCompetitionMatches] Error:", matchesError);
     return { upcoming: [], past: [] };

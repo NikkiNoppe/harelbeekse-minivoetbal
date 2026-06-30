@@ -103,30 +103,30 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             {isEdit ? "Bewerk de gegevens van de speler" : "Voeg een nieuwe speler toe aan het team"}
           </div>
           <div className="space-y-2">
-            <label className="text-purple-dark">Voornaam</label>
+            <label className="text-brand-dark">Voornaam</label>
             <Input
               placeholder="Voornaam van de speler"
-              className="modal__input bg-white placeholder:text-purple-200"
+              className="modal__input bg-white placeholder:text-brand-200"
               value={isEdit ? editingPlayer!.firstName : newPlayer.firstName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, firstName: e.target.value }) : onPlayerChange({ ...newPlayer, firstName: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-purple-dark">Achternaam</label>
+            <label className="text-brand-dark">Achternaam</label>
             <Input
               placeholder="Achternaam van de speler"
-              className="modal__input bg-white placeholder:text-purple-200"
+              className="modal__input bg-white placeholder:text-brand-200"
               value={isEdit ? editingPlayer!.lastName : newPlayer.lastName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, lastName: e.target.value }) : onPlayerChange({ ...newPlayer, lastName: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-purple-dark">Geboortedatum</label>
+            <label className="text-brand-dark">Geboortedatum</label>
             <Input
               type="date"
-              className="modal__input bg-white placeholder:text-purple-200"
+              className="modal__input bg-white placeholder:text-brand-200"
               value={isEdit ? editingPlayer!.birthDate : newPlayer.birthDate}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, birthDate: e.target.value }) : onPlayerChange({ ...newPlayer, birthDate: e.target.value })}
             />

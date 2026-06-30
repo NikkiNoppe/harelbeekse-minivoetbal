@@ -33,7 +33,7 @@ export function AdminDashboardLayout({
 
   return (
     <PullToRefreshWrapper onRefresh={handleRefresh} disabled={!isMobile}>
-      <div className="flex flex-col bg-purple-100 w-full min-h-screen">
+      <div className="flex flex-col bg-brand-100 w-full min-h-screen">
         {/* Header - always visible at top */}
         <Header 
           onLogoClick={onLogoClick} 
@@ -44,7 +44,7 @@ export function AdminDashboardLayout({
         />
 
         {/* Main content area */}
-        <main id="main-content" className="flex-1 bg-purple-100">
+        <main id="main-content" className="flex-1 bg-brand-100">
           <AdminDashboard 
             activeTab={activeTab as any} 
             setActiveTab={setActiveTab as any} 

@@ -112,14 +112,25 @@ function parsePollsResponse(data: unknown): {
 }
 
 export const profilePollService = {
-  async getPolls(isAdmin: boolean): Promise<ProfilePollAdmin[] | ProfilePollRespondentView[]> {
-    const data = await fetchProfilePollsForSession();
+  async getPolls(
+    organizationId: number,
+    isAdmin: boolean,
+  ): Promise<ProfilePollAdmin[] | ProfilePollRespondentView[]> {
+    const data = await fetchProfilePollsForSession(organizationId);
     const { adminPolls, respondentPolls } = parsePollsResponse(data);
     return isAdmin ? adminPolls : respondentPolls;
   },
 
-  async submitResponse(pollId: number, optionIds: string[]): Promise<ProfilePollMyResponse> {
-    const data = await submitProfilePollResponseForSession(pollId, optionIds);
+  async submitResponse(
+    organizationId: number,
+    pollId: number,
+    optionIds: string[],
+  ): Promise<ProfilePollMyResponse> {
+    const data = await submitProfilePollResponseForSession(
+      organizationId,
+      pollId,
+      optionIds,
+    );
     const result = data as RpcSubmitResult;
     if (!result?.success || !result.my_response) {
       throw new Error(result?.error ?? "Kon antwoord niet opslaan");
@@ -127,8 +138,16 @@ export const profilePollService = {
     return result.my_response;
   },
 
-  async createPoll(payload: CreateProfilePollPayload): Promise<number> {
-    const data = await manageProfilePollForSession("create", undefined, payload as unknown as Record<string, unknown>);
+  async createPoll(
+    organizationId: number,
+    payload: CreateProfilePollPayload,
+  ): Promise<number> {
+    const data = await manageProfilePollForSession(
+      organizationId,
+      "create",
+      undefined,
+      payload as unknown as Record<string, unknown>,
+    );
     const result = data as RpcManageResult;
     if (!result?.success || !result.id) {
       throw new Error(result?.error ?? "Kon poll niet aanmaken");
@@ -136,16 +155,16 @@ export const profilePollService = {
     return result.id;
   },
 
-  async closePoll(pollId: number): Promise<void> {
-    const data = await manageProfilePollForSession("close", pollId);
+  async closePoll(organizationId: number, pollId: number): Promise<void> {
+    const data = await manageProfilePollForSession(organizationId, "close", pollId);
     const result = data as RpcManageResult;
     if (!result?.success) {
       throw new Error(result?.error ?? "Kon poll niet sluiten");
     }
   },
 
-  async deletePoll(pollId: number): Promise<void> {
-    const data = await manageProfilePollForSession("delete", pollId);
+  async deletePoll(organizationId: number, pollId: number): Promise<void> {
+    const data = await manageProfilePollForSession(organizationId, "delete", pollId);
     const result = data as RpcManageResult;
     if (!result?.success) {
       throw new Error(result?.error ?? "Kon poll niet verwijderen");

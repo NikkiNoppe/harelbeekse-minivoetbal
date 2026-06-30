@@ -109,7 +109,7 @@ const TableActions = memo(<T extends { id?: number | string }>({
           variant="outline"
           size="sm"
           onClick={() => onEdit(item)}
-          className="h-8 w-8 p-0 bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
+          className="h-8 w-8 p-0 bg-white text-brand-600 border-brand-400 hover:bg-brand-50"
           disabled={isDeleting || isUpdating}
         >
           {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}

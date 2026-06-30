@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
@@ -80,11 +81,11 @@ const NavLinkButton: React.FC<NavLinkButtonProps> = ({
       aria-current={isActive ? "page" : undefined}
       className={cn(
         variant === "sheet" &&
-          "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+          "btn-nav w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2",
         variant === "sheet" && isActive && "active",
         variant === "desktop" &&
-          "inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm text-white/90 hover:text-white hover:bg-purple-500/50 transition-colors min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-purple-600",
-        variant === "desktop" && isActive && "bg-purple-500/60 text-white font-medium"
+          "inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-sm text-white/90 hover:text-white hover:bg-brand-500/50 transition-colors min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600",
+        variant === "desktop" && isActive && "bg-brand-500/60 text-white font-medium"
       )}
     >
       <Icon size={18} className="flex-shrink-0" />
@@ -116,8 +117,8 @@ const Header: React.FC<HeaderProps> = ({
   hasSidebar = false,
 }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const navigate = useNavigate();
-  const { logout } = useAuth();
+  const navigate = useOrgAwareNavigate();
+  const { logout, isSuperAdmin } = useAuth();
   const { isTabVisible } = useTabVisibility();
   const prefersReducedMotion = useReducedMotion();
 
@@ -138,6 +139,7 @@ const Header: React.FC<HeaderProps> = ({
   const filterOpts = {
     isTabVisible,
     isAdmin,
+    isSuperAdmin,
     normalizedRole,
     userRole: user?.role,
     variant: "header" as const,
@@ -152,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({
   const visibleFinancieelItems = isAuthenticated
     ? filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts)
     : [];
-  const visibleSpeelformatenItems = filterSpeelformatenItems(isAdmin);
+  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin);
   const visibleSysteemItems = isAuthenticated
     ? filterAdminOnlyItems(HEADER_SYSTEEM_ITEMS, filterOpts)
     : [];
@@ -194,10 +196,10 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="bg-purple-600 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
+    <header className="bg-brand-600 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-purple-900 focus:shadow-lg focus:outline-none"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-brand-900 focus:shadow-lg focus:outline-none"
       >
         Naar hoofdinhoud
       </a>
@@ -238,19 +240,19 @@ const Header: React.FC<HeaderProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-2 text-white bg-purple-200 hover:bg-purple-300 transition-all duration-200 motion-safe:hover:scale-105"
+                className="p-2 text-white bg-brand-200 hover:bg-brand-300 transition-all duration-200 motion-safe:hover:scale-105"
                 aria-label="Open navigatiemenu"
               >
-                <HamburgerIcon className="transition-transform duration-200 text-purple-900" />
+                <HamburgerIcon className="transition-transform duration-200 text-brand-900" />
               </Button>
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="navigation-modal w-full max-w-sm border-l border-purple-200 shadow-2xl flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden !gap-0 p-0"
+              className="navigation-modal w-full max-w-sm border-l border-brand-200 shadow-2xl flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden !gap-0 p-0"
               style={{ backgroundColor: "var(--color-100)" }}
             >
               <SheetHeader className="border-b border-gray-200 px-6 pt-6 pb-4 flex-shrink-0 pr-16 sm:pr-14">
-                <SheetTitle className={isAuthenticated ? "sr-only" : "text-2xl font-bold text-purple-800 text-left"}>
+                <SheetTitle className={isAuthenticated ? "sr-only" : "text-2xl font-bold text-brand-800 text-left"}>
                   Navigatie
                 </SheetTitle>
                 <SheetDescription className="sr-only">
@@ -260,21 +262,21 @@ const Header: React.FC<HeaderProps> = ({
                 {isAuthenticated && (
                   <button
                     type="button"
-                    className="w-full p-4 bg-purple-200 rounded-xl shadow-sm border border-purple-200 text-left hover:bg-purple-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                    className="w-full p-4 bg-brand-200 rounded-xl shadow-sm border border-brand-200 text-left hover:bg-brand-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                     onClick={() => {
                       setIsSheetOpen(false);
                       navigate(ADMIN_ROUTES.profile);
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-800 rounded-full flex items-center justify-center shadow-md">
+                      <div className="w-12 h-12 bg-brand-800 rounded-full flex items-center justify-center shadow-md">
                         <User size={24} className="text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-purple-900 text-sm">
+                        <p className="font-semibold text-brand-900 text-sm">
                           {user?.username || user?.email}
                         </p>
-                        <span className="text-xs text-purple-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1">
+                        <span className="text-xs text-brand-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1">
                           {roleLabel}
                         </span>
                       </div>

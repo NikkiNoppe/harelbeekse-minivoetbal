@@ -70,9 +70,9 @@ export const blogService = {
     }
   },
 
-  async getPublishedBlogPosts(): Promise<BlogPost[]> {
+  async getPublishedBlogPosts(organizationId: number): Promise<BlogPost[]> {
     try {
-      const rows = await fetchPublicApplicationSettings(['blog_posts']);
+      const rows = await fetchPublicApplicationSettings(['blog_posts'], organizationId);
       const sorted = [...rows].sort((a, b) => b.id - a.id);
       return transformBlogPostData(sorted);
     } catch (error) {

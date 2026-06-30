@@ -41,7 +41,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
             variant="outline"
             size="sm"
             onClick={() => onEdit(user)}
-            className="bg-white text-purple-600 border-purple-400 hover:bg-purple-50"
+            className="bg-white text-brand-600 border-brand-400 hover:bg-brand-50"
           >
             <Edit size={16} />
           </Button>

@@ -5,12 +5,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
+import { OrganizationProvider } from "@/context/OrganizationContext";
+import { OrganizationGate } from "@/components/common/OrganizationGate";
+import {
+  resolveOrganizationFromHostname,
+  userBelongsToOrganization,
+} from "@/services/organization/resolveOrganization";
 import { ModalProvider } from "@/context/ModalContext";
 import { TabVisibilityProvider } from "@/context/TabVisibilityContext";
 import { PlayerListLockProvider } from "@/context/PlayerListLockContext";
 import { ThemeProvider } from "./hooks/use-theme";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { PUBLIC_ROUTES, ADMIN_ROUTES } from "./config/routes";
+import { PUBLIC_ROUTES, ADMIN_ROUTES, SUPERADMIN_ROUTES } from "./config/routes";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ScrollRestore } from "@/components/common/ScrollRestore";
@@ -22,6 +28,13 @@ const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const SuperAdminPlatform = lazy(() => import("./pages/SuperAdmin"));
+const SuperAdminTenant = lazy(() =>
+  import("./pages/SuperAdmin").then((m) => ({ default: m.SuperAdminTenantRoute })),
+);
+const SuperAdminBeheer = lazy(() =>
+  import("./pages/SuperAdmin").then((m) => ({ default: m.SuperAdminBeheerRoute })),
+);
 
 /** Initializes dynamic theme colors from DB */
 function ThemeColorsInitializer({ children }: { children: React.ReactNode }) {
@@ -37,19 +50,21 @@ function RouteMeta() {
 
 const App = () => (
   <ThemeProvider defaultTheme="light">
-    <ThemeColorsInitializer>
-      <AuthProvider>
-        <ModalProvider>
-          <PlayerListLockProvider>
-            <TabVisibilityProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <ErrorBoundary>
-                    <RouteMeta />
-                    <ScrollRestore />
-                    <Routes>
+    <AuthProvider>
+      <ModalProvider>
+        <PlayerListLockProvider>
+          <BrowserRouter>
+            <OrganizationProvider>
+              <OrganizationGate>
+                <ThemeColorsInitializer>
+                  <TabVisibilityProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <ErrorBoundary>
+                        <RouteMeta />
+                        <ScrollRestore />
+                        <Routes>
                     {/* Redirect root to algemeen */}
                     <Route path="/" element={<Navigate to={PUBLIC_ROUTES.algemeen} replace />} />
                     
@@ -235,6 +250,23 @@ const App = () => (
                       </Suspense>
                     } />
 
+                    {/* SuperAdmin platform — tenant-keuze Harelbeke / Kuurne */}
+                    <Route path={SUPERADMIN_ROUTES.platform} element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <SuperAdminPlatform />
+                      </Suspense>
+                    } />
+                    <Route path={SUPERADMIN_ROUTES.beheer} element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <SuperAdminBeheer />
+                      </Suspense>
+                    } />
+                    <Route path={`${SUPERADMIN_ROUTES.platform}/:orgSlug`} element={
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <SuperAdminTenant />
+                      </Suspense>
+                    } />
+
                     {/* Catch-all for unknown routes - Lazy loaded with Suspense */}
                     <Route path="*" element={
                       <Suspense fallback={<LoadingSpinner />}>
@@ -242,14 +274,16 @@ const App = () => (
                       </Suspense>
                     } />
                     </Routes>
-                  </ErrorBoundary>
-                </BrowserRouter>
-              </TooltipProvider>
-            </TabVisibilityProvider>
-          </PlayerListLockProvider>
-        </ModalProvider>
-      </AuthProvider>
-    </ThemeColorsInitializer>
+                      </ErrorBoundary>
+                    </TooltipProvider>
+                  </TabVisibilityProvider>
+                </ThemeColorsInitializer>
+              </OrganizationGate>
+            </OrganizationProvider>
+          </BrowserRouter>
+        </PlayerListLockProvider>
+      </ModalProvider>
+    </AuthProvider>
   </ThemeProvider>
 );
 

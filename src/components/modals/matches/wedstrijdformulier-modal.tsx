@@ -2707,7 +2707,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         </div>
 
         {/* Spelers */}
-        <h3 className="text-xl font-semibold text-center text-purple-dark">Spelers</h3>
+        <h3 className="text-xl font-semibold text-center text-brand-dark">Spelers</h3>
         
         <div className="space-y-4">
           {/* Mobile-first: Stacked cards, collapsible on mobile */}
@@ -2808,7 +2808,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         {/* Kaarten, Boetes & Notities - Hidden for team managers */}
         {!isTeamManager && (
           <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-center text-purple-dark">Wedstrijd</h3>
+            <h3 className="text-xl font-semibold text-center text-brand-dark">Wedstrijd</h3>
             <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
             <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
               <CollapsibleTrigger asChild>

@@ -1,8 +1,10 @@
 
 import React, { useEffect, useMemo, useRef, useCallback } from "react";
 import Header from "@/components/pages/header/Header";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import Footer from "@/components/pages/footer/Footer";
+import TenantDebugPanel from "@/components/admin/TenantDebugPanel";
 import { AppModal } from "@/components/modals";
 import { LoginModal } from "@/components/modals";
 import MainPages from "@/components/pages/MainPages";
@@ -21,7 +23,7 @@ const Layout: React.FC = () => {
   const { user } = useAuth();
   const { isLoginModalOpen, openLoginModal, closeLoginModal } = useModal();
   const location = useLocation();
-  const navigate = useNavigate();
+  const navigate = useOrgAwareNavigate();
   const { isTabVisible, loading: tabLoading } = useTabVisibility();
   const previousActiveTab = useRef<string | null>(null);
   const isMobile = useIsMobile();
@@ -158,7 +160,7 @@ const Layout: React.FC = () => {
   // Publieke layout met Header hamburgermenu
   return (
     <PullToRefreshWrapper onRefresh={handleRefresh} disabled={!isMobile}>
-      <div className="min-h-screen flex flex-col bg-purple-100 text-foreground">
+      <div className="min-h-screen flex flex-col bg-brand-100 text-foreground">
         <Header 
           onLogoClick={handleLogoClick} 
           onLoginClick={handleLoginClick}
@@ -166,7 +168,7 @@ const Layout: React.FC = () => {
           isAuthenticated={!!user}
           user={user}
         />
-        <main id="main-content" className="flex-1 w-full bg-purple-100 pt-6">
+        <main id="main-content" className="flex-1 w-full bg-brand-100 pt-6">
           {isProfilePage ? (
             <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
               <div className="max-w-7xl mx-auto">
@@ -180,8 +182,7 @@ const Layout: React.FC = () => {
           )}
         </main>
         <Footer />
-        
-        
+        <TenantDebugPanel />
         {/* Global Login Modal */}
         <AppModal
           open={isLoginModalOpen}
