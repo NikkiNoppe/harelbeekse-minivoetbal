@@ -104,11 +104,7 @@ export const useRouteMeta = () => {
   );
   const meta = getRouteMeta(location.pathname);
   const isNoIndex = NOINDEX_PATHS.includes(location.pathname as (typeof NOINDEX_PATHS)[number]);
-  const origin = typeof window !== "undefined" ? window.location.origin : branding.siteUrl;
-  const canonicalUrl = `${origin}${location.pathname}`;
-  const defaultTitle =
-    branding.meta?.defaultTitle ?? `${branding.shortName} | ${branding.displayName}`;
-  const siteSuffix = branding.displayName;
+  const canonicalUrl = `${SITE_URL}${location.pathname}`;
 
   useEffect(() => {
     upsertFavicon(branding.faviconPath);

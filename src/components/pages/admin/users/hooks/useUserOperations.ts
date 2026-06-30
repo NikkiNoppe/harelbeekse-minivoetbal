@@ -153,7 +153,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       // Update user in users table (including password if provided)
       const updateData: any = {
         username: formData.username,
-        email: formData.email,
+        email: formData.email || null,
         role: formData.role
       };
       
@@ -173,9 +173,9 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
         {
           ...getRpcSessionArgs(),
           p_user_id: userId,
-          p_username: updateData.username,
-          p_email: updateData.email,
-          p_role: updateData.role,
+          p_username: updateData.username ?? null,
+          p_email: updateData.email ?? null,
+          p_role: updateData.role ?? null,
         },
       );
 
@@ -194,6 +194,7 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             ...getRpcSessionArgs(),
             p_operation: 'assign_many',
             p_user_id: userId,
+            p_team_id: null,
             p_team_ids: teamIds,
           } as any);
 
@@ -215,6 +216,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             ...getRpcSessionArgs(),
             p_operation: 'remove',
             p_user_id: userId,
+            p_team_id: null,
+            p_team_ids: null,
           } as any);
           toast({
             title: "Gebruiker bijgewerkt",
@@ -226,6 +229,8 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           ...getRpcSessionArgs(),
           p_operation: 'remove',
           p_user_id: userId,
+          p_team_id: null,
+          p_team_ids: null,
         } as any);
         toast({
           title: "Gebruiker bijgewerkt",
