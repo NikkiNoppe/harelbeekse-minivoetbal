@@ -26,15 +26,6 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       return false;
     }
     
-    if (newUser.role === "player_manager" && !newUser.teamIds?.length && !newUser.teamId) {
-      toast({
-        title: "Fout",
-        description: "Selecteer ten minste één team voor deze gebruiker",
-        variant: "destructive"
-      });
-      return false;
-    }
-    
     // Email is now optional, but if provided, it should be valid
     if (newUser.email && !newUser.email.includes('@')) {
       toast({
@@ -97,8 +88,9 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           if (teamUserError) {
             throw teamUserError;
           }
-          if (!(teamLinkResult as { success?: boolean })?.success) {
-            throw new Error('Teamkoppeling mislukt');
+          const linkPayload = teamLinkResult as { success?: boolean; error?: string };
+          if (!linkPayload?.success) {
+            throw new Error(linkPayload?.error || 'Teamkoppeling mislukt');
           }
           
           const teamNames = teams
@@ -132,9 +124,14 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       return true;
     } catch (error: any) {
       console.error('Error adding user:', error);
+      const message = error.message?.includes('Gebruikersnaam bestaat al')
+        ? 'Deze gebruikersnaam bestaat al binnen deze organisatie.'
+        : error.message?.includes('users_organization_id_username_key')
+          ? 'Deze gebruikersnaam bestaat al binnen deze organisatie.'
+          : error.message || 'Onbekende fout';
       toast({
         title: "Fout",
-        description: `Er is een fout opgetreden bij het toevoegen van de gebruiker: ${error.message || 'Onbekende fout'}`,
+        description: `Er is een fout opgetreden bij het toevoegen van de gebruiker: ${message}`,
         variant: "destructive"
       });
       return false;

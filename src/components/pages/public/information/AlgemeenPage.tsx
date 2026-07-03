@@ -7,7 +7,8 @@ import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
 import { useOrganizationContent } from "@/hooks/useOrganizationContent";
-import { PageHeader } from "@/components/layout";
+import { cn } from "@/lib/utils";
+import { PageHeader, PublicPage, PublicSectionHeading, PUBLIC_CARD_CLASS } from "@/components/layout";
 
 const CONTENT_PREVIEW_LENGTH = 240;
 
@@ -15,10 +16,8 @@ const CompetitionInfo = memo(({ aboutParagraph }: { aboutParagraph: string }) =>
   const headingId = React.useId();
   return (
     <section aria-labelledby={headingId}>
-      <h2 id={headingId} className="text-xl font-semibold text-[var(--color-700)] mb-4">
-        Over de competitie
-      </h2>
-      <Card>
+      <PublicSectionHeading id={headingId}>Over de competitie</PublicSectionHeading>
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardContent className="pt-6 text-sm">
           <p>{aboutParagraph}</p>
         </CardContent>
@@ -28,7 +27,7 @@ const CompetitionInfo = memo(({ aboutParagraph }: { aboutParagraph: string }) =>
 });
 
 const NewsItemSkeleton = memo(() => (
-  <Card className="w-full">
+  <Card className={cn("w-full", PUBLIC_CARD_CLASS)}>
     <CardHeader className="pb-3">
       <Skeleton className="h-4 w-20 mb-2" />
       <Skeleton className="h-6 w-3/4" />
@@ -56,7 +55,7 @@ const BlogPostItem = memo(({ post }: { post: BlogPost }) => {
       : `${content.slice(0, CONTENT_PREVIEW_LENGTH).trimEnd()}…`;
 
   return (
-    <Card className="w-full">
+    <Card className={cn("w-full", PUBLIC_CARD_CLASS)}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2 gap-2">
           <span className="text-xs text-muted-foreground flex-shrink-0">
@@ -148,7 +147,7 @@ const NewsSection = memo(() => {
 
     if (showError) {
       return (
-        <Card className="w-full" role="alert">
+        <Card className={cn("w-full", PUBLIC_CARD_CLASS)} role="alert">
           <CardContent className="py-8 text-center">
             <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" aria-hidden />
             <h3 className="text-lg font-semibold mb-2 text-foreground">Fout bij laden</h3>
@@ -169,7 +168,7 @@ const NewsSection = memo(() => {
 
     if (showEmpty) {
       return (
-        <Card className="w-full">
+        <Card className={cn("w-full", PUBLIC_CARD_CLASS)}>
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground text-sm">Geen nieuws beschikbaar</p>
           </CardContent>
@@ -191,17 +190,19 @@ const NewsSection = memo(() => {
   const headingId = React.useId();
   return (
     <section aria-labelledby={headingId}>
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <h2 id={headingId} className="text-xl font-semibold text-[var(--color-700)]">
-          Laatste Nieuws
-        </h2>
-        {isRefreshing && !isListLoading && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-            Vernieuwen…
-          </span>
-        )}
-      </div>
+      <PublicSectionHeading
+        id={headingId}
+        action={
+          isRefreshing && !isListLoading ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+              Vernieuwen…
+            </span>
+          ) : undefined
+        }
+      >
+        Laatste Nieuws
+      </PublicSectionHeading>
       {renderContent()}
     </section>
   );
@@ -211,12 +212,12 @@ const AlgemeenPage: React.FC = () => {
   const { algemeen } = useOrganizationContent();
 
   return (
-    <div className="space-y-6 motion-safe:animate-slide-up">
+    <PublicPage>
       <PageHeader title={algemeen.title} subtitle={algemeen.subtitle} />
 
       <CompetitionInfo aboutParagraph={algemeen.aboutParagraph} />
       <NewsSection />
-    </div>
+    </PublicPage>
   );
 };
 

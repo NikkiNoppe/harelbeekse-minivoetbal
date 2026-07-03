@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { DbUser, Team } from "../userTypes";
 import { useUserOperations } from "./useUserOperations";
 
@@ -17,6 +18,7 @@ const generateRandomPassword = (length: number = 12): string => {
 };
 
 export const useUserManagement = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   // State for user data and operations
   const [users, setUsers] = useState<DbUser[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -135,7 +137,7 @@ export const useUserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [organizationId]);
 
   // Filter users based on search term and filters
   const filteredUsers = useMemo(() => {
@@ -167,10 +169,11 @@ export const useUserManagement = () => {
   // User operations (add, update, delete)
   const { addUser, updateUser, deleteUser } = useUserOperations(teams, refreshData);
 
-  // Fetch users and teams on component mount
+  // Fetch users and teams when tenant context is ready
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (!orgQueryEnabled) return;
+    void refreshData();
+  }, [orgQueryEnabled, refreshData]);
 
   // Handle opening the edit dialog
   const handleOpenEditDialog = (user: DbUser) => {

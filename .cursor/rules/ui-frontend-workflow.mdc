@@ -1,0 +1,86 @@
+---
+description: Frontend-workflow — skills verplicht bij UI-werk, uniforme pagina's en herkenbare styling
+alwaysApply: true
+---
+
+# Frontend-workflow (verplicht bij UI-werk)
+
+**Lees deze rule vóór je pagina's, componenten, layout, styling of UX aanpast** (`src/components/**`, `src/pages/**`, `src/App.tsx`, thema-hooks).
+
+## Wanneer van toepassing
+
+Elke taak die **frontend/UI** raakt: nieuwe pagina, redesign, modal, formulier, navigatie, kleuren, responsive gedrag, animaties, leeg/fout-states.
+
+**Niet** van toepassing op pure backend/DB/auth zonder UI-wijziging.
+
+## Verplichte skills (eerst lezen, dan bouwen)
+
+| Skill | Pad | Wanneer |
+|-------|-----|---------|
+| **UI/UX Pro Max** | `.cursor/skills/ui-ux-pro-max/SKILL.md` | Altijd bij UI-werk — design system, UX-checklist, stack `shadcn`/`react` |
+| **21st.dev referentie** | `.cursor/skills/21st-dev-reference/SKILL.md` | Nieuwe secties, cards, hero's, modals, navigatie — vóór from-scratch bouwen |
+
+**Workflow:**
+1. Lees beide skills (of UI/UX Pro Max minimaal).
+2. Raadpleeg `design-system/MASTER.md` voor project-specifieke uniformiteit.
+3. Bij nieuwe/grote UI: run design-system search (zie ui-ux-pro-max skill, pad `.cursor/skills/ui-ux-pro-max/scripts/`).
+4. Implementeer met bestaande primitives — geen parallel design-taal.
+
+## Verplichte rules (combineer altijd)
+
+| Rule | Focus |
+|------|--------|
+| `ui-design-system.mdc` | `brand-*`, `useBranding()`, geen hardcoded hex/tenant-naam |
+| `ui-ux-principles.mdc` | Feedback, formulieren, skeleton/leeg/fout |
+| `ui-mobile-first.mdc` | Mobiel eerst, 44px touch, Sheet-nav |
+| `ui-accessibility.mdc` | Focus, labels, contrast, reduced motion |
+| `ui-21st-dev.mdc` | 21st.dev als referentie, shadcn + Framer Motion |
+| `data-snel-laden.mdc` | TanStack Query laad-UX bij data-pagina's |
+| `multi-tenant-frontend.mdc` | `organizationId` in queries, branding per org |
+
+## Uniforme pagina-opbouw
+
+Alle publieke en admin-pagina's volgen hetzelfde skelet:
+
+```tsx
+// Publieke pagina (voorbeeld: CompetitiePage, AlgemeenPage)
+<div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
+  {/* optioneel: PageHeader */}
+  <div className="space-y-4 sm:space-y-6">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 card-hover border-primary/20">
+      <CardHeader>...</CardHeader>
+      <CardContent className="pt-0 space-y-4 min-w-0 overflow-hidden">...</CardContent>
+    </Card>
+  </div>
+</div>
+```
+
+| Element | Patroon |
+|---------|---------|
+| **Outer wrapper** | `space-y-4 sm:space-y-6 animate-slide-up pb-6` |
+| **Container** | `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8` (via layout) |
+| **Cards** | shadcn `Card` + `border-primary/20` + `card-hover` + `shadow-lg` |
+| **Koppen** | `PageHeader` of `CardTitle` — één `h1` per pagina |
+| **Knoppen** | `@/components/ui/button` — primaire actie één per sectie |
+| **Modals** | `AppModal` / `AppAlertModal` |
+| **Tabellen mobiel** | Cards/stack of `ResponsiveTable` — geen brede vaste tabel |
+| **Data-lijsten** | Skeleton min. 250 ms; leeg pas na `isFetched` (`data-snel-laden.mdc`) |
+
+**Tenant:** kleuren via `brand-*` / thema-vars — Harelbeke blauw vs Kuurne donker+geel uit `useBranding()` + `useThemeColors`, nooit hardcoded.
+
+## Pre-oplevering checklist (UI)
+
+- [ ] Skills gelezen en toegepast
+- [ ] Zelfde spacing/cards als bestaande pagina's in dezelfde zone (publiek vs admin)
+- [ ] Mobiel ~375px getest — geen horizontale scroll
+- [ ] `useBranding()` / geen Harelbeke-hardcode op multi-tenant schermen
+- [ ] Lucide-iconen, geen emoji als UI-icoon
+- [ ] Focus + labels + 44px touch targets
+
+## Anti-patterns
+
+- UI bouwen zonder skills/rules te lezen
+- Nieuwe pagina met afwijkende layout (andere max-width, andere card-stijl) zonder reden
+- Losse hex-kleuren of `purple-*` classes
+- Full-page spinner als enige laadtoestand
+- Copy-paste van 21st.dev zonder project-tokens en hooks

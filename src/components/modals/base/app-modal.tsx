@@ -37,6 +37,8 @@ export interface AppModalProps {
   className?: string
   showCloseButton?: boolean
   onClose?: () => void
+  /** Optional inline styles for the scrollable modal body (e.g. match kit gradient). */
+  bodyStyle?: React.CSSProperties
 }
 
 // Size mapping (voor width)
@@ -60,6 +62,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
         size = "md",
         showCloseButton = true,
         onClose,
+        bodyStyle,
       },
       ref
     ) => {
@@ -250,10 +253,9 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               overflowX: 'hidden',
               flex: '1 1 0%',
               minHeight: 0,
-              backgroundColor: 'unset',
-              background: 'unset',
               WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
-              overscrollBehavior: 'contain' // Prevent scroll chaining
+              overscrollBehavior: 'contain', // Prevent scroll chaining
+              ...bodyStyle,
             }}
             className="modal-body"
           >

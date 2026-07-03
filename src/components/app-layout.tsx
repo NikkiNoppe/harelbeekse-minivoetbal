@@ -4,7 +4,6 @@ import Header from "@/components/pages/header/Header";
 import { useLocation } from "react-router-dom";
 import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import Footer from "@/components/pages/footer/Footer";
-import TenantDebugPanel from "@/components/admin/TenantDebugPanel";
 import { AppModal } from "@/components/modals";
 import { LoginModal } from "@/components/modals";
 import MainPages from "@/components/pages/MainPages";
@@ -39,7 +38,7 @@ const Layout: React.FC = () => {
   // Admin sections die sidebar gebruiken
   const adminTabs = [
     "match-forms", "match-forms-league", "match-forms-cup", "match-forms-playoffs", "players", "teams", "users", 
-    "competition", "playoffs", "cup", "financial", "settings", "schorsingen", "suspensions", "blog-management", "notification"
+    "competition", "playoffs", "cup", "financial", "settings", "platform-beheer", "schorsingen", "suspensions", "blog-management", "notification"
   ];
   
   // Main public tabs that use MainPages component
@@ -182,7 +181,6 @@ const Layout: React.FC = () => {
           )}
         </main>
         <Footer />
-        <TenantDebugPanel />
         {/* Global Login Modal */}
         <AppModal
           open={isLoginModalOpen}

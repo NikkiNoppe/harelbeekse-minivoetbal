@@ -15,6 +15,7 @@ export interface SeasonData {
   venues?: any[];
   venue_timeslots?: any[];
   vacation_periods?: any[];
+  slot_unavailability?: import('@/types/slotUnavailability').SlotUnavailability[];
   day_names?: string[];
 }
 

@@ -17,6 +17,8 @@ import {
   type SuperAdminTenantSlug,
 } from '@/config/superAdminTenants';
 import { setSuperAdminActingOrg } from '@/lib/superAdminOrg';
+import { getSessionToken } from '@/lib/authSession';
+import { isLoginError } from '@/lib/loginErrors';
 import { setSuperAdminActingOrganization } from '@/services/organization/superAdminOrganizationService';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +33,10 @@ interface SuperAdminTenantPageProps {
 }
 
 async function activateTenant(organizationId: number, slug: SuperAdminTenantSlug) {
-  const applied = await setSuperAdminActingOrganization(organizationId);
+  const applied = await setSuperAdminActingOrganization(
+    organizationId,
+    getSessionToken() ?? undefined,
+  );
   if (!applied) {
     return false;
   }
@@ -60,21 +65,27 @@ export const SuperAdminTenantPage: React.FC<SuperAdminTenantPageProps> = ({
   const handleLogin = async (data: SuperAdminPasswordForm) => {
     setIsSubmitting(true);
     try {
-      const success = await login('superadmin', data.password);
-      if (!success) {
-        toast({
-          title: 'Inloggen mislukt',
-          description: 'Controleer het SuperAdmin-wachtwoord.',
-          variant: 'destructive',
-        });
-        return;
-      }
+      await login('superadmin', data.password);
 
       const activated = await activateTenant(tenant.id, tenant.slug);
       if (!activated) {
         toast({
           title: 'Tenant niet geactiveerd',
           description: 'Kon organisatie niet koppelen aan je sessie.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      if (isLoginError(error)) {
+        toast({
+          title: 'Inloggen mislukt',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Inloggen mislukt',
+          description: 'Er is een onverwachte fout opgetreden.',
           variant: 'destructive',
         });
       }

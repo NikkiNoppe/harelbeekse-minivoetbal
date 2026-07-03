@@ -13,11 +13,12 @@ Overzicht van projectconfiguratie voor Cursor-agents.
 | `supabase-schema.mdc` | `supabase/**` | Migraties, RLS, triggers, edge functions |
 | `supabase-client.mdc` | `src/services`, hooks, domains | Session-RPC fetch-lagen, legacy `withUserContext` |
 | `ui-mobile-first.mdc` | altijd | Mobiel als hoofdplatform, touch targets |
+| `ui-frontend-workflow.mdc` | **altijd** | **Skills + uniforme pagina's bij elk UI-werk** |
 | `ui-accessibility.mdc` | altijd | Focus, contrast, semantiek, reduced motion |
 | `data-snel-laden.mdc` | altijd | TanStack Query, skeletons, achtergrond-sync |
-| `ui-design-system.mdc` | components, thema-hooks | Kleuren/branding per org (`application_settings`) |
-| `ui-ux-principles.mdc` | `src/components/**` | Feedback, formulieren, leeg/fout-states |
-| `ui-21st-dev.mdc` | `src/components/**` | UI-voorbeelden via 21st.dev |
+| `ui-design-system.mdc` | `src/**/*.tsx`, thema | Kleuren/branding per org (`application_settings`) |
+| `ui-ux-principles.mdc` | `src/**/*.tsx` | Feedback, formulieren, leeg/fout-states |
+| `ui-21st-dev.mdc` | `src/**/*.tsx` | UI-voorbeelden via 21st.dev |
 | `project-footer-versie.mdc` | altijd | Footer buildversie `v1.YYMMDD` |
 | `multi-tenant-visie.mdc` | **altijd** | Platformvisie, één codebase, stap-voor-stap migratie |
 | `multi-tenant-database.mdc` | `supabase/**` | `organization_id`, RLS, migratie-backfill |
@@ -35,10 +36,21 @@ Configuratie: `hooks.json`.
 
 ## Skills (`.cursor/skills/`)
 
-| Map | Gebruik |
-|-----|---------|
-| `21st-dev-reference/` | Workflow voor 21st.dev UI-voorbeelden |
-| `ui-ux-pro-max/` | Kleur, typografie, UX-richtlijnen |
+Skills worden **niet** door Cursor automatisch ingeladen — de agent moet ze lezen wanneer de taak UI raakt. Dat wordt afgedwongen via `ui-frontend-workflow.mdc` (always-apply).
+
+| Map | Wanneer lezen |
+|-----|----------------|
+| `ui-ux-pro-max/` | **Elk** UI-werk — design system, UX-checklist, `search.py --stack shadcn` |
+| `21st-dev-reference/` | Nieuwe componenten, secties, redesigns — vóór from-scratch bouwen |
+
+**Project design system:** `design-system/MASTER.md` — uniforme layout, cards, spacing, tokens.
+
+### Skills activeren (voor developers)
+
+1. **Rules** — `ui-frontend-workflow.mdc` staat op `alwaysApply: true`; elke agent-sessie krijgt de instructie om skills te lezen bij UI-werk.
+2. **Beschrijvingen** — skills hebben brede `description` in YAML frontmatter zodat Cursor ze in de skill-picker toont bij frontend-prompts.
+3. **Glob-rules** — `ui-design-system`, `ui-ux-principles`, `ui-21st-dev` triggeren extra wanneer `src/**/*.tsx` open is.
+4. **Handmatig** — in een prompt: *"Lees ui-ux-pro-max en 21st-dev skills; volg design-system/MASTER.md"*.
 
 ## Gerelateerde npm-scripts
 

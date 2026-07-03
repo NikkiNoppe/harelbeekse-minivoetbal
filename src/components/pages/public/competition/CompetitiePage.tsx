@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
 import { useCompetitionData, MatchData } from "@/hooks/useCompetitionData";
 import { useMinLoadingGate } from "@/hooks/useMinLoadingGate";
-import { PageHeader } from "@/components/layout";
+import { PageHeader, PublicPage, PublicSectionHeading, PUBLIC_CARD_CLASS } from "@/components/layout";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -375,7 +375,7 @@ const CompetitiePage: React.FC = () => {
       : "all";
 
   return (
-    <div className="space-y-6 motion-safe:animate-slide-up">
+    <PublicPage>
       <PageHeader
         title="Competitie"
         subtitle={seasonSubtitle}
@@ -411,14 +411,11 @@ const CompetitiePage: React.FC = () => {
       )}
 
       <section role="region" aria-labelledby="standings-heading">
-        <h2
-          id="standings-heading"
-          className="text-lg font-semibold text-[var(--color-700)] mb-3"
-        >
+        <PublicSectionHeading id="standings-heading">
           Competitiestand
-        </h2>
+        </PublicSectionHeading>
         {standingsError || showStandingsTimeout ? (
-          <Card>
+          <Card className={PUBLIC_CARD_CLASS}>
             <CardContent className="p-4">
               <DataErrorState
                 message={
@@ -440,12 +437,9 @@ const CompetitiePage: React.FC = () => {
       </section>
 
       <section role="region" aria-labelledby="schedule-heading">
-        <h2
-          id="schedule-heading"
-          className="text-lg font-semibold text-[var(--color-700)] mb-3"
-        >
+        <PublicSectionHeading id="schedule-heading">
           Speelschema
-        </h2>
+        </PublicSectionHeading>
 
         <FilterGroup columns={1} className="mb-4 w-full">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 w-full">
@@ -522,7 +516,7 @@ const CompetitiePage: React.FC = () => {
           />
         ) : null}
       </section>
-    </div>
+    </PublicPage>
   );
 };
 

@@ -25,7 +25,7 @@ const settingsSections = [
   { id: "formats", label: "Competitie Formaten", icon: Trophy, component: CompetitionDataSettings },
   { id: "venues", label: "Locaties", icon: Building, component: VenuesSettings },
   { id: "timeslots", label: "Tijdslots", icon: Clock, component: TimeslotsSettings },
-  { id: "vacations", label: "Vakanties", icon: Calendar, component: VacationsSettings },
+  { id: "vacations", label: "Vakanties & velden", icon: Calendar, component: VacationsSettings },
   { id: "season", label: "Seizoensdata", icon: Calendar, component: SeasonDataSettings },
   { id: "colors", label: "Kleuren", icon: Palette, component: ThemeColorsSettings },
   { id: "match-forms", label: "Wedstrijdformulieren", icon: FileText, component: MatchFormSettings },

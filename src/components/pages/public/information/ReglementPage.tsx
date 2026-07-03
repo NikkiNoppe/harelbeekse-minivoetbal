@@ -1,7 +1,7 @@
 import React from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { PageHeader } from "@/components/layout";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { PageHeader, PublicPage } from "@/components/layout";
+import { cn } from "@/lib/utils";
 
 const reglement = [
   {
@@ -149,46 +149,40 @@ const reglement = [
   },
 ];
 
-const ReglementPage: React.FC = () => {
-  const isMobile = useIsMobile();
-  const mainHeadingId = React.useId();
+const REGLEMENT_ACCORDION_ITEM_CLASS =
+  "border border-primary/20 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 card-hover bg-card";
 
+const ReglementPage: React.FC = () => {
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header - PageHeader on mobile, inline header on desktop */}
-      {isMobile ? (
-        <PageHeader 
-          title="Reglement" 
-        />
-      ) : (
-        <div className="flex justify-between items-center">
-          <h1 id={mainHeadingId} className="text-2xl font-bold" style={{ color: 'var(--primary)' }}>Reglement</h1>
-        </div>
-      )}
-      
-      <section role="region" aria-labelledby={mainHeadingId} className="max-w-2xl mx-auto">
+    <PublicPage>
+      <PageHeader title="Reglement" />
+
+      <section aria-label="Competitiereglement" className="max-w-3xl mx-auto w-full">
         <Accordion type="single" collapsible defaultValue="" className="space-y-3">
-        {reglement.map((h, i) => (
-          <AccordionItem 
-            key={h.title} 
-            value={h.title} 
-            className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white"
-          >
-            <AccordionTrigger 
-              className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
-              style={{ color: 'var(--color-700)' }}
+          {reglement.map((h) => (
+            <AccordionItem
+              key={h.title}
+              value={h.title}
+              className={REGLEMENT_ACCORDION_ITEM_CLASS}
             >
-              <span className="text-left flex-1">{h.title}</span>
-            </AccordionTrigger>
-            <AccordionContent className="px-5 py-4 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
-              {h.content}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+              <AccordionTrigger
+                className={cn(
+                  "text-base font-semibold px-5 py-4 gap-4",
+                  "text-brand-dark hover:bg-brand-50 data-[state=open]:bg-brand-50",
+                  "transition-colors duration-200 hover:no-underline",
+                )}
+              >
+                <span className="text-left flex-1">{h.title}</span>
+              </AccordionTrigger>
+              <AccordionContent className="px-5 py-4 text-sm text-card-foreground border-t border-primary/10 bg-card">
+                {h.content}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
         </Accordion>
       </section>
-    </div>
+    </PublicPage>
   );
-}
+};
 
-export default ReglementPage; 
+export default ReglementPage;

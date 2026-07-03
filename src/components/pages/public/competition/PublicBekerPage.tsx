@@ -5,7 +5,7 @@ import { Trophy, Award, AlertCircle, Archive } from "lucide-react";
 import { Link } from "react-router-dom";
 import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
-import { PageHeader } from "@/components/layout";
+import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -285,7 +285,7 @@ const TournamentRound = memo(({
 // ============================================================================
 const TournamentLoading = memo(() => {
   return (
-    <div className="space-y-6 animate-slide-up">
+    <PublicPage>
       <PageHeader 
         title="Beker" 
         subtitle="Seizoen 2025/2026"
@@ -296,7 +296,7 @@ const TournamentLoading = memo(() => {
       <TournamentRoundSkeleton title="Kwart Finales" cardCount={4} />
       <TournamentRoundSkeleton title="Halve Finales" cardCount={2} />
       <TournamentRoundSkeleton title="Finale" cardCount={1} />
-    </div>
+    </PublicPage>
   );
 });
 
@@ -311,12 +311,12 @@ const TournamentError = memo(({
   onRetry: () => void;
 }) => {
   return (
-    <div className="space-y-6 animate-slide-up">
+    <PublicPage>
       <PageHeader 
         title="Beker" 
         subtitle="Seizoen 2025/2026"
       />
-      <Card>
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardContent className="py-12">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
@@ -324,13 +324,13 @@ const TournamentError = memo(({
             <p className="text-muted-foreground mb-6">
               {error.message || "Kon toernooigegevens niet laden"}
             </p>
-            <Button onClick={onRetry} variant="outline">
+            <Button onClick={onRetry} variant="outline" className="min-h-[44px]">
               Opnieuw proberen
             </Button>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PublicPage>
   );
 });
 
@@ -339,12 +339,12 @@ const TournamentError = memo(({
 // ============================================================================
 const TournamentEmpty = memo(() => {
   return (
-    <div className="space-y-6 animate-slide-up">
+    <PublicPage>
       <PageHeader 
         title="Beker" 
         subtitle="Seizoen 2025/2026"
       />
-      <Card>
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardContent className="py-12">
           <div className="text-center">
             <Trophy className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -355,7 +355,7 @@ const TournamentEmpty = memo(() => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PublicPage>
   );
 });
 
@@ -419,7 +419,7 @@ const TournamentContent = memo(({
   
   
   return (
-    <div className="space-y-6 animate-slide-up">
+    <PublicPage>
       {/* Header */}
       <PageHeader 
         title="Beker" 
@@ -501,7 +501,7 @@ const TournamentContent = memo(({
           </div>
         )}
       </Accordion>
-    </div>
+    </PublicPage>
   );
 });
 
@@ -529,11 +529,7 @@ const PublicBekerPage: React.FC = () => {
     return <TournamentEmpty />;
   }
   
-  return (
-    <div className="space-y-6 animate-slide-up">
-      <TournamentContent bracketData={bracketData} />
-    </div>
-  );
+  return <TournamentContent bracketData={bracketData} />;
 };
 
 // Set display names for better debugging

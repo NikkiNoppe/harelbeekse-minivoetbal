@@ -30,6 +30,8 @@ export interface VacationPeriod {
   is_active: boolean;
 }
 
+export type { SlotUnavailability } from '@/types/slotUnavailability';
+
 export const competitionDataService = {
   // Get all competition formats
   async getCompetitionFormats(): Promise<CompetitionFormat[]> {
@@ -53,6 +55,16 @@ export const competitionDataService = {
   async getVacationPeriods(): Promise<VacationPeriod[]> {
     const data = await seasonService.getSeasonData();
     return data.vacation_periods || [];
+  },
+
+  async getSlotUnavailability(): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
+    const data = await seasonService.getSeasonData();
+    return data.slot_unavailability || [];
+  },
+
+  async getActiveSlotUnavailability(): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
+    const blocks = await this.getSlotUnavailability();
+    return blocks.filter((b) => b.is_active);
   },
 
   // Get day names

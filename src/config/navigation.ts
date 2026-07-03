@@ -3,6 +3,7 @@ import {
   Archive,
   Award,
   BookOpen,
+  Building2,
   Calendar,
   DollarSign,
   Home,
@@ -20,6 +21,7 @@ export interface NavItem {
   key: string;
   label: string;
   icon: LucideIcon;
+  visibilityKey?: string;
   adminOnly?: boolean;
   teamManagerOnly?: boolean;
   /** Alleen zichtbaar voor SuperAdmin (user id -1). */
@@ -31,6 +33,7 @@ export const PUBLIC_NAV_ORDER = [
   "competitie",
   "playoff",
   "beker",
+  "kaarten",
   "archief",
   "reglement",
 ] as const;
@@ -41,6 +44,7 @@ export const PUBLIC_NAV_ITEMS: NavItem[] = [
   { key: "competitie", label: "Competitie", icon: Trophy },
   { key: "beker", label: "Beker", icon: Award },
   { key: "playoff", label: "Play-off", icon: Target },
+  { key: "kaarten", label: "Kaarten", icon: Calendar },
   { key: "archief", label: "Archief", icon: Archive },
 ];
 
@@ -54,8 +58,7 @@ export const HEADER_BEHEER_ITEMS: NavItem[] = [
   { key: "players", label: "Spelers", icon: Users, adminOnly: false },
   { key: "teams", label: "Teams", icon: Shield, adminOnly: true },
   { key: "scheidsrechters", label: "Scheidsrechters", icon: Shield, adminOnly: false },
-  { key: "schorsingen", label: "Mijn Schorsingen", icon: Shield, adminOnly: false, teamManagerOnly: true },
-  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
+  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: false },
   { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
 ];
 
@@ -75,9 +78,9 @@ export const SIDEBAR_BEHEER_ITEMS: NavItem[] = [
 ];
 
 export const SPEELFORMATEN_ITEMS: NavItem[] = [
-  { key: "competition", label: "Competitie", icon: Trophy },
-  { key: "cup", label: "Beker", icon: Award },
-  { key: "playoffs", label: "Play-off", icon: Target },
+  { key: "competition", label: "Competitie", icon: Trophy, visibilityKey: "format-competition" },
+  { key: "cup", label: "Beker", icon: Award, visibilityKey: "format-cup" },
+  { key: "playoffs", label: "Play-off", icon: Target, visibilityKey: "format-playoffs" },
 ];
 
 export const FINANCIEEL_ITEMS: NavItem[] = [
@@ -85,6 +88,7 @@ export const FINANCIEEL_ITEMS: NavItem[] = [
 ];
 
 export const HEADER_SYSTEEM_ITEMS: NavItem[] = [
+  { key: "superadmin-beheer", label: "Platform beheer", icon: Building2, superAdminOnly: true },
   { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true, superAdminOnly: true },
   { key: "blog-management", label: "Blog Beheer", icon: BookOpen, adminOnly: true, superAdminOnly: true },
   { key: "notification", label: "Berichten", icon: MessageSquare, adminOnly: true, superAdminOnly: true },
@@ -120,6 +124,7 @@ export const NAV_ROUTE_MAP: Record<string, string> = {
   suspensions: ADMIN_ROUTES.suspensions,
   "blog-management": ADMIN_ROUTES["blog-management"],
   notification: ADMIN_ROUTES.notification,
+  "superadmin-beheer": ADMIN_ROUTES["platform-beheer"],
 };
 
 export function normalizeRole(role: string): string {
@@ -138,11 +143,12 @@ export function getRoleLabel(normalizedRole: string, isAdmin: boolean): string {
 }
 
 export function getOrderedPublicNavItems(
-  isTabVisible: (key: string) => boolean
+  isTabVisible: (key: string) => boolean,
+  _isSuperAdmin = false,
 ): NavItem[] {
-  return PUBLIC_NAV_ORDER.map((key) => PUBLIC_NAV_ITEMS.find((i) => i.key === key))
-    .filter((item): item is NavItem => Boolean(item))
-    .filter((item) => isTabVisible(item.key));
+  const items = PUBLIC_NAV_ORDER.map((key) => PUBLIC_NAV_ITEMS.find((i) => i.key === key))
+    .filter((item): item is NavItem => Boolean(item));
+  return items.filter((item) => isTabVisible(item.key));
 }
 
 interface FilterNavItemsOptions {
@@ -156,33 +162,35 @@ interface FilterNavItemsOptions {
 
 export function filterWedstrijdformulierenItems(
   items: NavItem[],
-  { isTabVisible, isAdmin }: Pick<FilterNavItemsOptions, "isTabVisible" | "isAdmin">
+  {
+    isTabVisible,
+    isAdmin,
+    isSuperAdmin = false,
+  }: Pick<FilterNavItemsOptions, "isTabVisible" | "isAdmin" | "isSuperAdmin">,
 ): NavItem[] {
   return items.filter((item) => {
     if (!isTabVisible(item.key)) return false;
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin && !isSuperAdmin) return false;
     return true;
   });
 }
 
 export function filterBeheerItems(
   items: NavItem[],
-  { isTabVisible, isAdmin, normalizedRole, userRole, variant }: FilterNavItemsOptions
+  { isTabVisible, isAdmin, isSuperAdmin = false, normalizedRole, userRole, variant }: FilterNavItemsOptions
 ): NavItem[] {
   return items.filter((item) => {
     if (!isTabVisible(item.key)) return false;
+    if (item.adminOnly && !isAdmin && !isSuperAdmin) return false;
+    if (item.teamManagerOnly && normalizedRole !== "player_manager") return false;
 
     if (variant === "sidebar") {
-      if (item.adminOnly && !isAdmin) return false;
       if (item.key === "players" && userRole === "referee") return false;
-      if (item.key === "scheidsrechters" && !(isAdmin || userRole === "referee")) return false;
+      if (item.key === "scheidsrechters" && !(isAdmin || isSuperAdmin || userRole === "referee")) return false;
       return true;
     }
 
-    if (item.key === "scheidsrechters" && !(isAdmin || normalizedRole === "referee")) {
-      return false;
-    }
-    if (item.teamManagerOnly && normalizedRole !== "player_manager") {
+    if (item.key === "scheidsrechters" && !(isAdmin || isSuperAdmin || normalizedRole === "referee")) {
       return false;
     }
     return true;
@@ -198,13 +206,22 @@ export function filterAdminOnlyItems(
   }: Pick<FilterNavItemsOptions, "isTabVisible" | "isAdmin" | "isSuperAdmin">,
 ): NavItem[] {
   return items.filter((item) => {
+    if (item.superAdminOnly) return isSuperAdmin;
     if (!isTabVisible(item.key)) return false;
-    if (item.superAdminOnly && !isSuperAdmin) return false;
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin && !isSuperAdmin) return false;
     return true;
   });
 }
 
-export function filterSpeelformatenItems(isSuperAdmin: boolean): NavItem[] {
-  return isSuperAdmin ? SPEELFORMATEN_ITEMS : [];
+export function filterSpeelformatenItems(
+  isSuperAdmin: boolean,
+  isTabVisible: (key: string) => boolean,
+): NavItem[] {
+  if (!isSuperAdmin) {
+    return [];
+  }
+
+  return SPEELFORMATEN_ITEMS.filter((item) =>
+    isTabVisible(item.visibilityKey ?? item.key),
+  );
 }

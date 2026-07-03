@@ -1873,6 +1873,17 @@ tbody tr:hover .sticky-column, tbody tr.bg-green-50 .sticky-column, tbody tr.bg-
   color: var(--color-destructive);
 }
 
+/* Dev tenant toolbar — ruimte onderaan zodat content niet verborgen wordt */
+body.has-tenant-debug-panel {
+  padding-bottom: 7.5rem;
+}
+
+@media (min-width: 1024px) {
+  body.has-tenant-debug-panel {
+    padding-bottom: 4.5rem;
+  }
+}
+
 /* 20. SAFE AREA FOR MOBILE BOTTOM NAV */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0);

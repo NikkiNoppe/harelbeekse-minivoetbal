@@ -1,9 +1,10 @@
 ---
 name: 21st-dev-reference
 description: >-
-  Use 21st.dev as the primary UI component reference — no API key needed.
-  Browse, fetch, and adapt open-source React/Tailwind/shadcn patterns from
-  21st.dev when building or redesigning interfaces.
+  Use for ANY frontend/UI work in this project — read before building new pages,
+  sections, modals, cards, or navigation. Use 21st.dev as the primary UI
+  component reference (no API key). Browse and adapt React/Tailwind/shadcn
+  patterns; combine with ui-ux-pro-max skill and design-system/MASTER.md.
 ---
 
 # 21st.dev als referentie (zonder API-key)

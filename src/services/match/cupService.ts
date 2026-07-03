@@ -439,13 +439,15 @@ export const bekerService = {
       const selectedTeamsSet = new Set(teams);
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
 
+      const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
+      const slotCtx = await loadSlotPlanningContext();
+
       // Helper to build a plan for a given shuffled order and compute total combined score
       const buildPlanForOrder = async (order: number[]) => {
         const plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string; slot_index: number; details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number } }> = [];
         let totalCombined = 0;
 
         // 1/8 finales with per-week optimal unique slot assignment
-        const totalAvailableSlots = 7;
         const numberOfPairs = Math.floor(order.length / 2);
         const weekToIndices = new Map<number, number[]>();
         for (let i = 0; i < numberOfPairs; i++) {
@@ -456,11 +458,8 @@ export const bekerService = {
         }
 
         // Preload slot details once
-        const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-        for (let s = 0; s < totalAvailableSlots; s++) {
-          const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
-          slotDetails.push({ venue, timeslot });
-        }
+        const totalAvailableSlots = slotCtx.totalSlots;
+        const slotDetails = slotCtx.slotDetails;
 
         // Helpers to generate combinations and permutations (small sizes only)
         const combinations = (arr: number[], k: number): number[][] => {
@@ -495,7 +494,13 @@ export const bekerService = {
 
         for (const [weekIndex, matchIndices] of weekToIndices.entries()) {
           const m = matchIndices.length;
-          // Build score matrix: m x 7
+          const weekMonday = playingWeeks[weekIndex];
+          const blocked = slotCtx.getBlockedSlotIndices(weekMonday);
+          const availableSlots = slotCtx.getAvailableSlotIndices(weekMonday);
+          if (m > availableSlots.length) {
+            return { plan: [], totalCombined: -1 };
+          }
+          // Build score matrix: m x beschikbare slots
           const scoreMatrix: Array<Array<{ combined: number; h: number; a: number }>> = [];
           for (let r = 0; r < m; r++) {
             const i = matchIndices[r];
@@ -505,6 +510,10 @@ export const bekerService = {
             const awayId = order[awayTeamIndex];
             const row: Array<{ combined: number; h: number; a: number }> = [];
             for (let c = 0; c < totalAvailableSlots; c++) {
+              if (blocked.has(c)) {
+                row.push({ combined: -1, h: 0, a: 0 });
+                continue;
+              }
               const { venue, timeslot } = slotDetails[c];
               let hScore = 0, aScore = 0, combined = 0;
               if (teamPreferences && venues) {
@@ -518,10 +527,10 @@ export const bekerService = {
           }
 
           // Choose unique slots to maximize total combined
-          const allSlots = Array.from({ length: totalAvailableSlots }, (_, x) => x);
+          const allSlots = availableSlots;
           let assignment: Array<{ matchIdx: number; slot: number; h: number; a: number; combined: number }> = [];
           let bestSum = -1;
-          if (m <= totalAvailableSlots && m <= 4) {
+          if (m <= availableSlots.length && m <= 4) {
             const slotCombos = combinations(allSlots, m);
             for (const slots of slotCombos) {
               const perms = permutations(slots);

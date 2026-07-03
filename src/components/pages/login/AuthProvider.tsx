@@ -21,9 +21,10 @@ import {
   getSuperAdminActingOrg,
 } from '@/lib/superAdminOrg';
 import { setSuperAdminActingOrganization } from '@/services/organization/superAdminOrganizationService';
+import { LoginError } from '@/lib/loginErrors';
 
 function isSuperAdminUsername(username: string): boolean {
-  return username.toLowerCase() === 'superadmin';
+  return username.trim().toLowerCase() === 'superadmin';
 }
 
 function normalizeRole(role: string): string {
@@ -127,15 +128,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           nextUser.isSuperAdmin === true || nextUser.id === -1;
 
         if (isSuperAdminUser) {
-          const acting = getSuperAdminActingOrg();
-          if (acting) {
-            const applied = await setSuperAdminActingOrganization(
-              acting.organizationId,
-            );
-            if (applied) {
-              nextUser = { ...nextUser, organizationId: acting.organizationId };
-              persistAuthState(nextUser, authData.sessionToken);
+          let orgId = getSuperAdminActingOrg()?.organizationId;
+          let orgSlug = getSuperAdminActingOrg()?.slug;
+          if (orgId == null) {
+            try {
+              const hostOrg = await resolveOrganizationFromHostname({
+                orgSlugOverride: getActiveOrgSlugOverride({
+                  isSuperAdmin: true,
+                }),
+              });
+              orgId = hostOrg.id;
+              orgSlug = hostOrg.slug;
+            } catch {
+              orgId = 1;
+              orgSlug = 'harelbeke';
             }
+          }
+          const applied = await setSuperAdminActingOrganization(orgId);
+          if (applied) {
+            nextUser = { ...nextUser, organizationId: orgId };
+            if (orgSlug) {
+              setSuperAdminActingOrg({ organizationId: orgId, slug: orgSlug });
+            }
+            persistAuthState(nextUser, authData.sessionToken);
           }
         }
 
@@ -187,9 +202,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (error) {
             console.error('SuperAdmin login RPC error:', error.message);
           }
-          return false;
+          throw new LoginError(
+            'SuperAdmin-wachtwoord is incorrect. Gebruik admin1987 (kleine letters).',
+            'invalid_credentials',
+          );
         }
 
+        const sessionToken = data[0].session_token;
         const superAdminUser: User = {
           id: -1,
           username: 'SuperAdmin',
@@ -199,9 +218,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           isSuperAdmin: true,
         };
 
-        setUser(superAdminUser);
+        persistAuthState(superAdminUser, sessionToken);
+
+        let nextUser: User = superAdminUser;
+        try {
+          await restoreSessionContext(sessionToken);
+
+          let orgId: number;
+          let orgSlug: string;
+          try {
+            const hostOrg = await resolveOrganizationFromHostname({
+              orgSlugOverride: getActiveOrgSlugOverride({ isSuperAdmin: true }),
+            });
+            orgId = hostOrg.id;
+            orgSlug = hostOrg.slug;
+          } catch {
+            orgId = getSuperAdminActingOrg()?.organizationId ?? 1;
+            orgSlug = getSuperAdminActingOrg()?.slug ?? 'harelbeke';
+          }
+
+          const applied = await setSuperAdminActingOrganization(
+            orgId,
+            sessionToken,
+          );
+          nextUser = applied
+            ? { ...superAdminUser, organizationId: orgId }
+            : superAdminUser;
+
+          if (applied) {
+            setSuperAdminActingOrg({ organizationId: orgId, slug: orgSlug });
+            persistAuthState(nextUser, sessionToken);
+          } else {
+            console.warn(
+              'SuperAdmin: tenant niet gekoppeld aan sessie, login gaat door.',
+            );
+          }
+        } catch (setupError) {
+          console.error('SuperAdmin post-login setup failed:', setupError);
+        }
+
+        setUser(nextUser);
         setIsAuthenticated(true);
-        persistAuthState(superAdminUser, data[0].session_token);
         resetUserContextCache();
         setAuthContextReady(true);
         return true;
@@ -220,18 +277,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
+      let hostOrg;
+      try {
+        hostOrg = await resolveOrganizationFromHostname({
+          orgSlugOverride: getActiveOrgSlugOverride({ isSuperAdmin: false }),
+        });
+      } catch {
+        throw new LoginError(
+          'Organisatie kon niet worden bepaald voor deze site.',
+          'invalid_credentials',
+        );
+      }
+
       const { data, error } = await supabase.rpc('login_user', {
         input_username_or_email: username,
         input_password: password,
+        p_organization_id: hostOrg.id,
       });
 
       if (error) {
         console.error('Login RPC error:', error);
-        return false;
+        throw new LoginError(
+          'Gebruikersnaam/e-mail of wachtwoord is incorrect.',
+          'invalid_credentials',
+        );
       }
 
       if (!data?.[0]) {
-        return false;
+        throw new LoginError(
+          'Gebruikersnaam/e-mail of wachtwoord is incorrect.',
+          'invalid_credentials',
+        );
       }
 
       const userData = data[0];
@@ -250,7 +326,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
 
       try {
-        const hostOrg = await resolveOrganizationFromHostname();
         if (
           !userBelongsToOrganization(
             loggedInUser.organizationId,
@@ -261,10 +336,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           await supabase.rpc('logout_user', {
             p_session_token: userData.session_token,
           });
-          return false;
+          throw new LoginError(
+            `Dit account hoort bij een andere organisatie en kan niet inloggen op ${hostOrg.name}.`,
+            'wrong_organization',
+          );
         }
-      } catch {
-        return false;
+      } catch (error) {
+        if (error instanceof LoginError) {
+          throw error;
+        }
+        throw new LoginError(
+          'Organisatie kon niet worden bepaald voor deze site.',
+          'invalid_credentials',
+        );
       }
 
       setUser(loggedInUser);
@@ -274,8 +358,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setAuthContextReady(true);
       return true;
     } catch (error) {
+      if (error instanceof LoginError) {
+        throw error;
+      }
       console.error('Login error:', error);
-      return false;
+      throw new LoginError(
+        'Er is een onverwachte fout opgetreden tijdens het inloggen.',
+        'invalid_credentials',
+      );
     }
   };
 
@@ -291,7 +381,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (USE_SUPABASE_AUTH) {
       await signOutSupabaseAuthBridge();
     }
-    setAuthContextReady(false);
     setUser(null);
     setIsAuthenticated(false);
     persistAuthState(null);
@@ -302,6 +391,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (e) {
       console.warn('Could not clear dismissed notifications:', e);
     }
+    setAuthContextReady(true);
   };
 
   const value: AuthContextType = {

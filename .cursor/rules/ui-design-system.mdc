@@ -1,6 +1,6 @@
 ---
 description: Design system — kleuren, branding en tokens per organisatie (multi-tenant)
-globs: src/components/**/*.tsx,src/hooks/useThemeColors.ts,src/hooks/useBranding.ts,src/lib/colorUtils.ts,src/index.css
+globs: src/**/*.tsx,src/index.css,src/App.tsx
 alwaysApply: false
 ---
 

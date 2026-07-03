@@ -9,6 +9,7 @@ import { bekerService as cupService } from "./cupService";
 import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { loadSlotPlanningContext } from "@/services/match/slotPlanningContext";
 import {
   bulkDeleteCompetitionMatches,
   bulkDeleteMatchesByIds,
@@ -340,6 +341,7 @@ export const competitionService = {
   ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
     const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
     const matchesPerWeek = 7; // 7 speelmomenten per week
+    const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
     const totalMatches = matches.length;
     
     console.log(`📊 Distributie info: ${totalMatches} wedstrijden, ${playingWeeks.length} weken beschikbaar`);
@@ -434,10 +436,13 @@ export const competitionService = {
         for (let weekIndex = currentWeek; weekIndex < playingWeeks.length; weekIndex++) {
           const weekTeams = teamsPerWeek.get(weekIndex)!;
           const slotsUsed = slotsPerWeek.get(weekIndex)!;
-          if (slotsUsed >= matchesPerWeek) continue;
+          const weekMonday = playingWeeks[weekIndex];
+          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(match.home) || weekTeams.has(match.away)) continue;
 
-          const slotIndex = slotsUsed; // behoud sequentiële slotvulling
+          const slotIndex = slotCtx.getSlotIndexForUsage(weekMonday, slotsUsed);
+          if (slotIndex === null) continue;
           // Bereken combined score voor deze week/slot
           let combined = 0;
           if (options?.teamPreferences) {
@@ -680,6 +685,7 @@ export const competitionService = {
       });
 
       // Greedy week assignment without slots (respecting team conflicts and capacity)
+      const slotCtx = await loadSlotPlanningContext();
       const matchesPerWeek = 7;
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const weekToMatches: Map<number, Array<{ home: number; away: number; matchday: number }>> = new Map();
@@ -710,7 +716,7 @@ export const competitionService = {
           for (let w = currentWeek; w < playingWeeks.length; w++) {
             const teamSet = teamsPerWeek.get(w)!;
             const list = weekToMatches.get(w)!;
-            if (list.length >= matchesPerWeek) continue;
+            if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w], matchesPerWeek)) continue;
             if (teamSet.has(m.home) || teamSet.has(m.away)) continue;
             teamSet.add(m.home); teamSet.add(m.away);
             list.push(m);
@@ -721,20 +727,20 @@ export const competitionService = {
             return { success: false, message: `Kan wedstrijd ${m.home}-${m.away} (speeldag ${md}) niet plannen binnen beschikbare weken`, plan: [] };
           }
         }
-        while (currentWeek < playingWeeks.length && (weekToMatches.get(currentWeek)!.length >= matchesPerWeek)) currentWeek++;
+        while (
+          currentWeek < playingWeeks.length &&
+          weekToMatches.get(currentWeek)!.length >=
+            slotCtx.getWeekCapacity(playingWeeks[currentWeek], matchesPerWeek)
+        ) {
+          currentWeek++;
+        }
       }
 
       // Optimize slot assignment per week (maximize combined)
       const plan: Array<{ unique_number: string; speeldag: string; home_team_id: number; away_team_id: number | null; match_date: string; match_time: string; venue: string; details: { homeScore: number; awayScore: number; combined: number; maxCombined: number } } > = [];
       let totalCombined = 0;
-      const totalAvailableSlots = 7;
-
-      // Preload slot details
-      const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-      for (let s = 0; s < totalAvailableSlots; s++) {
-        const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
-        slotDetails.push({ venue, timeslot });
-      }
+      const totalAvailableSlots = slotCtx.totalSlots;
+      const slotDetails = slotCtx.slotDetails;
 
       const combinations = (arr: number[], k: number): number[][] => {
         const res: number[][] = []; const back = (start: number, path: number[]) => {
@@ -793,6 +799,17 @@ export const competitionService = {
         const m = matchesList.length;
         if (m === 0) continue;
 
+        const weekMonday = playingWeeks[weekIndex];
+        const blocked = slotCtx.getBlockedSlotIndices(weekMonday);
+        const availableSlots = slotCtx.getAvailableSlotIndices(weekMonday);
+        if (m > availableSlots.length) {
+          return {
+            success: false,
+            message: `Week van ${weekMonday}: ${m} wedstrijden nodig maar slechts ${availableSlots.length} slots vrij (veldblokkades).`,
+            plan: [],
+          };
+        }
+
         // Build score matrix m x 7 with seasonal fairness boosts and adaptive fallback
         const { applyAdaptiveFallback } = await import("@/services/core/teamPreferencesService");
         const scoreMatrix: Array<Array<{ combined: number; h: number; a: number }>> = [];
@@ -802,16 +819,16 @@ export const competitionService = {
           const row: Array<{ combined: number; h: number; a: number }> = [];
           
           // Calculate base scores for all slots first
-          const homeSlotScores: number[] = [];
-          const awaySlotScores: number[] = [];
+          const homeSlotScores = new Array(totalAvailableSlots).fill(0);
+          const awaySlotScores = new Array(totalAvailableSlots).fill(0);
           
           for (let c = 0; c < totalAvailableSlots; c++) {
+            if (blocked.has(c)) continue;
             const { venue, timeslot } = slotDetails[c];
             const hRes = scoreTeamForDetails(teamPreferences.get(home), timeslot, venue, venues);
             const aRes = scoreTeamForDetails(teamPreferences.get(away), timeslot, venue, venues);
-            
-            homeSlotScores.push(hRes.score);
-            awaySlotScores.push(aRes.score);
+            homeSlotScores[c] = hRes.score;
+            awaySlotScores[c] = aRes.score;
           }
           
           // Apply adaptive fallback if needed
@@ -820,6 +837,10 @@ export const competitionService = {
           
           // Apply seasonal fairness boosts to adjusted scores
           for (let c = 0; c < totalAvailableSlots; c++) {
+            if (blocked.has(c)) {
+              row.push({ combined: -1, h: 0, a: 0 });
+              continue;
+            }
             const homeBoost = calculateFairnessBoost(home, teamFairness);
             const awayBoost = calculateFairnessBoost(away, teamFairness);
             
@@ -853,10 +874,10 @@ export const competitionService = {
           scoreMatrix.push(row);
         }
 
-        const allSlots = Array.from({ length: totalAvailableSlots }, (_, i) => i);
+        const allSlots = availableSlots;
         let assignment: Array<{ r: number; c: number; h: number; a: number; combined: number }> = [];
         let bestEval = -1;
-        if (m <= totalAvailableSlots && m <= 7) {
+        if (m <= availableSlots.length && m <= 7) {
           const slotCombos = combinations(allSlots, m);
           for (const slots of slotCombos) {
             const perms = permutations(slots);
@@ -916,8 +937,9 @@ export const competitionService = {
             for (const r of order) {
               let bestC = -1, best = -1, bh = 0, ba = 0;
               for (let c = 0; c < totalAvailableSlots; c++) {
-                if (used.has(c)) continue;
+                if (blocked.has(c) || used.has(c)) continue;
                 const s = scoreMatrix[r][c];
+                if (s.combined < 0) continue;
                 // Small random jitter in tie-breaking
                 const jitter = Math.random() * 0.0001;
                 if (s.combined + jitter > best) { best = s.combined + jitter; bestC = c; bh = s.h; ba = s.a; }
@@ -1099,13 +1121,11 @@ export const competitionService = {
         matchesByMatchdayBase.set(matchday, arr);
       });
 
-      // Preload slot details once (7 slots)
-      const totalAvailableSlots = 7;
-      const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-      for (let s = 0; s < totalAvailableSlots; s++) {
-        const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
-        slotDetails.push({ venue, timeslot });
-      }
+      // Preload slot planning (veldblokkades + priority slots)
+      const slotCtx = await loadSlotPlanningContext();
+      const totalAvailableSlots = slotCtx.totalSlots;
+      const slotDetails = slotCtx.slotDetails;
+      const matchesPerWeekCap = 7;
 
       // Helper for one preview using prepared data
       const generateOnePreview = async () => {
@@ -1128,7 +1148,7 @@ export const competitionService = {
             for (let w = currentWeek; w < playingWeeks.length; w++) {
               const teamSet = teamsPerWeek.get(w)!;
               const list = weekToMatches.get(w)!;
-              if (list.length >= 7) continue;
+              if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w], matchesPerWeekCap)) continue;
               if (teamSet.has(m.home) || teamSet.has(m.away)) continue;
               teamSet.add(m.home); teamSet.add(m.away);
               list.push(m);
@@ -1139,7 +1159,13 @@ export const competitionService = {
               return { plan: [], totalCombined: -1 };
             }
           }
-          while (currentWeek < playingWeeks.length && (weekToMatches.get(currentWeek)!.length >= 7)) currentWeek++;
+          while (
+            currentWeek < playingWeeks.length &&
+            weekToMatches.get(currentWeek)!.length >=
+              slotCtx.getWeekCapacity(playingWeeks[currentWeek], matchesPerWeekCap)
+          ) {
+            currentWeek++;
+          }
         }
 
         // Score matrix per week and stochastic assignment (same rules as previewCompetition)
@@ -1647,6 +1673,7 @@ export const competitionService = {
 
       // Distributie met 7 slots/week, geen team 2x per week, met voorkeur-scoring
       const matchesPerWeek = 7;
+      const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const slotsPerWeek: Map<number, number> = new Map();
       for (let w = 0; w < playingWeeks.length; w++) {
@@ -1670,10 +1697,13 @@ export const competitionService = {
         for (let w = 0; w < playingWeeks.length; w++) {
           const weekTeams = teamsPerWeek.get(w)!;
           const slotsUsed = slotsPerWeek.get(w)!;
-          if (slotsUsed >= matchesPerWeek) continue;
+          const weekMonday = playingWeeks[w];
+          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(m.home) || weekTeams.has(m.away)) continue;
 
-          const slotIndex = slotsUsed;
+          const slotIndex = slotCtx.getSlotIndexForUsage(weekMonday, slotsUsed);
+          if (slotIndex === null) continue;
           const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
           const h = scoreTeamForDetails(teamPrefs.get(m.home), timeslot, venue, venues);
           const a = scoreTeamForDetails(teamPrefs.get(m.away), timeslot, venue, venues);

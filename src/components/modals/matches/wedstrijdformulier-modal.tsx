@@ -1,24 +1,16 @@
 import React, { useCallback, useMemo, useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { MatchesPenaltyShootoutModal } from "@/components/modals";
 import { ForfaitEmailModal } from "./forfait-email-modal";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ChevronDown } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { type Referee } from "@/services/core";
 import { useRefereesQuery } from "@/hooks/useRefereesQuery";
-import { Loader2, Users, Trash2, Plus, X, Save, RefreshCw, AlertTriangle } from "lucide-react";
+import { Users, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTeamPlayersWithSuspensions, type TeamPlayer } from "@/components/pages/admin/matches/hooks/useTeamPlayers";
-import { PlayerDataRefreshModal, InlinePlayerRetry } from "@/components/modals";
-import MatchesCardIcon from "@/components/pages/admin/matches/components/MatchesCardIcon";
+import { PlayerDataRefreshModal } from "@/components/modals";
 import { costSettingsService, financialService } from "@/domains/financial";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentDate, localDateTimeToISO } from "@/lib/dateUtils";
@@ -27,6 +19,34 @@ import { useMatchFormState } from "@/components/pages/admin/matches/hooks/useMat
 import { useEnhancedMatchFormSubmission } from "@/components/pages/admin/matches/hooks/useEnhancedMatchFormSubmission";
 import { canEditMatch, canTeamManagerEdit, shouldAutoLockMatch } from "@/lib/matchLockUtils";
 import { useMatchFormSettings } from "@/hooks/useMatchFormSettings";
+import { getSubtleMatchScoreBackground, getTeamKitColumnStyle } from "@/components/common/ColorPreview";
+import { MatchFormCardsSection } from "@/components/modals/matches/MatchFormCardsSection";
+import { MatchFormCaptainSelect } from "@/components/modals/matches/MatchFormCaptainSelect";
+import { MatchFormFinancialSection } from "@/components/modals/matches/MatchFormFinancialSection";
+import { MatchFormNotesSection } from "@/components/modals/matches/MatchFormNotesSection";
+import {
+  type MatchFormCardItem,
+  type MatchFormPenaltyItem,
+  type MatchFormSavedCard,
+  type MatchFormTeamKey,
+} from "@/components/modals/matches/matchFormTypes";
+import { MatchFormMobileTabBar, MatchFormSectionShell } from "@/components/modals/matches/MatchFormMobileTabs";
+import { MatchFormPlayerSelectionTable } from "@/components/modals/matches/MatchFormPlayerSelectionTable";
+import { MatchFormScoreSection } from "@/components/modals/matches/MatchFormScoreSection";
+import { MatchFormSectionCard } from "@/components/modals/matches/MatchFormSectionCard";
+import { MatchFormWedstrijdinfoSection } from "@/components/modals/matches/MatchFormWedstrijdinfoSection";
+import {
+  getDefaultMatchFormMobileTab,
+  getDefaultSectionOpenState,
+  getMatchFormRole,
+  type MatchFormMobileTab,
+} from "@/components/modals/matches/matchFormLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { fetchMatchTeamsContactForSession } from "@/services/match/matchTeamsContactSessionFetch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { fetchPublicTeams } from "@/services/public/publicScheduleFetch";
 import {
   clearSkipAutoMatchCostsForAdmin,
   costNameImpliesMatchCostSuppression,
@@ -94,7 +114,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
   const [isKaartenOpen, setIsKaartenOpen] = useState(false);
   const [isNotitiesOpen, setIsNotitiesOpen] = useState(false);
-  const [isGegevensOpen, setIsGegevensOpen] = useState(false);
+  const [isGegevensOpen, setIsGegevensOpen] = useState(true);
   // Referee query with robust retry logic
   const { 
     data: referees = [], 
@@ -109,24 +129,13 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const { toast } = useToast();
   
   // Card management state (from MatchesRefereeCardsSection)
-  type TeamKey = "home" | "away";
-  interface CardItem {
-    team: TeamKey | "";
-    playerId: number | null;
-    cardType: "yellow" | "double_yellow" | "red";
-  }
-  const [cardItems, setCardItems] = useState<CardItem[]>([]);
+  const [cardItems, setCardItems] = useState<MatchFormCardItem[]>([]);
   const [isSavingCards, setIsSavingCards] = useState(false);
-  const [savedCards, setSavedCards] = useState<Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }>>([]);
+  const [savedCards, setSavedCards] = useState<MatchFormSavedCard[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(true);
 
   // Penalty management state (from MatchesRefereePenaltySection)
-  interface PenaltyItem {
-    id?: number;
-    costSettingId: number | null;
-    teamId: number | null;
-  }
-  const [penalties, setPenalties] = useState<PenaltyItem[]>([]);
+  const [penalties, setPenalties] = useState<MatchFormPenaltyItem[]>([]);
   const [availablePenalties, setAvailablePenalties] = useState<any[]>([]);
   const [isLoadingPenalties, setIsLoadingPenalties] = useState(false);
   const [savedPenalties, setSavedPenalties] = useState<Array<{ id: number; teamName: string; penaltyName: string; amount: number }>>([]);
@@ -141,6 +150,63 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [restoringAutoMatchCosts, setRestoringAutoMatchCosts] = useState(false);
   const [forfaitEmailModalOpen, setForfaitEmailModalOpen] = useState(false);
   const [forfaitEmailContext, setForfaitEmailContext] = useState<{ forfaitTeamName: string } | null>(null);
+
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
+  const { data: publicTeams } = useQuery({
+    queryKey: withOrgQueryKey(["match-form-public-teams"], organizationId),
+    enabled: open && orgQueryEnabled,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: () => fetchPublicTeams(organizationId!),
+  });
+
+  const { data: matchTeamsContact = [] } = useQuery({
+    queryKey: withOrgQueryKey(
+      ["match-form-teams-contact", match.homeTeamId, match.awayTeamId],
+      organizationId,
+    ),
+    enabled: open && orgQueryEnabled,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: () => fetchMatchTeamsContactForSession(match.homeTeamId, match.awayTeamId),
+  });
+
+  const homeTeamInfo = useMemo(
+    () => matchTeamsContact.find((team) => team.team_id === match.homeTeamId) ?? null,
+    [matchTeamsContact, match.homeTeamId],
+  );
+  const awayTeamInfo = useMemo(
+    () => matchTeamsContact.find((team) => team.team_id === match.awayTeamId) ?? null,
+    [matchTeamsContact, match.awayTeamId],
+  );
+
+  const homeClubColors = useMemo(() => {
+    const fromPublic = publicTeams?.find((team) => team.team_id === match.homeTeamId)?.club_colors;
+    return fromPublic ?? homeTeamInfo?.club_colors ?? null;
+  }, [publicTeams, match.homeTeamId, homeTeamInfo?.club_colors]);
+
+  const awayClubColors = useMemo(() => {
+    const fromPublic = publicTeams?.find((team) => team.team_id === match.awayTeamId)?.club_colors;
+    return fromPublic ?? awayTeamInfo?.club_colors ?? null;
+  }, [publicTeams, match.awayTeamId, awayTeamInfo?.club_colors]);
+
+  const scoreSectionStyle = useMemo(
+    () => getSubtleMatchScoreBackground(homeClubColors, awayClubColors),
+    [homeClubColors, awayClubColors],
+  );
+
+  const homeColumnStyle = useMemo(
+    () => getTeamKitColumnStyle(homeClubColors),
+    [homeClubColors],
+  );
+
+  const awayColumnStyle = useMemo(
+    () => getTeamKitColumnStyle(awayClubColors),
+    [awayClubColors],
+  );
 
   const penaltyTeamOptions = useMemo(() => ([
     { id: match.homeTeamId, name: match.homeTeamName },
@@ -603,7 +669,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     toast,
   ]);
 
-  const updatePenalty = useCallback((index: number, field: keyof PenaltyItem, value: any) => {
+  const updatePenalty = useCallback((index: number, field: keyof MatchFormPenaltyItem, value: MatchFormPenaltyItem[keyof MatchFormPenaltyItem]) => {
     setPenalties(prev => {
       const updated = prev.map((penalty, i) => {
         if (i === index) {
@@ -707,11 +773,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     selectedReferee,
   ]);
 
-  const CARD_OPTIONS = [
-    { value: "yellow", label: "Geel" },
-    { value: "double_yellow", label: "2x Geel" },
-    { value: "red", label: "Rood" },
-  ] as const;
 
   const playersByTeam = useMemo(() => ({
     home: homeTeamSelections.filter(s => s.playerId !== null),
@@ -723,7 +784,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     const loadExistingCards = async () => {
       setIsLoadingCards(true);
       try {
-        const existingCards: Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }> = [];
+        const existingCards: MatchFormSavedCard[] = [];
         
         if (match.homePlayers) {
           for (const player of match.homePlayers) {
@@ -767,7 +828,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setCardItems(prev => [...prev, { team: "", playerId: null, cardType: "yellow" }]);
   }, []);
 
-  const updateCardItem = useCallback((index: number, field: keyof CardItem, value: any) => {
+  const updateCardItem = useCallback((index: number, field: keyof MatchFormCardItem, value: MatchFormCardItem[keyof MatchFormCardItem]) => {
     setCardItems(prev => prev.map((it, i) => i === index ? { ...it, [field]: value, ...(field === "team" ? { playerId: null } : {}) } : it));
   }, []);
 
@@ -778,6 +839,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
   const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
+  const canEditScore = useMemo(() => isAdmin || isReferee, [isAdmin, isReferee]);
   const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), [match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
 
@@ -821,7 +883,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setIsSavingCards(true);
     try {
       let saved = 0;
-      const sessionAdds: Array<{ team: TeamKey; playerName: string; cardType: string; playerId: number }> = [];
+      const sessionAdds: MatchFormSavedCard[] = [];
       for (const it of cardItems) {
         if (it.team && it.playerId && it.cardType) {
           handleCardChange(it.playerId, it.cardType);
@@ -829,7 +891,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
           const list = it.team === "home" ? playersByTeam.home : playersByTeam.away;
           const sel = list.find(s => s.playerId === it.playerId);
           sessionAdds.push({ 
-            team: it.team as TeamKey, 
+            team: it.team as MatchFormTeamKey, 
             playerName: sel?.playerName || `Speler #${it.playerId}`, 
             cardType: it.cardType,
             playerId: it.playerId
@@ -1233,17 +1295,56 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [canActuallyEdit, isSubmitting, handleSubmit]);
 
-  // Focus on first score input when modal opens (only if scores are empty)
+  const formRole = useMemo(
+    () => getMatchFormRole(isAdmin, isReferee),
+    [isAdmin, isReferee],
+  );
+  const isMobile = useIsMobile();
+  const [mobileTab, setMobileTab] = useState<MatchFormMobileTab>(() =>
+    getDefaultMatchFormMobileTab(formRole),
+  );
+
+  useEffect(() => {
+    if (open) {
+      setMobileTab(getDefaultMatchFormMobileTab(formRole));
+    }
+  }, [open, formRole]);
+
+  // Rol-specifieke default open state bij openen modal
   useEffect(() => {
     if (!open) return;
+    const defaults = getDefaultSectionOpenState(
+      formRole,
+      teamId,
+      match.homeTeamId,
+      match.awayTeamId,
+    );
+    setHomeTeamOpen(defaults.homeTeamOpen);
+    setAwayTeamOpen(defaults.awayTeamOpen);
+    setIsKaartenOpen(defaults.isKaartenOpen);
+    setIsGegevensOpen(defaults.isGegevensOpen);
+    setIsNotitiesOpen(defaults.isNotitiesOpen);
+    setIsFinancieelOpen(defaults.isFinancieelOpen);
+  }, [open, formRole, match.homeTeamId, match.awayTeamId, teamId]);
+
+  // Focus: team manager → eerste speler-select; scheids/admin → score
+  useEffect(() => {
+    if (!open || !canActuallyEdit) return;
     const timer = setTimeout(() => {
-      const firstScoreInput = document.getElementById('home-score');
-      if (firstScoreInput && canActuallyEdit && !homeScore && !awayScore) {
-        firstScoreInput.focus();
+      if (isTeamManager) {
+        const ownSide = match.homeTeamId === teamId ? "home" : "away";
+        const section = document.getElementById(`match-form-${ownSide}-players`);
+        const triggers = section?.querySelectorAll<HTMLElement>("[data-match-form-first-player]");
+        const visibleTrigger = triggers
+          ? Array.from(triggers).find((el) => el.offsetParent !== null)
+          : undefined;
+        visibleTrigger?.focus();
+      } else if (canEditScore && !homeScore && !awayScore) {
+        document.getElementById("home-score")?.focus();
       }
-    }, 150);
+    }, isTeamManager ? 250 : 150);
     return () => clearTimeout(timer);
-  }, [open, canActuallyEdit, homeScore, awayScore]);
+  }, [open, canActuallyEdit, isTeamManager, canEditScore, match.homeTeamId, teamId, homeScore, awayScore]);
 
   // Memoize referees for performance (now using useRefereesQuery hook above)
   const memoizedReferees = useMemo(() => referees, [referees]);
@@ -1488,932 +1589,8 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     return null;
   }, []);
 
-  // Helper function to render player selection table for a team (without hooks)
-  const renderPlayerSelectionTable = useCallback((
-    teamLabel: string,
-    selections: PlayerSelection[],
-    selectedPlayerIds: (number | null)[],
-    canEditTeam: boolean,
-    isHomeTeam: boolean,
-    players: TeamPlayer[] | undefined,
-    isLoading: boolean,
-    error: any,
-    retryCount: number | undefined,
-    refetch: (() => Promise<void>) | undefined
-  ) => {
-    const memoizedSelectedPlayerIds = useMemo(() => selectedPlayerIds, [selectedPlayerIds]);
-    const memoizedPlayers = useMemo(() => players, [players]);
-
-    if (isLoading) {
-      const retryMessage = retryCount && retryCount > 0 ? ` (Poging ${retryCount}/3...)` : '';
-      return (
-        <div className="space-y-3">
-          <div className="flex flex-col items-center justify-center py-4 gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Spelers worden geladen...{retryMessage}</span>
-          </div>
-          <div className="animate-pulse space-y-2">
-            <div className="h-10 bg-muted rounded-md"></div>
-            <div className="h-10 bg-muted rounded-md"></div>
-            <div className="h-10 bg-muted rounded-md"></div>
-          </div>
-        </div>
-      );
-    }
-    
-    if (error) {
-      return (
-        <div className="space-y-3">
-          <div className="text-center py-3 text-destructive flex flex-col items-center gap-2" role="alert">
-            <span>Kan spelers niet laden</span>
-            {refetch && (
-              <button
-                onClick={() => refetch()}
-                className="px-3 py-1 bg-primary text-primary-foreground rounded hover:bg-primary/90 text-sm min-h-[44px]"
-                aria-label="Opnieuw proberen"
-              >
-                🔄 Opnieuw proberen
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // Check if we have an empty result that might be a loading issue (not just an empty team)
-    const hasExistingSelections = selections.some(s => s.playerName && s.playerName.trim() !== '' && s.playerName !== '(niet beschikbaar)');
-    const hasEmptyResult = !isLoading && !error && memoizedPlayers !== undefined && memoizedPlayers.length === 0 && !hasExistingSelections;
-    
-    const TABLE_COLUMNS = { speler: "w-[80%]", rugnr: "w-[20%]" } as const;
-
-    return (
-      <div>
-        {refetch && (
-          <PlayerDataRefreshModal
-            players={memoizedPlayers}
-            loading={isLoading}
-            error={error}
-            onRefresh={refetch}
-            teamLabel={teamLabel}
-            showForEmptyArray={true}
-          />
-        )}
-        {/* Inline retry for empty results */}
-        {hasEmptyResult && refetch && (
-          <InlinePlayerRetry
-            onRetry={refetch}
-            isLoading={isLoading}
-            error={error}
-            itemCount={memoizedPlayers?.length || 0}
-            emptyMessage="Geen spelers gevonden"
-            className="mb-3"
-          />
-        )}
-        {/* Desktop/tablet view */}
-        <div className="hidden md:block rounded-md border bg-white pb-2">
-          <table className="table min-w-full">
-            <thead>
-              <tr className="table-head">
-                <th className={TABLE_COLUMNS.speler + " py-1 text-left"}>Speler</th>
-                <th className={TABLE_COLUMNS.rugnr + " py-1 text-center"}>Rugnr</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selections.map((selection, index) => {
-                const handlePlayerChange = (value: string) => {
-                  const newId = value === "no-player" ? null : parseInt(value);
-                  handlePlayerSelection(index, 'playerId', newId, isHomeTeam);
-                  if (newId) {
-                    const p = memoizedPlayers?.find(pl => pl.player_id === newId);
-                    const name = p ? `${p.first_name} ${p.last_name}` : '';
-                    handlePlayerSelection(index, 'playerName', name, isHomeTeam);
-                  } else {
-                    handlePlayerSelection(index, 'playerName', '', isHomeTeam);
-                  }
-                };
-
-                return (
-                  <tr key={`${selection.playerId}-${index}`} className="table-row">
-                    <td className={TABLE_COLUMNS.speler + " text-sm"}>
-                      {canEditTeam ? (
-                        <Select
-                          value={selection.playerId?.toString() || "no-player"}
-                          onValueChange={handlePlayerChange}
-                          disabled={!canEditTeam || isLoading}
-                        >
-                          <SelectTrigger 
-                            className={cn(
-                              "dropdown-login-style w-full max-w-full min-h-[44px] text-sm",
-                              isLoading && "opacity-75 cursor-wait"
-                            )}
-                            disabled={isLoading}
-                          >
-                            <SelectValue 
-                              placeholder={
-                                isLoading 
-                                  ? "Spelers worden geladen uit database..." 
-                                  : error 
-                                    ? "Fout bij laden, probeer opnieuw" 
-                                    : "Selecteer speler"
-                              }
-                              className={getPlayerSelectValueClassName(
-                                getPlayerDisplayName(selection, memoizedPlayers) || undefined
-                              )}
-                              style={{
-                                textOverflow: 'ellipsis',
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap',
-                                minWidth: 0,
-                                maxWidth: '100%',
-                                display: 'block'
-                              }}
-                            />
-                            {isLoading && (
-                              <div className="absolute right-2 flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                              </div>
-                            )}
-                          </SelectTrigger>
-                          <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
-                            <SelectItem value="no-player" className="dropdown-item-login-style" disabled={isLoading}>
-                              Geen speler
-                            </SelectItem>
-                            {isLoading ? (
-                              <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
-                                <div className="flex items-center justify-center gap-2 py-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                  <span className="text-sm font-medium">Spelers worden geladen uit database...</span>
-                                </div>
-                              </SelectItem>
-                            ) : error ? (
-                              <SelectItem value="error" disabled className="dropdown-item-login-style text-center text-destructive">
-                                <div className="flex flex-col items-center justify-center gap-1 py-2">
-                                  <span className="text-sm font-medium">Fout bij laden spelers</span>
-                                  {refetch && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        refetch();
-                                      }}
-                                      className="text-xs text-primary hover:underline mt-1"
-                                    >
-                                      Probeer opnieuw
-                                    </button>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ) : (
-                              <>
-                                {selection.playerId && selection.playerName && 
-                                 memoizedPlayers !== undefined && 
-                                 !isLoading &&
-                                 !memoizedPlayers.find(p => p.player_id === selection.playerId) && (
-                                  <SelectItem 
-                                    value={selection.playerId.toString()} 
-                                    className="dropdown-item-login-style opacity-75"
-                                  >
-                                    {selection.playerName} (niet beschikbaar)
-                                  </SelectItem>
-                                )}
-                                {memoizedPlayers && Array.isArray(memoizedPlayers) &&
-                                  memoizedPlayers.map((player) => {
-                                    const playerIdNum = player.player_id;
-                                    const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
-                                    const suspended = isPlayerSuspended(playerIdNum, memoizedPlayers);
-                                    const fullName = `${player.first_name} ${player.last_name}`;
-                                    
-                                    return (
-                                      <SelectItem
-                                        key={playerIdNum}
-                                        value={playerIdNum.toString()}
-                                        disabled={alreadySelected || suspended}
-                                        className={`dropdown-item-login-style ${alreadySelected || suspended ? "opacity-50 text-gray-400" : ""}`}
-                                        style={{ 
-                                          textOverflow: 'ellipsis', 
-                                          overflow: 'hidden',
-                                          whiteSpace: 'nowrap'
-                                        }}
-                                      >
-                                        {fullName}
-                                      </SelectItem>
-                                    );
-                                  })}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="block w-full">
-                          {selection.playerName || "-"}
-                        </span>
-                      )}
-                    </td>
-                    <td className={TABLE_COLUMNS.rugnr + " text-center px-0"}>
-                      {canEditTeam ? (
-                        <Input
-                          id={`jersey-${index}`}
-                          type="number"
-                          min="1"
-                          max="99"
-                          placeholder="Rugnr"
-                          value={selection.jerseyNumber || ""}
-                          onChange={(e) => handlePlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
-                          disabled={!selection.playerId}
-                          className="w-16 min-w-[64px] text-center text-xs py-1 px-2 input-login-style h-8"
-                          style={{ fontSize: '16px' }}
-                        />
-                      ) : (
-                        <span className="text-xs">
-                          {selection.jerseyNumber && <>{selection.jerseyNumber}</>}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {selections.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="text-center py-3 text-muted-foreground">
-                    Geen spelers geselecteerd voor dit team.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile view - compact list */}
-        <div className="md:hidden">
-          {selections.length === 0 ? (
-            <div className="text-center py-3 text-muted-foreground">Geen spelers geselecteerd voor dit team.</div>
-          ) : (
-            <div className="rounded-md border bg-white divide-y">
-              {selections.map((selection, index) => {
-                const handlePlayerChangeMobile = (value: string) => {
-                  const newId = value === "no-player" ? null : parseInt(value);
-                  handlePlayerSelection(index, 'playerId', newId, isHomeTeam);
-                  if (newId) {
-                    const p = memoizedPlayers?.find(pl => pl.player_id === newId);
-                    const name = p ? `${p.first_name} ${p.last_name}` : '';
-                    handlePlayerSelection(index, 'playerName', name, isHomeTeam);
-                  } else {
-                    handlePlayerSelection(index, 'playerName', '', isHomeTeam);
-                  }
-                };
-
-                return (
-                  <div key={`${selection.playerId}-${index}`} className="p-2">
-                    <div className="grid grid-cols-[4fr_1fr] gap-2 min-w-0">
-                      {canEditTeam ? (
-                        <div className="min-w-0">
-                          <Select
-                            value={selection.playerId?.toString() || "no-player"}
-                            onValueChange={handlePlayerChangeMobile}
-                            disabled={!canEditTeam || isLoading}
-                          >
-                            <SelectTrigger 
-                              className={cn(
-                                "dropdown-login-style w-full max-w-full min-h-[44px] text-sm",
-                                isLoading && "opacity-75 cursor-wait"
-                              )}
-                              disabled={isLoading}
-                            >
-                              <SelectValue 
-                                placeholder={
-                                  isLoading 
-                                    ? "Spelers worden geladen uit database..." 
-                                    : error 
-                                      ? "Fout bij laden, probeer opnieuw" 
-                                      : "Selecteer speler"
-                                }
-                                className={getPlayerSelectValueClassName(
-                                  getPlayerDisplayName(selection, memoizedPlayers) || undefined
-                                )}
-                                style={{
-                                  textOverflow: 'ellipsis',
-                                  overflow: 'hidden',
-                                  whiteSpace: 'nowrap',
-                                  minWidth: 0,
-                                  maxWidth: '100%',
-                                  display: 'block'
-                                }}
-                              />
-                              {isLoading && (
-                                <div className="absolute right-2 flex items-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                                </div>
-                              )}
-                            </SelectTrigger>
-                            <SelectContent className="dropdown-content-login-style z-[1001] bg-white">
-                              <SelectItem value="no-player" className="dropdown-item-login-style" disabled={isLoading}>
-                                Geen speler
-                              </SelectItem>
-                              {isLoading ? (
-                                <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
-                                  <div className="flex items-center justify-center gap-2 py-2">
-                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                    <span className="text-sm font-medium">Spelers worden geladen uit database...</span>
-                                  </div>
-                                </SelectItem>
-                              ) : error ? (
-                                <SelectItem value="error" disabled className="dropdown-item-login-style text-center text-destructive">
-                                  <div className="flex flex-col items-center justify-center gap-1 py-2">
-                                    <span className="text-sm font-medium">Fout bij laden spelers</span>
-                                    {refetch && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          refetch();
-                                        }}
-                                        className="text-xs text-primary hover:underline mt-1"
-                                      >
-                                        Probeer opnieuw
-                                      </button>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ) : (
-                                memoizedPlayers && Array.isArray(memoizedPlayers) && memoizedPlayers.map((player) => {
-                                  const playerIdNum = player.player_id;
-                                  const alreadySelected = memoizedSelectedPlayerIds.includes(playerIdNum) && selection.playerId !== playerIdNum;
-                                  const fullName = `${player.first_name} ${player.last_name}`;
-                                  
-                                  return (
-                                    <SelectItem 
-                                      key={playerIdNum} 
-                                      value={playerIdNum.toString()} 
-                                      disabled={alreadySelected} 
-                                      className="dropdown-item-login-style"
-                                      style={{ 
-                                        textOverflow: 'ellipsis', 
-                                        overflow: 'hidden',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                    >
-                                      {fullName}
-                                    </SelectItem>
-                                  );
-                                })
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <div className="min-w-0 text-xs h-8 flex items-center">
-                          {selection.playerName || "-"}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        {canEditTeam ? (
-                          <Input
-                            id={`m-jersey-${index}`}
-                            type="number"
-                            min="1"
-                            max="99"
-                            placeholder="Rugnr"
-                            value={selection.jerseyNumber || ""}
-                            onChange={(e) => handlePlayerSelection(index, 'jerseyNumber', e.target.value, isHomeTeam)}
-                            disabled={!selection.playerId}
-                            className="w-full min-w-[64px] h-8 text-center text-xs py-1 px-2 input-login-style"
-                            style={{ fontSize: '16px' }}
-                          />
-                        ) : (
-                          <span className="block text-xs text-right">{selection.jerseyNumber && selection.jerseyNumber}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }, [matchDate, handlePlayerSelection]);
-
-  // Helper function to render captain selection
-  const renderCaptainSelection = useCallback((
-    selections: PlayerSelection[],
-    canEditTeam: boolean,
-    teamLabel: string,
-    isHomeTeam: boolean
-  ) => {
-    const availablePlayers = useMemo(() => {
-      return selections.filter(selection => selection.playerId !== null);
-    }, [selections]);
-
-    const currentCaptain = useMemo(() => {
-      return selections.find(selection => selection.isCaptain);
-    }, [selections]);
-
-    const captainValue = useMemo(() => {
-      return currentCaptain?.playerId?.toString() || "no-captain";
-    }, [currentCaptain]);
-
-    const hasPlayers = availablePlayers.length > 0;
-
-    const handleCaptainChangeLocal = useCallback((value: string) => {
-      if (value === "no-captain") {
-        handleCaptainChange("no-captain", isHomeTeam);
-      } else {
-        handleCaptainChange(value, isHomeTeam);
-      }
-    }, [isHomeTeam]);
-
-    return (
-      <div className="space-y-2">
-        <Label htmlFor={`captain-select-${isHomeTeam ? 'home' : 'away'}`}>Aanvoerder{teamLabel ? ` — ${teamLabel}` : ''}</Label>
-        <Select
-          value={captainValue}
-          onValueChange={handleCaptainChangeLocal}
-          disabled={!canEditTeam || !hasPlayers}
-        >
-          <SelectTrigger className="w-full h-8 text-sm mt-1 dropdown-login-style">
-            <SelectValue placeholder={hasPlayers ? "Selecteer aanvoerder" : "Geen spelers beschikbaar"} />
-          </SelectTrigger>
-          <SelectContent className="dropdown-content-login-style z-[1000] bg-white">
-            {hasPlayers ? (
-              <>
-                <SelectItem value="no-captain" className="dropdown-item-login-style">
-                  Geen aanvoerder
-                </SelectItem>
-                {availablePlayers.map((selection) => (
-                  <SelectItem
-                    key={selection.playerId}
-                    value={selection.playerId!.toString()}
-                    className="dropdown-item-login-style"
-                  >
-                    {selection.jerseyNumber ? `${selection.jerseyNumber} - ` : ''}{selection.playerName || `Speler ${selection.playerId}`}
-                  </SelectItem>
-                ))}
-              </>
-            ) : (
-              <SelectItem value="no-captain" disabled className="dropdown-item-login-style">
-                Geen spelers geselecteerd
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }, [handleCaptainChange]);
 
    // Boetes + Financieel merged section - visible for admin + referee
-  const financieelSection = showRefereeFields && (
-    <Collapsible open={isFinancieelOpen} onOpenChange={setIsFinancieelOpen}>
-      <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isFinancieelOpen ? 'var(--color-100)' : 'white' }}>
-            <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-              <CardTitle className="flex items-center gap-2 text-sm m-0">
-                Financieel
-              </CardTitle>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                  isFinancieelOpen && "transform rotate-180"
-                )}
-              />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-[var(--color-200)]">
-          <CardContent className="pt-3">
-            <div className="space-y-4">
-              {/* === BOETES SUBSECTIE === */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Boetes</h4>
-
-                {canEdit && (
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      type="button"
-                      onClick={addPenalty}
-                      disabled={isAddPenaltyButtonDisabled}
-                      className="btn btn--secondary h-8 px-3 w-full sm:flex-1"
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1.5" />
-                      Boete toevoegen
-                    </Button>
-                  </div>
-                )}
-
-                {/* New Penalties Section */}
-                {penalties.length > 0 && (
-                  <div id="penalties-new-list" className="space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-foreground">Nieuwe boetes</span>
-                        <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                          {penalties.length} {penalties.length === 1 ? 'boete' : 'boetes'}
-                        </span>
-                      </div>
-                      {penalties.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setPenalties([])}
-                          className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
-                        >
-                          <X className="h-3 w-3 mr-0.5" />
-                          Alles wissen
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      {penalties.map((penalty, index) => {
-                        const isValid = penalty.teamId && penalty.costSettingId;
-                        return (
-                          <div 
-                            key={`penalty-${index}`} 
-                            className={cn(
-                              "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
-                              isValid 
-                                ? "border-primary/30 bg-primary/5 shadow-sm" 
-                                : "border-border bg-muted/50"
-                            )}
-                          >
-                            {canEdit && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPenalties(prev => prev.filter((_, i) => i !== index));
-                                }}
-                                className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
-                                aria-label="Boete verwijderen"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            )}
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 pr-10">
-                              <div className="space-y-0.5">
-                                <Label htmlFor={`penalty-team-${index}`} className="text-xs font-medium">Team</Label>
-                                <Select
-                                  value={penalty.teamId ? penalty.teamId.toString() : undefined}
-                                  onValueChange={(v) => updatePenalty(index, 'teamId', parseInt(v))}
-                                  disabled={!canEdit}
-                                >
-                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                    <SelectValue placeholder="Selecteer team" />
-                                  </SelectTrigger>
-                                  <SelectContent className="dropdown-content-login-style z-50">
-                                    {penaltyTeamOptions.map((team) => (
-                                      <SelectItem
-                                        key={team.id}
-                                        value={team.id.toString()}
-                                        className="dropdown-item-login-style"
-                                      >
-                                        {team.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-0.5">
-                                <Label htmlFor={`penalty-cost-${index}`} className="text-xs font-medium">Type Boete</Label>
-                                <Select
-                                  value={penalty.costSettingId ? penalty.costSettingId.toString() : undefined}
-                                  onValueChange={(v) => updatePenalty(index, 'costSettingId', parseInt(v))}
-                                  disabled={!canEdit || !penalty.teamId}
-                                >
-                                  <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                    <SelectValue placeholder={!penalty.teamId ? "Eerst team kiezen" : "Selecteer boete type"} />
-                                  </SelectTrigger>
-                                  <SelectContent className="dropdown-content-login-style z-50">
-                                    {sortedPenaltyOptions.map((costSetting) => (
-                                      <SelectItem
-                                        key={costSetting.id}
-                                        value={costSetting.id.toString()}
-                                        className="dropdown-item-login-style"
-                                      >
-                                        {costSetting.name} - €{costSetting.amount}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Save draft penalties */}
-                    <div className="flex justify-end pt-1.5 border-t border-border">
-                      <Button 
-                        onClick={savePenalties} 
-                        className="btn btn--secondary h-8 px-4 w-full sm:w-auto"
-                        disabled={isSavePenaltyButtonDisabled || isLoadingPenalties}
-                      >
-                        {isLoadingPenalties ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                            Opslaan...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-3.5 w-3.5 mr-1.5" />
-                            Boetes opslaan
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Saved Penalties Section */}
-                {savedPenalties.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pt-2 border-t border-border">
-                      <span className="text-sm font-semibold text-foreground">Opgeslagen boetes</span>
-                      <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                        {savedPenalties.length} {savedPenalties.length === 1 ? 'boete' : 'boetes'}
-                      </span>
-                    </div>
-                    <div className="space-y-2.5">
-                      {savedPenalties.map((p, i) => {
-                        const forfaitOnPlayedMatch =
-                          matchAppearsPlayed && costNameImpliesMatchCostSuppression(p.penaltyName);
-                        return (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150",
-                            forfaitOnPlayedMatch && "border-amber-400 bg-amber-50/40",
-                          )}
-                          style={forfaitOnPlayedMatch ? undefined : { borderColor: "var(--color-400)" }}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-11 h-11 rounded-lg border border-border bg-muted/80 shrink-0 shadow-sm">
-                              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <span className="text-sm font-semibold text-foreground truncate">
-                                  {p.teamName}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
-                                  {p.penaltyName}
-                                </span>
-                                <span className="text-xs font-semibold text-foreground">
-                                  €{p.amount}
-                                </span>
-                              </div>
-                              {forfaitOnPlayedMatch && (
-                                <p className="text-xs text-amber-900 mt-1">
-                                  Waarschijnlijk fout: wedstrijd heeft uitslag — forfait verwittigd hoort hier niet.
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {canEdit && (
-                            <Button 
-                              type="button" 
-                              onClick={() => removeSavedPenalty(i)} 
-                              className="btn btn--icon btn--danger shrink-0" 
-                              aria-label="Boete verwijderen"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* === WEDSTRIJDKOSTEN SUBSECTIE (admin only) === */}
-              {isAdmin && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-foreground border-b border-border pb-1">Wedstrijdkosten</h4>
-
-                  {hasForfaitPenalty && (
-                    <div
-                      className={cn(
-                        "rounded-lg border px-3 py-2.5 text-sm",
-                        matchAppearsPlayed
-                          ? "border-amber-300 bg-amber-50/90 text-amber-950"
-                          : "border-blue-200 bg-blue-50/80 text-blue-950",
-                      )}
-                    >
-                      {matchAppearsPlayed ? (
-                        <p>
-                          Er staat een forfait-boete op een wedstrijd met uitslag. Dat hoort normaal niet —
-                          verwijder de boete bij Financieel als die per ongeluk is toegevoegd. Wedstrijdkosten
-                          blijven gelden zolang de wedstrijd gespeeld is.
-                        </p>
-                      ) : (
-                        <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
-                      )}
-                    </div>
-                  )}
-
-                  {skipAutoMatchCosts && !hasForfaitPenalty && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2.5 text-sm text-amber-950">
-                      <p className="mb-2">
-                        Je hebt wedstrijdkosten handmatig verwijderd. Automatisch aanvullen bij opslaan staat{" "}
-                        <strong>uit</strong> tot je hieronder opnieuw standaardkosten toepast.
-                      </p>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-8 border-input bg-background hover:bg-muted"
-                        disabled={restoringAutoMatchCosts || !match.isCompleted}
-                        onClick={handleRestoreAutoMatchCosts}
-                      >
-                        {restoringAutoMatchCosts ? (
-                          <>
-                            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                            Bezig…
-                          </>
-                        ) : (
-                          "Standaard wedstrijdkosten opnieuw toepassen"
-                        )}
-                      </Button>
-                      {!match.isCompleted ? (
-                        <p className="text-xs text-amber-900/80 mt-1.5">Alleen mogelijk zodra de wedstrijd ingediend is.</p>
-                      ) : null}
-                    </div>
-                  )}
-                  
-                  {isLoadingMatchCosts ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                      <span className="text-sm text-muted-foreground">Kosten laden...</span>
-                    </div>
-                  ) : matchCosts.length === 0 ? (
-                    hasForfaitPenalty ? null : (
-                      <div className="flex items-center justify-center py-3 px-4 border-2 border-dashed border-muted-foreground/20 rounded-lg bg-muted/30">
-                        <p className="text-sm text-muted-foreground text-center">Nog geen kosten. Worden automatisch aangemaakt bij indiening.</p>
-                      </div>
-                    )
-                  ) : (
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-foreground">Kosten</span>
-                        <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                          {matchCosts.length}
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {matchCosts.map((cost) => (
-                          <div 
-                            key={cost.id} 
-                            className="flex items-center justify-between gap-3 p-3 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md transition-all duration-150"
-                            style={{ borderColor: 'var(--color-400)' }}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                                <span className="text-sm font-semibold text-foreground truncate">{cost.teamName}</span>
-                                <span className="text-muted-foreground">•</span>
-                                <span className="text-sm text-foreground">{cost.costName}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "text-xs font-medium px-2 py-0.5 rounded-md border",
-                                  cost.category === 'deposit' 
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : cost.category === 'penalty'
-                                    ? "bg-destructive/10 text-destructive border-destructive/20"
-                                    : "bg-primary/10 text-primary border-primary/20"
-                                )}>
-                                  {cost.category === 'deposit' ? 'Storting' : cost.category === 'penalty' ? 'Boete' : cost.category === 'match_cost' ? 'Wedstrijdkost' : 'Overig'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {editingCostId === cost.id ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-sm">€</span>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    value={editingCostAmount}
-                                    onChange={(e) => setEditingCostAmount(e.target.value)}
-                                    className="h-8 w-20 text-sm input-login-style"
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        const val = parseFloat(editingCostAmount);
-                                        if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
-                                      }
-                                      if (e.key === 'Escape') setEditingCostId(null);
-                                    }}
-                                    autoFocus
-                                  />
-                                  <Button
-                                    size="sm"
-                                    className="btn btn--primary h-8 px-2"
-                                    onClick={() => {
-                                      const val = parseFloat(editingCostAmount);
-                                      if (!isNaN(val)) handleUpdateMatchCostAmount(cost.id, val);
-                                    }}
-                                  >
-                                    <Save className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-8 px-2"
-                                    onClick={() => setEditingCostId(null)}
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <button
-                                  className="text-sm font-semibold text-foreground hover:text-primary cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setEditingCostId(cost.id);
-                                    setEditingCostAmount(cost.amount.toString());
-                                  }}
-                                  title="Klik om bedrag aan te passen"
-                                >
-                                  €{cost.amount.toFixed(2)}
-                                </button>
-                              )}
-                              <Button
-                                type="button"
-                                onClick={() => handleDeleteMatchCost(cost.id)}
-                                className="btn btn--icon btn--danger shrink-0"
-                                aria-label="Kost verwijderen"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
-  );
-
-  // Notities sectie - can remain memoized as it has simpler state
-  const refereeFields = useMemo(() => showRefereeFields && (
-    <Collapsible open={isNotitiesOpen} onOpenChange={setIsNotitiesOpen}>
-      <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-        <CollapsibleTrigger asChild>
-          <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isNotitiesOpen ? 'var(--color-100)' : 'white' }}>
-            <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-              <CardTitle className="flex items-center gap-2 text-sm m-0">
-                Notities
-              </CardTitle>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                  isNotitiesOpen && "transform rotate-180"
-                )}
-              />
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="border-t border-[var(--color-200)]">
-          <CardContent className="pt-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Textarea
-                  id="referee-notes"
-                  value={refereeNotes}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    console.log('📝 [WedstrijdformulierModal] Referee notes onChange:', {
-                      oldValue: refereeNotes,
-                      newValue: newValue,
-                      length: newValue.length,
-                      type: typeof newValue
-                    });
-                    setRefereeNotes(newValue);
-                  }}
-                  disabled={!canEdit}
-                  placeholder="Voeg hier eventuele notities toe..."
-                  className="min-h-[120px] input-login-style"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
-  ), [showRefereeFields, refereeNotes, setRefereeNotes, canEdit, isNotitiesOpen]);
 
   return (
     <AppModal
@@ -2423,6 +1600,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       size="lg"
       aria-describedby="match-form-description"
       showCloseButton={true}
+      bodyStyle={scoreSectionStyle}
       primaryAction={{
         label: isSubmitting ? "Bezig..." : "Opslaan",
         onClick: handleSubmit,
@@ -2434,367 +1612,174 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       <div id="match-form-description" className="sr-only">
         Vul scores, spelers en details van de wedstrijd in
       </div>
-      <div className="space-y-6">
-        {/* Late submission warning banner */}
-        {isLateSubmission && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-sm">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium text-destructive">Te laat ingevuld</p>
-              <p className="text-muted-foreground">
-                Dit formulier wordt na de deadline ingevuld. Bij opslaan wordt automatisch een boete van €{matchFormSettings?.late_penalty_amount?.toFixed(2) ?? '5.00'} aangerekend.
-              </p>
-            </div>
-          </div>
-        )}
-        {/* SCORE - PROMINENT BOVENAAN */}
-        <div className="space-y-4 pb-2">
-          {/* Section Title */}
-          <div className="text-center">
-            <h3 className="text-xl font-bold" style={{ color: 'var(--primary)', paddingTop: '8px', paddingBottom: '8px' }}>
-              Score
-            </h3>
-          </div>
-
-          {/* Score Inputs Container */}
-          <div className="relative">
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-3 md:gap-4 items-end">
-              {/* Home Team Score */}
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="home-score" 
-                  className="text-sm font-semibold text-center block"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  {match.homeTeamName}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="home-score"
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={displayHomeScore}
-                    onChange={(e) => setHomeScore(e.target.value)}
-                    disabled={!isAdmin && !isReferee}
-                    className={homeScoreClassName}
-                    style={{
-                      fontSize: '2rem',
-                      fontWeight: '700',
-                      padding: '1rem'
-                    }}
-                    aria-label={`Score voor ${match.homeTeamName}`}
-                  />
-                </div>
-              </div>
-
-              {/* Score Separator */}
-              <div className="flex items-center justify-center pb-2 md:pb-2" style={{ marginTop: '-2rem' }}>
-                <span 
-                  className="text-2xl font-bold flex items-center justify-center"
-                  style={{ 
-                    color: 'var(--accent)', 
-                    height: '47px',
-                    lineHeight: '47px'
-                  }}
-                  aria-label="tegen"
-                >
-                  -
-                </span>
-              </div>
-
-              {/* Away Team Score */}
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="away-score" 
-                  className="text-sm font-semibold text-center block"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  {match.awayTeamName}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="away-score"
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={displayAwayScore}
-                    onChange={(e) => setAwayScore(e.target.value)}
-                    disabled={!isAdmin && !isReferee}
-                    className={awayScoreClassName}
-                    style={{
-                      fontSize: '2rem',
-                      fontWeight: '700',
-                      padding: '1rem'
-                    }}
-                    aria-label={`Score voor ${match.awayTeamName}`}
-                  />
-                </div>
-              </div>
-            </div>
+      {isLateSubmission && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <div>
+            <p className="font-medium text-destructive">Te laat ingevuld</p>
+            <p className="text-muted-foreground">
+              Dit formulier wordt na de deadline ingevuld. Bij opslaan wordt automatisch een boete van €{matchFormSettings?.late_penalty_amount?.toFixed(2) ?? "5.00"} aangerekend.
+            </p>
           </div>
         </div>
+      )}
+      <MatchFormMobileTabBar
+        role={formRole}
+        value={mobileTab}
+        onValueChange={setMobileTab}
+      />
+      <div className="flex flex-col gap-6">
+        <MatchFormSectionShell
+          section="score"
+          role={formRole}
+          mobileTab={mobileTab}
+          isMobile={isMobile}
+        >
+        <MatchFormScoreSection
+          homeTeamName={match.homeTeamName}
+          awayTeamName={match.awayTeamName}
+          homeClubColors={homeClubColors}
+          awayClubColors={awayClubColors}
+          homeColumnStyle={homeColumnStyle}
+          awayColumnStyle={awayColumnStyle}
+          homeTeamContact={homeTeamInfo}
+          awayTeamContact={awayTeamInfo}
+          homeContactEnabled={!isTeamManager || match.homeTeamId !== teamId}
+          awayContactEnabled={!isTeamManager || match.awayTeamId !== teamId}
+          canEditScore={canEditScore}
+          isTeamManager={isTeamManager}
+          displayHomeScore={displayHomeScore}
+          displayAwayScore={displayAwayScore}
+          homeScoreClassName={homeScoreClassName}
+          awayScoreClassName={awayScoreClassName}
+          onHomeScoreChange={setHomeScore}
+          onAwayScoreChange={setAwayScore}
+        />
+        </MatchFormSectionShell>
 
+        <MatchFormSectionShell
+          section="gegevens"
+          role={formRole}
+          mobileTab={mobileTab}
+          isMobile={isMobile}
+        >
         {/* Basisgegevens */}
         <div className="space-y-4">
-          {/* Gegevens - Collapsible */}
-          <Collapsible open={isGegevensOpen} onOpenChange={setIsGegevensOpen}>
-            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="text-sm font-semibold px-5 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isGegevensOpen ? 'var(--color-100)' : 'white' }}>
-                  <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-                    <CardTitle className="flex items-center gap-2 text-sm m-0">
-                      Gegevens
-                    </CardTitle>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                        isGegevensOpen && "transform rotate-180"
-                      )}
-                    />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-t border-[var(--color-200)]">
-                <CardContent className="pt-4 space-y-4">
-                  {/* First row: Date, Time (1/2 - 1/2 on mobile) */}
-                  <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="match-date" style={{ color: 'var(--accent)' }}>Datum</Label>
-                      <Input
-                        id="match-date"
-                        type="date"
-                        value={matchData.date}
-                        onChange={(e) => handleMatchDataChange("date", e.target.value)}
-                        disabled={!isAdmin}
-                        className="input-login-style h-8 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="match-time" style={{ color: 'var(--accent)' }}>Tijd</Label>
-                      <Input
-                        id="match-time"
-                        type="time"
-                        value={matchData.time}
-                        onChange={(e) => handleMatchDataChange("time", e.target.value)}
-                        disabled={!isAdmin}
-                        className="input-login-style h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Second row: Location full width */}
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="match-location" style={{ color: 'var(--accent)' }}>Locatie</Label>
-                      <Input
-                        id="match-location"
-                        value={matchData.location}
-                        onChange={(e) => handleMatchDataChange("location", e.target.value)}
-                        disabled={!isAdmin}
-                        placeholder="Wedstrijdlocatie"
-                        className="input-login-style h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Administratieve gegevens */}
-                  <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="match-matchday" style={{ color: 'var(--accent)' }}>Speeldag</Label>
-                      <Input
-                        id="match-matchday"
-                        value={matchData.matchday || ""}
-                        onChange={(e) => handleMatchDataChange("matchday", e.target.value)}
-                        disabled={!isAdmin}
-                        placeholder="Speeldag"
-                        className="input-login-style h-8 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="match-referee" style={{ color: 'var(--accent)' }}>Scheidsrechter</Label>
-                      <Select
-                        value={refereeSelectValue}
-                        onValueChange={(v) => {
-                          if (v === "__none__") {
-                            setSelectedReferee("");
-                          } else {
-                            setSelectedReferee(v);
-                          }
-                        }}
-                        disabled={isTeamManager || !canEdit || loadingReferees}
-                      >
-                        <SelectTrigger className="dropdown-login-style min-h-[44px] h-[44px] text-sm w-full">
-                          <SelectValue 
-                            placeholder={
-                              loadingReferees 
-                                ? "Scheidsrechters worden geladen..." 
-                                : selectedReferee 
-                                  ? selectedReferee 
-                                  : "Selecteer scheidsrechter"
-                            } 
-                          />
-                          {loadingReferees && (
-                            <div className="absolute right-2 flex items-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden="true" />
-                            </div>
-                          )}
-                        </SelectTrigger>
-                        <SelectContent className="dropdown-content-login-style z-modal bg-card" style={{ backgroundColor: 'white' }}>
-                          {loadingReferees ? (
-                            <SelectItem value="loading" disabled className="dropdown-item-login-style text-center" aria-busy="true">
-                              <div className="flex items-center justify-center gap-2 py-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                                <span className="text-sm font-medium">Scheidsrechters worden geladen...</span>
-                              </div>
-                            </SelectItem>
-                          ) : (
-                            <>
-                              {/* Option to clear referee */}
-                              <SelectItem value="__none__" className="dropdown-item-login-style text-muted-foreground">
-                                Geen scheidsrechter
-                              </SelectItem>
-                              {/* Always show selected referee first, even if not in list yet (during loading or if referee was removed) */}
-                              {selectedReferee && !selectedRefereeExists && (
-                                <SelectItem 
-                                  value={selectedReferee} 
-                                  className="dropdown-item-login-style opacity-75"
-                                >
-                                  {selectedReferee}
-                                </SelectItem>
-                              )}
-                              {/* Show all available referees */}
-                              {memoizedReferees.length > 0 ? (
-                                memoizedReferees.map((referee) => (
-                                  <SelectItem key={referee.user_id} value={referee.username} className="dropdown-item-login-style">
-                                    {referee.username}
-                                  </SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="no-referees" disabled className="dropdown-item-login-style text-center text-muted-foreground">
-                                  Geen scheidsrechters beschikbaar
-                                </SelectItem>
-                              )}
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {/* Inline retry for referees when empty */}
-                      {!loadingReferees && memoizedReferees.length === 0 && !selectedReferee && (
-                        refereesError ? (
-                          <InlinePlayerRetry
-                            onRetry={async () => { await refetchReferees(); }}
-                            isLoading={loadingReferees}
-                            error={refereesError}
-                            itemCount={memoizedReferees.length}
-                            emptyMessage="Geen scheidsrechters gevonden"
-                            className="mt-2"
-                          />
-                        ) : (
-                          <p className="text-xs text-muted-foreground mt-2 w-full">
-                            Nog geen scheidsrechter toegewezen
-                          </p>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+          <MatchFormWedstrijdinfoSection
+            open={isGegevensOpen}
+            onOpenChange={setIsGegevensOpen}
+            date={matchData.date}
+            time={matchData.time}
+            location={matchData.location}
+            matchday={matchData.matchday || ""}
+            onFieldChange={handleMatchDataChange}
+            isAdmin={isAdmin}
+            isTeamManager={isTeamManager}
+            canEdit={canEdit}
+            refereeSelectValue={refereeSelectValue}
+            selectedReferee={selectedReferee}
+            onRefereeChange={setSelectedReferee}
+            loadingReferees={loadingReferees}
+            referees={memoizedReferees}
+            refereesError={refereesError}
+            onRefetchReferees={refetchReferees}
+            selectedRefereeExists={!!selectedRefereeExists}
+          />
         </div>
+        </MatchFormSectionShell>
 
+        <MatchFormSectionShell
+          section="spelers"
+          role={formRole}
+          mobileTab={mobileTab}
+          isMobile={isMobile}
+        >
         {/* Spelers */}
-        <h3 className="text-xl font-semibold text-center text-brand-dark">Spelers</h3>
+        <h3 className="text-center text-xl font-semibold text-brand-dark">Spelers</h3>
         
         <div className="space-y-4">
           {/* Mobile-first: Stacked cards, collapsible on mobile */}
           <div className="space-y-3">
             {/* Home Team Card */}
-            <Collapsible open={homeTeamOpen} onOpenChange={setHomeTeamOpen}>
-              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: homeTeamOpen ? 'var(--color-100)' : 'white' }}>
-                    <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-                      <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
-                        <Users className="h-4 w-4 text-primary" />
-                        {match.homeTeamName}
-                      </CardTitle>
-                      <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Thuis)</span>
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                          homeTeamOpen && "transform rotate-180"
-                        )}
+            <MatchFormSectionCard
+              open={homeTeamOpen}
+              onOpenChange={setHomeTeamOpen}
+              contentId="match-form-home-players"
+              title={
+                <>
+                  <Users className="h-4 w-4 text-primary" />
+                  {match.homeTeamName}
+                </>
+              }
+              trailing={<span className="text-sm font-normal text-muted-foreground">(Thuis)</span>}
+            >
+              <CardContent className="pt-4">
+                    <MatchFormPlayerSelectionTable
+                      teamLabel={`${match.homeTeamName} (Thuis)`}
+                      selections={homeTeamSelections}
+                      selectedPlayerIds={homeSelectedPlayerIds}
+                      canEditTeam={canEditHome}
+                      isHomeTeam
+                      players={homePlayersWithSuspensions}
+                      isLoading={homeIsLoading}
+                      error={homeError}
+                      retryCount={homeRetryCount}
+                      refetch={homeRefetch}
+                      onPlayerSelection={handlePlayerSelection}
+                      getPlayerDisplayName={getPlayerDisplayName}
+                      isPlayerSuspended={isPlayerSuspended}
+                    />
+                    <div className="mt-4">
+                      <MatchFormCaptainSelect
+                        selections={homeTeamSelections}
+                        canEditTeam={canEditHome}
+                        teamLabel={`${match.homeTeamName} (Thuis)`}
+                        isHomeTeam
+                        onCaptainChange={handleCaptainChange}
                       />
                     </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="border-t border-[var(--color-200)]">
-                  <CardContent className="pt-4">
-                    {renderPlayerSelectionTable(
-                      `${match.homeTeamName} (Thuis)`,
-                      homeTeamSelections,
-                      homeSelectedPlayerIds,
-                      canEditHome,
-                      true,
-                      homePlayersWithSuspensions,
-                      homeIsLoading,
-                      homeError,
-                      homeRetryCount,
-                      homeRefetch
-                    )}
-                    <div className="mt-4">
-                      {renderCaptainSelection(homeTeamSelections, canEditHome, `${match.homeTeamName} (Thuis)`, true)}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+              </CardContent>
+            </MatchFormSectionCard>
 
-            {/* Away Team Card */}
-            <Collapsible open={awayTeamOpen} onOpenChange={setAwayTeamOpen}>
-              <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: awayTeamOpen ? 'var(--color-100)' : 'white' }}>
-                    <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-                      <CardTitle className="flex items-center gap-2 text-sm flex-1 m-0">
-                        <Users className="h-4 w-4 text-primary" />
-                        {match.awayTeamName}
-                      </CardTitle>
-                      <span className="text-sm font-normal text-muted-foreground ml-auto mr-2">(Uit)</span>
-                      <ChevronDown
-                        className={cn(
-                          "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                          awayTeamOpen && "transform rotate-180"
-                        )}
+            <MatchFormSectionCard
+              open={awayTeamOpen}
+              onOpenChange={setAwayTeamOpen}
+              contentId="match-form-away-players"
+              title={
+                <>
+                  <Users className="h-4 w-4 text-primary" />
+                  {match.awayTeamName}
+                </>
+              }
+              trailing={<span className="text-sm font-normal text-muted-foreground">(Uit)</span>}
+            >
+              <CardContent className="pt-4">
+                    <MatchFormPlayerSelectionTable
+                      teamLabel={`${match.awayTeamName} (Uit)`}
+                      selections={awayTeamSelections}
+                      selectedPlayerIds={awaySelectedPlayerIds}
+                      canEditTeam={canEditAway}
+                      isHomeTeam={false}
+                      players={awayPlayersWithSuspensions}
+                      isLoading={awayIsLoading}
+                      error={awayError}
+                      retryCount={awayRetryCount}
+                      refetch={awayRefetch}
+                      onPlayerSelection={handlePlayerSelection}
+                      getPlayerDisplayName={getPlayerDisplayName}
+                      isPlayerSuspended={isPlayerSuspended}
+                    />
+                    <div className="mt-4">
+                      <MatchFormCaptainSelect
+                        selections={awayTeamSelections}
+                        canEditTeam={canEditAway}
+                        teamLabel={`${match.awayTeamName} (Uit)`}
+                        isHomeTeam={false}
+                        onCaptainChange={handleCaptainChange}
                       />
                     </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="border-t border-[var(--color-200)]">
-                  <CardContent className="pt-4">
-                    {renderPlayerSelectionTable(
-                      `${match.awayTeamName} (Uit)`,
-                      awayTeamSelections,
-                      awaySelectedPlayerIds,
-                      canEditAway,
-                      false,
-                      awayPlayersWithSuspensions,
-                      awayIsLoading,
-                      awayError,
-                      awayRetryCount,
-                      awayRefetch
-                    )}
-                    <div className="mt-4">
-                      {renderCaptainSelection(awayTeamSelections, canEditAway, `${match.awayTeamName} (Uit)`, false)}
-                    </div>
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+              </CardContent>
+            </MatchFormSectionCard>
           </div>
           
           {/* Save button for team managers, referees, and admins */}
@@ -2804,271 +1789,89 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
             </div>
           )}
         </div>
+        </MatchFormSectionShell>
 
+        <MatchFormSectionShell
+          section="wedstrijd"
+          role={formRole}
+          mobileTab={mobileTab}
+          isMobile={isMobile}
+        >
         {/* Kaarten, Boetes & Notities - Hidden for team managers */}
         {!isTeamManager && (
           <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-center text-brand-dark">Wedstrijd</h3>
-            <Collapsible open={isKaartenOpen} onOpenChange={setIsKaartenOpen}>
-            <Card className="bg-card border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-150 ease-out bg-white">
-              <CollapsibleTrigger asChild>
-                <CardHeader className="text-sm font-semibold hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-150 ease-out text-[var(--color-700)] hover:text-[var(--color-900)] gap-4" style={{ color: 'var(--color-700)', height: '61px', padding: 0, display: 'flex', alignItems: 'center', backgroundColor: isKaartenOpen ? 'var(--color-100)' : 'white' }}>
-                  <div className="flex items-center justify-between w-full px-5" style={{ marginTop: '21px', marginBottom: '21px' }}>
-                    <CardTitle className="flex items-center gap-2 text-sm m-0">
-                      Kaarten
-                    </CardTitle>
-                    <ChevronDown
-                      className={cn(
-                        "h-4 w-4 text-muted-foreground transition-transform duration-150 ease-out [&[data-state=open]]:rotate-180 shrink-0",
-                        isKaartenOpen && "transform rotate-180"
-                      )}
-                    />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="border-t border-[var(--color-200)]">
-                <CardContent className="pt-3">
-                  {showRefereeFields && (
-                    <div className="space-y-3">
-                      {/* Loading State */}
-                      {isLoadingCards && (
-                        <div className="flex items-center justify-center py-6">
-                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                          <span className="text-sm text-muted-foreground">Kaarten laden...</span>
-                        </div>
-                      )}
+            <h3 className="text-center text-xl font-semibold text-brand-dark">Wedstrijd</h3>
+            <MatchFormCardsSection
+              open={isKaartenOpen}
+              onOpenChange={setIsKaartenOpen}
+              homeTeamName={match.homeTeamName}
+              awayTeamName={match.awayTeamName}
+              showRefereeFields={showRefereeFields}
+              canEdit={canEdit}
+              isLoadingCards={isLoadingCards}
+              cardItems={cardItems}
+              savedCards={savedCards}
+              playersByTeam={playersByTeam}
+              isSavingCards={isSavingCards}
+              onAddCardItem={addCardItem}
+              onUpdateCardItem={updateCardItem}
+              onClearCardItems={() => setCardItems([])}
+              onRemoveCardItem={removeCardItem}
+              onSaveCardItems={saveCardItems}
+              onRemoveSavedCard={removeSavedCard}
+            />
+            {showRefereeFields && (
+              <MatchFormFinancialSection
+                open={isFinancieelOpen}
+                onOpenChange={setIsFinancieelOpen}
+                isAdmin={isAdmin}
+                canEdit={canEdit}
+                matchIsCompleted={match.isCompleted}
+                matchAppearsPlayed={matchAppearsPlayed}
+                penalties={penalties}
+                savedPenalties={savedPenalties}
+                sortedPenaltyOptions={sortedPenaltyOptions}
+                penaltyTeamOptions={penaltyTeamOptions}
+                isLoadingPenalties={isLoadingPenalties}
+                isAddPenaltyButtonDisabled={isAddPenaltyButtonDisabled}
+                isSavePenaltyButtonDisabled={isSavePenaltyButtonDisabled}
+                matchCosts={matchCosts}
+                isLoadingMatchCosts={isLoadingMatchCosts}
+                hasForfaitPenalty={hasForfaitPenalty}
+                skipAutoMatchCosts={skipAutoMatchCosts}
+                restoringAutoMatchCosts={restoringAutoMatchCosts}
+                editingCostId={editingCostId}
+                editingCostAmount={editingCostAmount}
+                onAddPenalty={addPenalty}
+                onClearPenalties={() => setPenalties([])}
+                onUpdatePenalty={updatePenalty}
+                onRemovePenaltyDraft={(index) => setPenalties((prev) => prev.filter((_, i) => i !== index))}
+                onSavePenalties={savePenalties}
+                onRemoveSavedPenalty={removeSavedPenalty}
+                onRestoreAutoMatchCosts={handleRestoreAutoMatchCosts}
+                onStartEditCost={(costId, amount) => {
+                  setEditingCostId(costId);
+                  setEditingCostAmount(amount.toString());
+                }}
+                onCancelEditCost={() => setEditingCostId(null)}
+                onEditingCostAmountChange={setEditingCostAmount}
+                onUpdateMatchCostAmount={handleUpdateMatchCostAmount}
+                onDeleteMatchCost={handleDeleteMatchCost}
+                costNameImpliesMatchCostSuppression={costNameImpliesMatchCostSuppression}
+              />
+            )}
+            <MatchFormNotesSection
+              open={isNotitiesOpen}
+              onOpenChange={setIsNotitiesOpen}
+              showRefereeFields={showRefereeFields}
+              canEdit={canEdit}
+              refereeNotes={refereeNotes}
+              onRefereeNotesChange={setRefereeNotes}
+            />
 
-                      {/* New Cards Section */}
-                      {cardItems.length > 0 && (
-                        <div className="space-y-2.5">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-semibold text-foreground">Nieuwe kaarten</span>
-                              <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                                {cardItems.length} {cardItems.length === 1 ? 'kaart' : 'kaarten'}
-                              </span>
-                            </div>
-                            {cardItems.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setCardItems([])}
-                                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-destructive"
-                              >
-                                <X className="h-3 w-3 mr-0.5" />
-                                Alles wissen
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="space-y-2">
-                            {cardItems.map((it, idx) => {
-                              const teamPlayers = it.team === "home" ? playersByTeam.home : it.team === "away" ? playersByTeam.away : [];
-                              const isValid = it.team && it.playerId && it.cardType;
-                              return (
-                                <div 
-                                  key={idx} 
-                                  className={cn(
-                                    "relative flex flex-col gap-1.5 p-2.5 border rounded-lg transition-all duration-200",
-                                    isValid 
-                                      ? "border-primary/30 bg-primary/5 shadow-sm" 
-                                      : "border-border bg-muted/50"
-                                  )}
-                                >
-                                  {/* Delete button for individual card - only show when card is valid */}
-                                  {canEdit && isValid && (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeCardItem(idx)}
-                                      className="absolute top-2 right-2 w-8 h-8 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border shadow-sm hover:bg-destructive/10 hover:border-destructive/30 text-muted-foreground hover:text-destructive transition-all duration-150 z-10"
-                                      aria-label="Kaart verwijderen"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  )}
-
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 pr-10">
-                                    <div className="space-y-0.5">
-                                      <Label className="text-xs font-medium">Team</Label>
-                                      <Select value={it.team} onValueChange={(v) => updateCardItem(idx, "team", v)} disabled={!canEdit}>
-                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                          <SelectValue placeholder="Selecteer team" />
-                                        </SelectTrigger>
-                                        <SelectContent className="dropdown-content-login-style z-50">
-                                          <SelectItem value="home" className="dropdown-item-login-style">Thuis — {match.homeTeamName}</SelectItem>
-                                          <SelectItem value="away" className="dropdown-item-login-style">Uit — {match.awayTeamName}</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    <div className="space-y-0.5">
-                                      <Label className="text-xs font-medium">Speler</Label>
-                                      <Select value={it.playerId ? String(it.playerId) : undefined} onValueChange={(v) => updateCardItem(idx, "playerId", parseInt(v))} disabled={!canEdit || !it.team}>
-                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                          <SelectValue placeholder={!it.team ? "Eerst team kiezen" : "Selecteer speler"} />
-                                        </SelectTrigger>
-                                        <SelectContent className="dropdown-content-login-style z-50">
-                                          {teamPlayers.map(sel => (
-                                            <SelectItem key={sel.playerId!} value={String(sel.playerId!)} className="dropdown-item-login-style">
-                                              {sel.jerseyNumber ? `${sel.jerseyNumber} - ` : ''}{sel.playerName || `Speler ${sel.playerId}`}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    <div className="space-y-0.5">
-                                      <Label className="text-xs font-medium">Type kaart</Label>
-                                      <Select value={it.cardType} onValueChange={(v) => updateCardItem(idx, "cardType", v)} disabled={!canEdit}>
-                                        <SelectTrigger className="dropdown-login-style h-8 text-sm w-full">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="dropdown-content-login-style z-50">
-                                          {CARD_OPTIONS.map(opt => (
-                                            <SelectItem key={opt.value} value={opt.value} className="dropdown-item-login-style">
-                                              <span className="flex items-center">
-                                                <MatchesCardIcon type={opt.value as any} />
-                                                <span className="ml-1">{opt.label}</span>
-                                              </span>
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-
-                          {/* Action buttons - full width on mobile */}
-                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-1.5 border-t border-border">
-                            <Button 
-                              onClick={addCardItem} 
-                              variant="outline" 
-                              size="sm"
-                              className="btn btn--secondary h-8 px-3 w-full sm:w-auto"
-                              disabled={!canEdit}
-                            >
-                              <Plus className="h-3.5 w-3.5 mr-1.5" />
-                              Nog een kaart
-                            </Button>
-                            <Button 
-                              onClick={saveCardItems} 
-                              className="btn btn--primary h-8 px-4 w-full sm:w-auto"
-                              disabled={isSavingCards || cardItems.every(it => !it.team || !it.playerId || !it.cardType)}
-                            >
-                              {isSavingCards ? (
-                                <>
-                                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                                  Opslaan...
-                                </>
-                              ) : (
-                                <>
-                                  <Save className="h-3.5 w-3.5 mr-1.5" />
-                                  Kaarten opslaan
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Add button when no new cards (always available) */}
-                      {!isLoadingCards && cardItems.length === 0 && canEdit && (
-                        <div className="pt-1.5">
-                          <Button onClick={addCardItem} className="btn btn--secondary h-8 px-3 w-full">
-                            <Plus className="h-3.5 w-3.5 mr-1.5" />
-                            Kaart toevoegen
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Saved Cards Section - Improved */}
-                      {savedCards.length > 0 && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 pt-2 border-t border-border">
-                            <span className="text-sm font-semibold text-foreground">Opgeslagen kaarten</span>
-                            <span className="text-xs font-medium text-muted-foreground bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                              {savedCards.length} {savedCards.length === 1 ? 'kaart' : 'kaarten'}
-                            </span>
-                          </div>
-                          <div className="space-y-2.5">
-                            {savedCards.map((c, i) => {
-                              const teamName = c.team === 'home' ? match.homeTeamName : match.awayTeamName;
-                              
-                              const iconBgClass =
-                                c.cardType === 'yellow'
-                                  ? 'bg-yellow-50 border-yellow-200'
-                                  : c.cardType === 'double_yellow'
-                                  ? 'bg-yellow-100 border-yellow-300'
-                                  : 'bg-red-50 border-red-200';
-                              
-                              const cardTypeLabel = c.cardType === 'yellow' ? 'Geel' : c.cardType === 'double_yellow' ? '2x Geel' : 'Rood';
-                              
-                              return (
-                              <div 
-                                key={i} 
-                                className="flex items-center justify-between gap-3 p-3.5 text-sm border rounded-lg bg-white shadow-sm hover:shadow-md hover:bg-muted/20 transition-all duration-150"
-                                style={{ borderColor: 'var(--color-400)' }}
-                              >
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <div className={cn(
-                                    "flex items-center justify-center w-11 h-11 rounded-lg border shrink-0 shadow-sm",
-                                    iconBgClass
-                                  )}>
-                                    <MatchesCardIcon type={c.cardType as any} size={20} />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                      <span className="text-sm font-semibold text-foreground truncate">
-                                        {teamName}
-                                      </span>
-                                      <span className="text-muted-foreground">•</span>
-                                      <span className="truncate text-foreground font-medium text-sm">{c.playerName}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className={cn(
-                                        "text-xs font-semibold px-2 py-0.5 rounded-md",
-                                        c.cardType === 'yellow' 
-                                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
-                                          : c.cardType === 'double_yellow'
-                                          ? 'bg-yellow-200 text-yellow-900 border border-yellow-300'
-                                          : 'bg-red-100 text-red-800 border border-red-200'
-                                      )}>
-                                        {cardTypeLabel}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                {canEdit && (
-                                  <Button
-                                    type="button"
-                                    onClick={() => removeSavedCard(i)}
-                                    className="btn btn--icon btn--danger shrink-0"
-                                    aria-label="Kaart verwijderen"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-            {financieelSection}
-
-            {refereeFields}
           </div>
         )}
+        </MatchFormSectionShell>
         
         {/* Hidden fields to preserve poll data */}
         <>

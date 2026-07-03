@@ -3,6 +3,7 @@ import MatchesCard from "./components/MatchesCard";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 import { MatchFormData } from "./types";
 import { Card, CardContent } from "@/components/ui/card";
+import { MatchCardSkeleton } from "@/components/ui/skeleton";
 import { 
   sortMatchesByDateAndTime, 
   getCupRoundName, 
@@ -279,11 +280,12 @@ const getGridClassName = (groupKey: string) => {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-12 text-center">
-          <p className="text-muted-foreground">Wedstrijden laden...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-3" aria-busy="true">
+        <span className="sr-only">Wedstrijden laden…</span>
+        {[...Array(4)].map((_, index) => (
+          <MatchCardSkeleton key={index} />
+        ))}
+      </div>
     );
   }
 

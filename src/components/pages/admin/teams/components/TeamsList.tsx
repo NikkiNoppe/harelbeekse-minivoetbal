@@ -62,7 +62,7 @@ const EmptyState = () => (
         <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
         <h3 className="text-lg font-semibold mb-2 text-foreground">Geen teams</h3>
         <p className="text-muted-foreground">
-          Er zijn nog geen teams toegevoegd aan de competitie.
+          Er zijn nog geen teams toegevoegd aan deze competitie.
         </p>
       </div>
     </CardContent>

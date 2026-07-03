@@ -22,6 +22,7 @@ import {
   UnknownOrganizationHostnameError,
   type Organization,
 } from '@/services/organization/resolveOrganization';
+import { SuperAdminActingOrgSync } from '@/components/common/SuperAdminActingOrgSync';
 
 export interface OrganizationContextValue {
   organization: Organization | undefined;
@@ -55,7 +56,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
 
   const {
     data: organization,
-    isLoading,
+    isPending,
     isFetching,
     isFetched,
     error,
@@ -64,7 +65,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
     queryKey: ['organization', hostname, orgSlugOverride],
     queryFn: () =>
       resolveOrganizationFromHostname({ hostname, orgSlugOverride }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 30 * 60 * 1000,
     retry: (failureCount, err) => {
       if (err instanceof UnknownOrganizationHostnameError) {
@@ -82,6 +83,11 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
   const isUnknownHostname =
     organizationError instanceof UnknownOrganizationHostnameError;
   const isOrganizationReady = authContextReady && isFetched && !!organization;
+
+  useEffect(() => {
+    if (!authContextReady) return;
+    void refetch();
+  }, [orgSlugOverride, authContextReady, refetch]);
 
   useEffect(() => {
     mismatchHandled.current = false;
@@ -130,7 +136,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
       hostname,
       isOrganizationReady,
       isOrganizationLoading:
-        !authContextReady || isLoading || (isFetching && !organization),
+        !authContextReady || (isPending && !organization),
       organizationError,
       isUnknownHostname,
       refetchOrganization: () => {
@@ -142,7 +148,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
       hostname,
       isOrganizationReady,
       authContextReady,
-      isLoading,
+      isPending,
       isFetching,
       organizationError,
       isUnknownHostname,
@@ -152,6 +158,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
 
   return (
     <OrganizationContext.Provider value={value}>
+      <SuperAdminActingOrgSync />
       {children}
     </OrganizationContext.Provider>
   );

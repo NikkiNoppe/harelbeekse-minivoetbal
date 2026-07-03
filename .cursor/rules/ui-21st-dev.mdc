@@ -1,6 +1,6 @@
 ---
 description: Gebruik 21st.dev als UI-voorbeelden bij nieuwe of verbeterde interfaces (geen API-key)
-globs: src/components/**/*.tsx
+globs: src/**/*.tsx
 alwaysApply: false
 ---
 

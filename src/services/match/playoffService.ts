@@ -4,6 +4,7 @@ import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
 import { seasonService } from "@/services/seasonService";
 import { priorityOrderService } from "@/services/priorityOrderService";
+import { loadSlotPlanningContext } from '@/services/match/slotPlanningContext';
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails } from "@/services/core/teamPreferencesService";
 import {
@@ -657,6 +658,7 @@ export const playoffService = {
       }
 
       const matchesPerWeek = 7;
+      const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const slotsPerWeek: Map<number, number> = new Map();
       for (let w = 0; w < playingWeeks.length; w++) { teamsPerWeek.set(w, new Set()); slotsPerWeek.set(w, 0); }
@@ -672,9 +674,12 @@ export const playoffService = {
         let bestWeek: number | null = null; let bestSlotForWeek = 0; let bestScore = -1;
         for (let w = 0; w < playingWeeks.length; w++) {
           const weekTeams = teamsPerWeek.get(w)!; const slotsUsed = slotsPerWeek.get(w)!;
-          if (slotsUsed >= matchesPerWeek) continue;
+          const weekMonday = playingWeeks[w];
+          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(m.home) || weekTeams.has(m.away)) continue;
-          const slotIndex = slotsUsed;
+          const slotIndex = slotCtx.getSlotIndexForUsage(weekMonday, slotsUsed);
+          if (slotIndex === null) continue;
           const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
           const h = scoreTeamForDetails(teamPrefs.get(m.home), timeslot, venue, venues);
           const a = scoreTeamForDetails(teamPrefs.get(m.away), timeslot, venue, venues);

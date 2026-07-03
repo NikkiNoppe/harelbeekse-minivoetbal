@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
+import { lazyImport } from "@/utils/lazyImport";
 import { OrganizationProvider } from "@/context/OrganizationContext";
 import { OrganizationGate } from "@/components/common/OrganizationGate";
 import {
@@ -20,20 +21,21 @@ import { PUBLIC_ROUTES, ADMIN_ROUTES, SUPERADMIN_ROUTES } from "./config/routes"
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ScrollRestore } from "@/components/common/ScrollRestore";
+import TenantDebugPanel from "@/components/admin/TenantDebugPanel";
 import { useThemeColorsInit } from "@/hooks/useThemeColors";
 import { useRouteMeta } from "@/hooks/useRouteMeta";
 
-// Lazy load main components
-const Index = lazy(() => import("./pages/Index"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
-const SuperAdminPlatform = lazy(() => import("./pages/SuperAdmin"));
+// Lazy load main components (retry + reload bij gefaalde HMR dynamic import)
+const Index = lazyImport(() => import("./pages/Index"));
+const NotFound = lazyImport(() => import("./pages/NotFound"));
+const ResetPassword = lazyImport(() => import("./pages/ResetPassword"));
+const Unsubscribe = lazyImport(() => import("./pages/Unsubscribe"));
+const SuperAdminPlatform = lazyImport(() => import("./pages/SuperAdmin"));
 const SuperAdminTenant = lazy(() =>
   import("./pages/SuperAdmin").then((m) => ({ default: m.SuperAdminTenantRoute })),
 );
-const SuperAdminBeheer = lazy(() =>
-  import("./pages/SuperAdmin").then((m) => ({ default: m.SuperAdminBeheerRoute })),
+const SuperAdminBeheerRedirect = lazy(() =>
+  import("./pages/SuperAdmin").then((m) => ({ default: m.SuperAdminBeheerRedirect })),
 );
 
 /** Initializes dynamic theme colors from DB */
@@ -192,6 +194,13 @@ const App = () => (
                         </Suspense>
                       </ProtectedRoute>
                     } />
+                    <Route path={ADMIN_ROUTES['platform-beheer']} element={
+                      <ProtectedRoute requireAdmin>
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <Index />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
                     <Route path={ADMIN_ROUTES.suspensions} element={
                       <ProtectedRoute requireAdmin>
                         <Suspense fallback={<LoadingSpinner />}>
@@ -258,7 +267,7 @@ const App = () => (
                     } />
                     <Route path={SUPERADMIN_ROUTES.beheer} element={
                       <Suspense fallback={<LoadingSpinner />}>
-                        <SuperAdminBeheer />
+                        <SuperAdminBeheerRedirect />
                       </Suspense>
                     } />
                     <Route path={`${SUPERADMIN_ROUTES.platform}/:orgSlug`} element={
@@ -274,6 +283,7 @@ const App = () => (
                       </Suspense>
                     } />
                     </Routes>
+                    <TenantDebugPanel />
                       </ErrorBoundary>
                     </TooltipProvider>
                   </TabVisibilityProvider>

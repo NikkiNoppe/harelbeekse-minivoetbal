@@ -89,6 +89,7 @@ export const SYSTEM_ROUTES = {
   admin: {
     users: '/admin/users',
     settings: '/admin/settings',
+    platformBeheer: '/admin/platform-beheer',
     blog: '/admin/blog-management',
     notifications: '/admin/notification',
   },
@@ -135,6 +136,7 @@ export const ADMIN_ROUTES = {
   cup: MATCHES_ROUTES.admin.cup,
   financial: FINANCIAL_ROUTES.admin.financial,
   settings: SYSTEM_ROUTES.admin.settings,
+  'platform-beheer': SYSTEM_ROUTES.admin.platformBeheer,
   suspensions: CARDS_SUSPENSIONS_ROUTES.admin.suspensions,
   schorsingen: CARDS_SUSPENSIONS_ROUTES.admin.teamSuspensions,
   scheidsrechters: TEAMS_PLAYERS_ROUTES.admin.referees,
@@ -171,6 +173,7 @@ export const ADMIN_SYSTEM_ROUTES = {
   cup: ADMIN_ROUTES.cup,
   playoffs: ADMIN_ROUTES.playoffs,
   settings: ADMIN_ROUTES.settings,
+  'platform-beheer': ADMIN_ROUTES['platform-beheer'],
   'blog-management': ADMIN_ROUTES['blog-management'],
   'notification': ADMIN_ROUTES['notification'],
 } as const;
@@ -187,6 +190,7 @@ export const SUPERADMIN_ONLY_ROUTES = [
   ADMIN_ROUTES.cup,
   ADMIN_ROUTES.playoffs,
   ADMIN_ROUTES.settings,
+  ADMIN_ROUTES['platform-beheer'],
   ADMIN_ROUTES['blog-management'],
   ADMIN_ROUTES.notification,
 ] as const;
@@ -207,6 +211,7 @@ export const ROUTE_GUARDS = {
     ADMIN_ROUTES.cup,
     ADMIN_ROUTES.financial,
     ADMIN_ROUTES.settings,
+    ADMIN_ROUTES['platform-beheer'],
     ADMIN_ROUTES.suspensions,
     ADMIN_ROUTES['blog-management'],
     ADMIN_ROUTES['notification'],
@@ -406,6 +411,12 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   [ADMIN_ROUTES.settings]: {
     title: 'Instellingen',
     description: 'Beheer applicatie instellingen',
+    requiresAuth: true,
+    requiresAdmin: true,
+  },
+  [ADMIN_ROUTES['platform-beheer']]: {
+    title: 'Platform beheer',
+    description: 'Beheer organisaties, branding en tenant-configuratie',
     requiresAuth: true,
     requiresAdmin: true,
   },

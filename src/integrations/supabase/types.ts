@@ -513,24 +513,35 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          acting_organization_id: number | null
           created_at: string
           expires_at: string
           session_id: string
           user_id: number
         }
         Insert: {
+          acting_organization_id?: number | null
           created_at?: string
           expires_at: string
           session_id?: string
           user_id: number
         }
         Update: {
+          acting_organization_id?: number | null
           created_at?: string
           expires_at?: string
           session_id?: string
           user_id?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_acting_organization_id_fkey"
+            columns: ["acting_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {
@@ -659,26 +670,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      apply_app_user_context:
-        | {
-            Args: {
-              p_role: string
-              p_team_ids: string
-              p_user_id: number
-              p_username?: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_organization_id?: number
-              p_role: string
-              p_team_ids: string
-              p_user_id: number
-              p_username?: string
-            }
-            Returns: undefined
-          }
+      apply_app_user_context: {
+        Args: {
+          p_organization_id?: number
+          p_role: string
+          p_team_ids: string
+          p_user_id: number
+          p_username?: string
+        }
+        Returns: undefined
+      }
       apply_suspension_after_match: {
         Args: { match_id_param: number }
         Returns: undefined
@@ -827,6 +828,7 @@ export type Database = {
         Args: { p_session_token: string }
         Returns: {
           email: string
+          organization_id: number
           role: string
           team_users: Json
           user_id: number
@@ -866,14 +868,29 @@ export type Database = {
           unique_number: string
         }[]
       }
+      get_match_teams_contact_for_session: {
+        Args: {
+          p_away_team_id: number
+          p_home_team_id: number
+          p_session_token: string
+        }
+        Returns: {
+          club_colors: string
+          contact_email: string
+          contact_person: string
+          contact_phone: string
+          team_id: number
+          team_name: string
+        }[]
+      }
       get_matches_for_forms: {
         Args: {
-          p_competition_type: string
-          p_has_elevated_permissions: boolean
-          p_referee_user_id: number
-          p_referee_username: string
+          p_competition_type?: string
+          p_has_elevated_permissions?: boolean
+          p_referee_user_id?: number
+          p_referee_username?: string
           p_session_token: string
-          p_team_id: number
+          p_team_id?: number
         }
         Returns: {
           assigned_referee_id: number
@@ -901,7 +918,7 @@ export type Database = {
         }[]
       }
       get_matches_for_session: {
-        Args: { p_filters: Json; p_session_token: string }
+        Args: { p_filters?: Json; p_session_token: string }
         Returns: {
           assigned_referee_id: number | null
           away_players: Json | null
@@ -964,7 +981,7 @@ export type Database = {
         }[]
       }
       get_players_for_session: {
-        Args: { p_session_token: string; p_team_id: number }
+        Args: { p_session_token: string; p_team_id?: number }
         Returns: {
           birth_date: string
           first_name: string
@@ -1065,7 +1082,7 @@ export type Database = {
         }[]
       }
       get_referees_for_session: {
-        Args: { p_session_token: string; p_user_id: number }
+        Args: { p_session_token: string; p_user_id?: number }
         Returns: {
           user_id: number
           username: string
@@ -1137,7 +1154,7 @@ export type Database = {
         }[]
       }
       get_team_costs_transactions: {
-        Args: { p_session_token: string; p_team_id: number }
+        Args: { p_session_token: string; p_team_id?: number }
         Returns: {
           amount: number
           away_team_id: number
@@ -1177,7 +1194,7 @@ export type Database = {
         }[]
       }
       get_teams_for_session: {
-        Args: { p_session_token: string; p_team_id: number }
+        Args: { p_session_token: string; p_team_id?: number }
         Returns: {
           club_colors: string
           contact_email: string
@@ -1246,7 +1263,11 @@ export type Database = {
         }[]
       }
       login_user: {
-        Args: { input_password: string; input_username_or_email: string }
+        Args: {
+          input_password: string
+          input_username_or_email: string
+          p_organization_id?: number
+        }
         Returns: {
           email: string
           organization_id: number
@@ -1335,8 +1356,8 @@ export type Database = {
             Args: {
               p_operation: string
               p_session_token: string
-              p_team_id: number
-              p_team_ids: number[]
+              p_team_id?: number
+              p_team_ids?: number[]
               p_user_id: number
             }
             Returns: Json
@@ -1387,6 +1408,10 @@ export type Database = {
       set_current_user_context: {
         Args: { p_role: string; p_team_ids?: string; p_user_id: number }
         Returns: undefined
+      }
+      set_super_admin_acting_organization: {
+        Args: { p_organization_id: number; p_session_token: string }
+        Returns: boolean
       }
       submit_profile_poll_response_for_session: {
         Args: {
@@ -1454,11 +1479,11 @@ export type Database = {
       }
       update_user_for_session: {
         Args: {
-          p_email: string
-          p_role: Database["public"]["Enums"]["user_role"]
+          p_email?: string
+          p_role?: Database["public"]["Enums"]["user_role"]
           p_session_token: string
           p_user_id: number
-          p_username: string
+          p_username?: string
         }
         Returns: Json
       }

@@ -5,13 +5,17 @@ import StandingsArchiveCard from './StandingsArchiveCard';
 import CupWinnerCard from './CupWinnerCard';
 import CupArchiveCard from './CupArchiveCard';
 import PlayoffArchiveCard from './PlayoffArchiveCard';
-import { Archive, Loader2 } from 'lucide-react';
+import { Archive, AlertCircle } from 'lucide-react';
+import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from '@/components/layout';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /** Standaard archief-tab — volledig seizoen met eindstanden */
 const DEFAULT_ARCHIVE_SEASON = '2025-2026';
 
 const ArchiefPage: React.FC = () => {
-  const { data: archives, isLoading, isError, refetch } = useArchives();
+  const { data: archives, isLoading, isError, refetch, isFetched } = useArchives();
   const [selected, setSelected] = useState<string | null>(null);
 
   const seasons = useMemo(() => {
@@ -32,61 +36,73 @@ const ArchiefPage: React.FC = () => {
 
   const active = useMemo(
     () => (archives || []).find((a) => a.season_label === selected) || null,
-    [archives, selected]
+    [archives, selected],
   );
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-16 text-brand-700">
-        <Loader2 className="w-6 h-6 animate-spin mr-2" /> Archief laden...
-      </div>
+      <PublicPage>
+        <PageHeader
+          title="Archief"
+          subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
+        />
+        <Skeleton className="h-10 w-full max-w-xs" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </PublicPage>
     );
   }
 
   if (isError) {
     return (
-      <div className="text-center py-16 bg-white rounded-xl border border-brand-100 space-y-3">
-        <p className="text-brand-800 font-medium">Archief kon niet worden geladen</p>
-        <p className="text-sm text-muted-foreground">
-          Probeer het opnieuw. Als het probleem blijft, neem contact op met de organisatie.
-        </p>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="min-h-[44px] px-4 rounded-md text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 transition-colors"
-        >
-          Opnieuw proberen
-        </button>
-      </div>
+      <PublicPage>
+        <PageHeader
+          title="Archief"
+          subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
+        />
+        <Card className={PUBLIC_CARD_CLASS} role="alert">
+          <CardContent className="py-8 text-center space-y-4">
+            <AlertCircle className="h-8 w-8 mx-auto text-destructive" aria-hidden />
+            <div>
+              <p className="font-medium text-foreground">Archief kon niet worden geladen</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Probeer het opnieuw. Als het probleem blijft, neem contact op met de organisatie.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => void refetch()}
+              className="min-h-[44px]"
+            >
+              Opnieuw proberen
+            </Button>
+          </CardContent>
+        </Card>
+      </PublicPage>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center">
-          <Archive className="w-5 h-5 text-brand-700" />
-        </div>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-900">Archief</h1>
-          <p className="text-sm text-muted-foreground">
-            Eindklassementen, playoffs en bekerwinnaars per seizoen.
-          </p>
-        </div>
-      </div>
+    <PublicPage>
+      <PageHeader
+        title="Archief"
+        subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
+      />
 
-      {seasons.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-brand-100">
-          <Archive className="w-10 h-10 mx-auto text-brand-300 mb-3" />
-          <p className="text-brand-800 font-medium">Nog geen gearchiveerde seizoenen</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Een beheerder kan het huidige seizoen archiveren via de competitie-, playoff- en bekerbeheerpagina.
-          </p>
-        </div>
+      {isFetched && seasons.length === 0 ? (
+        <Card className={PUBLIC_CARD_CLASS}>
+          <CardContent className="py-12 text-center">
+            <Archive className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden />
+            <p className="font-medium text-foreground">Nog geen gearchiveerde seizoenen</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Een beheerder kan het huidige seizoen archiveren via de competitie-, playoff- en bekerbeheerpagina.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <>
           <SeasonSelector seasons={seasons} selected={selected} onSelect={setSelected} />
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <CupWinnerCard
               cup={active?.cup_winner ?? null}
               playoff={active?.playoff ?? null}
@@ -97,7 +113,7 @@ const ArchiefPage: React.FC = () => {
           </div>
         </>
       )}
-    </div>
+    </PublicPage>
   );
 };
 

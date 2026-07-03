@@ -1,13 +1,20 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getRpcSessionArgs } from '@/lib/authSession';
+import { getRpcSessionArgs, getSessionToken } from '@/lib/authSession';
 
 export async function setSuperAdminActingOrganization(
   organizationId: number,
+  sessionToken?: string,
 ): Promise<boolean> {
+  const token = sessionToken ?? getSessionToken();
+  if (!token) {
+    console.error('set_super_admin_acting_organization: geen sessietoken');
+    return false;
+  }
+
   const { data, error } = await supabase.rpc(
     'set_super_admin_acting_organization',
     {
-      ...getRpcSessionArgs(),
+      p_session_token: token,
       p_organization_id: organizationId,
     },
   );

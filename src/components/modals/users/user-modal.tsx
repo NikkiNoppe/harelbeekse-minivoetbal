@@ -6,7 +6,7 @@ import {
 } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 interface TeamOption {
   id: number;
@@ -57,6 +57,7 @@ export const UserModal: React.FC<UserModalProps> = ({
     role: "player_manager",
     selectedTeamId: null
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Memoized initial form data to prevent unnecessary recalculations
   const initialFormData = useMemo((): FormData | null => {
@@ -80,7 +81,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         email: "",
         password: "",
         role: "player_manager",
-        selectedTeamId: teams.length > 0 ? teams[0].id : null
+        selectedTeamId: null
       };
     }
   }, [open, editingUser, teams]);
@@ -90,7 +91,10 @@ export const UserModal: React.FC<UserModalProps> = ({
     if (initialFormData) {
       setFormData(initialFormData);
     }
-  }, [initialFormData]);
+    if (!open) {
+      setShowPassword(false);
+    }
+  }, [initialFormData, open]);
 
   // Memoized input change handler
   const handleInputChange = useCallback((field: keyof FormData, value: string | number | null) => {
@@ -202,11 +206,21 @@ export const UserModal: React.FC<UserModalProps> = ({
   );
 
   // Memoized team label
-  const teamLabel = useMemo(() => (
-    <>
-      Team {isTeamSelectionDisabled && <span className="text-orange-600 text-sm">(niet beschikbaar voor deze rol)</span>}
-    </>
-  ), [isTeamSelectionDisabled]);
+  const teamLabel = useMemo(() => {
+    if (isTeamSelectionDisabled) {
+      return (
+        <>
+          Team{' '}
+          <span className="text-orange-600 text-sm">(niet beschikbaar voor deze rol)</span>
+        </>
+      );
+    }
+    return (
+      <>
+        Team <span className="text-muted-foreground text-sm font-normal">(optioneel)</span>
+      </>
+    );
+  }, [isTeamSelectionDisabled]);
 
   return (
     <AppModal
@@ -265,16 +279,33 @@ export const UserModal: React.FC<UserModalProps> = ({
             <label className="text-brand-dark font-medium">
               {passwordLabel}
             </label>
-            <Input
-              type="password"
-              placeholder={passwordPlaceholder}
-              className="modal__input"
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
-              disabled={isLoading}
-              minLength={6}
-              required={isPasswordRequired}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder={passwordPlaceholder}
+                className="modal__input pr-11"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                disabled={isLoading}
+                minLength={6}
+                required={isPasswordRequired}
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                disabled={isLoading}
+                className="absolute right-0 top-0 flex h-full min-h-[44px] min-w-[44px] items-center justify-center rounded-r-md text-brand-500 transition-colors hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                aria-label={showPassword ? "Wachtwoord verbergen" : "Wachtwoord tonen"}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" aria-hidden />
+                ) : (
+                  <Eye className="h-5 w-5" aria-hidden />
+                )}
+              </button>
+            </div>
           </div>
           
           {/* Role */}

@@ -13,9 +13,10 @@ const TabVisibilityContext = createContext<TabVisibilityContextProps | undefined
 export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { settings, loading } = useTabVisibilitySettings();
+  const isSuperAdmin = user?.isSuperAdmin === true || user?.id === -1;
 
   const isTabVisible = useCallback((tab: TabName | string): boolean => {
-    // Map admin tabs to their public equivalents for tab visibility checks
+    const userRole = resolveVisibilityRole(user, isSuperAdmin);
     const adminToPublicMapping: Record<string, string> = {
       'competition': 'competitie',
       'cup': 'beker',
@@ -49,7 +50,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       // Check role-specific visibility
-      const userRole = getUserRole(user.role);
       const roleVisibility = setting.visibility?.[userRole];
       const isVisible = roleVisibility === true;
       
@@ -67,8 +67,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Special case for match-forms - check if any match forms are visible
     if (tab === 'match-forms') {
       if (!user) return false;
-      
-      const userRole = getUserRole(user.role);
       
       const leagueSetting = settings.find(s => s.setting_name === 'match-forms-league');
       const cupSetting = settings.find(s => s.setting_name === 'match-forms-cup');
@@ -111,8 +109,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         return false;
       }
       
-      const userRole = getUserRole(user.role);
-      
       if (!setting.visibility || typeof setting.visibility !== 'object') {
         if (process.env.NODE_ENV === 'development') {
           console.warn(`[TabVisibility] Setting "teams" has invalid visibility structure:`, setting);
@@ -154,9 +150,6 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         return false;
       }
       
-      // Check role-specific visibility
-      const userRole = getUserRole(user.role);
-      
       // Check if visibility object exists and has the role
       if (!setting.visibility || typeof setting.visibility !== 'object') {
         if (process.env.NODE_ENV === 'development') {
@@ -191,11 +184,8 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       return alwaysVisiblePublicTabs.includes(mappedTab);
     }
 
-    // Determine which role to check
-    const roleToCheck: RoleKey = user ? getUserRole(user.role) : 'public';
-
     // Check role-specific visibility from the new structure
-    const isVisibleForRole = setting.visibility?.[roleToCheck] ?? setting.is_visible;
+    const isVisibleForRole = setting.visibility?.[userRole] ?? setting.is_visible;
 
     if (!isVisibleForRole) {
       return false;
@@ -207,7 +197,7 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     return true;
-  }, [settings, user]);
+  }, [settings, user, isSuperAdmin]);
 
   return (
     <TabVisibilityContext.Provider value={{ isTabVisible, loading }}>
@@ -215,6 +205,16 @@ export const TabVisibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     </TabVisibilityContext.Provider>
   );
 };
+
+// Helper: SuperAdmin volgt admin-zichtbaarheid per tenant (geen bypass).
+function resolveVisibilityRole(
+  user: { role?: string } | null | undefined,
+  isSuperAdmin: boolean,
+): RoleKey {
+  if (!user) return 'public';
+  if (isSuperAdmin) return 'admin';
+  return getUserRole(user.role ?? '');
+}
 
 // Helper function to map user role to RoleKey
 // Normalizes various role names (team_manager, team, manager, etc.) to player_manager

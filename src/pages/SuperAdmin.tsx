@@ -1,6 +1,6 @@
 import React from 'react';
-import { Navigate, useParams } from 'react-router-dom';
-import { SUPERADMIN_ROUTES } from '@/config/routes';
+import { Navigate, useParams, useLocation } from 'react-router-dom';
+import { SUPERADMIN_ROUTES, ADMIN_ROUTES } from '@/config/routes';
 import { isSuperAdminTenantSlug } from '@/config/superAdminTenants';
 import { SuperAdminRoute } from '@/components/common/SuperAdminRoute';
 import {
@@ -18,6 +18,17 @@ export function SuperAdminBeheerRoute() {
     <SuperAdminRoute>
       <SuperAdminOrgHubPage />
     </SuperAdminRoute>
+  );
+}
+
+/** Redirect legacy /superadmin/beheer naar admin-pagina (behoud query). */
+export function SuperAdminBeheerRedirect() {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{ pathname: ADMIN_ROUTES['platform-beheer'], search: location.search }}
+      replace
+    />
   );
 }
 

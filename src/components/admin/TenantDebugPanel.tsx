@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/hooks/useOrganization';
+import { DEFAULT_ORGANIZATION_SLUG } from '@/config/organization';
 import { fetchPublicMatches, fetchPublicTeams } from '@/services/public/publicScheduleFetch';
 import { withOrgQueryKey } from '@/lib/orgQueryKey';
 import { cn } from '@/lib/utils';
@@ -10,13 +12,18 @@ import {
   applyDevOrgSlugToSearch,
   DEV_ORGANIZATION_LABELS,
   DEV_ORGANIZATION_SLUGS,
+  getOrgSlugQueryParam,
   isDevOrgSwitcherEnabled,
   type DevOrganizationSlug,
 } from '@/config/organizationHosts';
+import { DevRoleSwitchButtons } from '@/components/admin/DevRoleSwitchButtons';
 
-const SHOW_DEBUG =
-  import.meta.env.VITE_SHOW_TENANT_DEBUG === 'true' ||
-  import.meta.env.DEV;
+export function isTenantDebugPanelEnabled(): boolean {
+  return (
+    (import.meta.env.VITE_SHOW_TENANT_DEBUG === 'true' || import.meta.env.DEV) &&
+    isDevOrgSwitcherEnabled()
+  );
+}
 
 function DevOrgSwitchButtons({
   activeSlug,
@@ -27,7 +34,7 @@ function DevOrgSwitchButtons({
 }) {
   return (
     <div
-      className="flex flex-wrap items-center gap-2"
+      className="flex flex-nowrap items-center gap-2"
       role="group"
       aria-label="Wissel organisatie (dev)"
     >
@@ -42,7 +49,7 @@ function DevOrgSwitchButtons({
             aria-pressed={isActive}
             aria-current={isActive ? 'true' : undefined}
             className={cn(
-              'min-h-[44px] rounded-md border px-3 py-2 text-xs font-semibold transition-colors',
+              'min-h-[44px] shrink-0 whitespace-nowrap rounded-md border px-3 py-2 text-xs font-semibold transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2',
               isActive
                 ? 'border-brand-600 bg-brand-600 text-white'
@@ -58,8 +65,8 @@ function DevOrgSwitchButtons({
 }
 
 /**
- * Dev-only panel: org-switcher + (admin) hostname, counts.
- * Productie: alleen zichtbaar met VITE_SHOW_TENANT_DEBUG=true.
+ * Dev-only panel: org-switcher (links) + rol-switcher (rechts) + debug-info.
+ * Productie: alleen zichtbaar met VITE_SHOW_TENANT_DEBUG=true én DEV-build.
  */
 export const TenantDebugPanel: React.FC = () => {
   const location = useLocation();
@@ -69,12 +76,23 @@ export const TenantDebugPanel: React.FC = () => {
     hostname,
     organizationId,
     organizationSlug,
-    organization,
     isOrganizationReady,
   } = useOrganization();
 
   const isAdmin = user?.role === 'admin' || user?.id === -1;
-  const showSwitcher = isDevOrgSwitcherEnabled() && isOrganizationReady;
+  const panelEnabled = isTenantDebugPanelEnabled();
+  const effectiveOrgSlug =
+    organizationSlug ||
+    getOrgSlugQueryParam() ||
+    DEFAULT_ORGANIZATION_SLUG;
+
+  useEffect(() => {
+    if (!panelEnabled) return;
+    document.body.classList.add('has-tenant-debug-panel');
+    return () => {
+      document.body.classList.remove('has-tenant-debug-panel');
+    };
+  }, [panelEnabled]);
 
   const countsQuery = useQuery({
     queryKey: withOrgQueryKey(['tenant-debug-counts'], organizationId),
@@ -99,48 +117,61 @@ export const TenantDebugPanel: React.FC = () => {
     });
   };
 
-  if (!SHOW_DEBUG || !showSwitcher) {
+  if (!panelEnabled) {
     return null;
   }
 
-  return (
+  const panel = (
     <aside
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-amber-300 bg-amber-50/95 px-3 py-2 text-xs text-amber-950 shadow-lg safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 z-[200] border-t border-amber-300 bg-amber-50/95 px-3 py-2 text-xs text-amber-950 shadow-lg safe-area-bottom backdrop-blur-sm pointer-events-auto"
       aria-label="Tenant debug"
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
-        <DevOrgSwitchButtons activeSlug={organizationSlug} onSwitch={switchOrg} />
+      <div className="mx-auto flex max-w-7xl items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <DevOrgSwitchButtons activeSlug={effectiveOrgSlug} onSwitch={switchOrg} />
 
-        {isAdmin && (
-          <>
-            <span className="hidden sm:inline text-amber-700" aria-hidden>
-              |
-            </span>
-            <span className="font-semibold">Tenant debug</span>
-            <span>
-              Host: <code className="rounded bg-amber-100 px-1">{hostname}</code>
-            </span>
-            <span>
-              Org: {organization?.name ?? '—'} (
-              <code className="rounded bg-amber-100 px-1">{organizationSlug}</code>, id{' '}
-              {organizationId})
-            </span>
-            {countsQuery.isFetching && (
-              <span className="opacity-70">Counts laden…</span>
-            )}
-            {countsQuery.data && (
-              <span>
-                Teams: {countsQuery.data.teams} · Matches: {countsQuery.data.matches}
-              </span>
-            )}
-            {countsQuery.isError && (
-              <span className="text-red-700">Counts: fout bij laden</span>
-            )}
-          </>
-        )}
+          {isAdmin && (
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="font-semibold">Tenant debug</span>
+                <span>
+                  Host: <code className="rounded bg-amber-100 px-1">{hostname}</code>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>
+                  Org: <code className="rounded bg-amber-100 px-1">{effectiveOrgSlug}</code>, id{' '}
+                  {organizationId ?? '…'}
+                </span>
+                {countsQuery.isFetching && (
+                  <span className="opacity-70">Counts laden…</span>
+                )}
+                {countsQuery.data && (
+                  <span>
+                    Teams: {countsQuery.data.teams} · Matches: {countsQuery.data.matches}
+                  </span>
+                )}
+                {countsQuery.isError && (
+                  <span className="text-red-700">Counts: fout bij laden</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DevRoleSwitchButtons
+          organizationSlug={effectiveOrgSlug}
+          className="shrink-0 self-center"
+        />
       </div>
     </aside>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(panel, document.body);
+  }
+
+  return panel;
 };
 
 export default TenantDebugPanel;

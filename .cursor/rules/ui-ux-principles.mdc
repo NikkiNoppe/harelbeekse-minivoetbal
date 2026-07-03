@@ -1,6 +1,6 @@
 ---
 description: UX-principes — feedback, formulieren, navigatie, leeg/fout-states
-globs: src/components/**/*.tsx,src/pages/**/*.tsx
+globs: src/**/*.tsx
 alwaysApply: false
 ---
 

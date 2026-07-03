@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core/teamService";
 import { useTeamOperations } from "./useTeamOperations";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 
 interface Team {
   team_id: number;
@@ -36,6 +37,7 @@ interface TeamFormData {
 
 export function useTeamsEnhanced() {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -71,7 +73,7 @@ export function useTeamsEnhanced() {
 
   const { loading: operationsLoading, createTeam, updateTeam, deleteTeam } = useTeamOperations(refreshData);
 
-  const fetchTeams = async () => {
+  const fetchTeams = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -87,16 +89,16 @@ export function useTeamsEnhanced() {
         description: error?.message || "Er is een fout opgetreden bij het laden van de teams.",
         variant: "destructive",
       });
-      // Set empty array on error to prevent UI issues
       setTeams([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
   
   useEffect(() => {
-    fetchTeams();
-  }, [toast]);
+    if (!orgQueryEnabled) return;
+    void fetchTeams();
+  }, [organizationId, orgQueryEnabled, fetchTeams]);
 
   const handleEditTeam = (team: Team) => {
     setEditingTeam(team);

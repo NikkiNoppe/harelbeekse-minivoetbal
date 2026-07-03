@@ -1,5 +1,4 @@
-import React, { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useCallback, useMemo } from "react";
 import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -28,13 +27,14 @@ import {
   filterSpeelformatenItems,
 } from "@/config/navigation";
 import { cn } from "@/lib/utils";
+import { isTenantDebugPanelEnabled } from "@/components/admin/TenantDebugPanel";
 
 interface HeaderProps {
   onLogoClick: () => void;
   onLoginClick: () => void;
   activeTab: string;
-  isAuthenticated: boolean;
-  user: { username?: string; email?: string; role?: string } | null;
+  isAuthenticated?: boolean;
+  user?: { username?: string; email?: string; role?: string } | null;
   hasSidebar?: boolean;
 }
 
@@ -61,6 +61,19 @@ interface NavLinkButtonProps {
   variant?: "sheet" | "desktop";
   index?: number;
   animate?: boolean;
+}
+
+interface SheetSection {
+  id: string;
+  title: string;
+  items: NavItem[];
+  collapsible?: boolean;
+}
+
+interface DesktopShortcutSection {
+  id: string;
+  title: string;
+  item: NavItem;
 }
 
 const NavLinkButton: React.FC<NavLinkButtonProps> = ({
@@ -112,15 +125,22 @@ const Header: React.FC<HeaderProps> = ({
   onLogoClick,
   onLoginClick,
   activeTab,
-  isAuthenticated,
-  user,
+  isAuthenticated: isAuthenticatedProp,
+  user: userProp,
   hasSidebar = false,
 }) => {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useOrgAwareNavigate();
-  const { logout, isSuperAdmin } = useAuth();
+  const {
+    user: authUser,
+    logout,
+    isSuperAdmin,
+  } = useAuth();
+  const user = authUser ?? userProp ?? null;
+  const isAuthenticated = authUser ? true : (isAuthenticatedProp ?? false);
   const { isTabVisible } = useTabVisibility();
   const prefersReducedMotion = useReducedMotion();
+  const allowDevPanelInteraction = isTenantDebugPanelEnabled();
 
   const handleLogoClick = useCallback(() => {
     try {
@@ -134,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({
   const isAdmin = normalizedRole === "admin";
   const roleLabel = getRoleLabel(normalizedRole, isAdmin);
 
-  const visiblePublicItems = getOrderedPublicNavItems(isTabVisible);
+  const visiblePublicItems = getOrderedPublicNavItems(isTabVisible, isSuperAdmin);
 
   const filterOpts = {
     isTabVisible,
@@ -154,10 +174,200 @@ const Header: React.FC<HeaderProps> = ({
   const visibleFinancieelItems = isAuthenticated
     ? filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts)
     : [];
-  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin);
+  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin, isTabVisible);
   const visibleSysteemItems = isAuthenticated
     ? filterAdminOnlyItems(HEADER_SYSTEEM_ITEMS, filterOpts)
     : [];
+
+  const wedstrijdenItems = useMemo(() => {
+    const items = [...visibleWedstrijdformulierenItems];
+
+    if (normalizedRole === "referee") {
+      const scheidsrechtersItem = visibleBeheerItems.find((item) => item.key === "scheidsrechters");
+      if (scheidsrechtersItem) {
+        items.push(scheidsrechtersItem);
+      }
+    }
+
+    return items;
+  }, [normalizedRole, visibleBeheerItems, visibleWedstrijdformulierenItems]);
+
+  const mijnPloegItems = useMemo(() => {
+    if (normalizedRole !== "player_manager") {
+      return [];
+    }
+
+    return visibleBeheerItems
+      .filter((item) => item.key === "players" || item.key === "schorsingen")
+      .map((item) =>
+        item.key === "schorsingen"
+          ? { ...item, label: "Mijn schorsingen" }
+          : item,
+      );
+  }, [normalizedRole, visibleBeheerItems]);
+
+  const beheerItems = useMemo(() => {
+    if (!isAdmin && !isSuperAdmin) {
+      return [];
+    }
+
+    const allowedKeys = new Set(["players", "teams", "scheidsrechters", "users", "schorsingen"]);
+    return visibleBeheerItems.filter((item) => allowedKeys.has(item.key));
+  }, [isAdmin, isSuperAdmin, visibleBeheerItems]);
+
+  const sheetSections = useMemo<SheetSection[]>(() => {
+    const sections: SheetSection[] = [];
+
+    if (wedstrijdenItems.length > 0) {
+      sections.push({
+        id: "wedstrijden",
+        title: "Wedstrijden",
+        items: wedstrijdenItems,
+        collapsible: wedstrijdenItems.length > 1,
+      });
+    }
+
+    if (mijnPloegItems.length > 0) {
+      sections.push({
+        id: "mijn-ploeg",
+        title: "Mijn ploeg",
+        items: mijnPloegItems,
+        collapsible: mijnPloegItems.length > 1,
+      });
+    }
+
+    if (beheerItems.length > 0) {
+      sections.push({
+        id: "beheer",
+        title: "Beheer",
+        items: beheerItems,
+        collapsible: beheerItems.length > 1,
+      });
+    }
+
+    if (visibleFinancieelItems.length > 0) {
+      sections.push({
+        id: "financieel",
+        title: "Financieel",
+        items: visibleFinancieelItems,
+        collapsible: visibleFinancieelItems.length > 1,
+      });
+    }
+
+    if (visibleSpeelformatenItems.length > 0) {
+      sections.push({
+        id: "planning",
+        title: "Planning",
+        items: visibleSpeelformatenItems,
+        collapsible: visibleSpeelformatenItems.length > 1,
+      });
+    }
+
+    if (visibleSysteemItems.length > 0) {
+      sections.push({
+        id: "platform",
+        title: "Platform",
+        items: visibleSysteemItems,
+        collapsible: visibleSysteemItems.length > 1,
+      });
+    }
+
+    return sections;
+  }, [
+    beheerItems,
+    mijnPloegItems,
+    visibleFinancieelItems,
+    visibleSpeelformatenItems,
+    visibleSysteemItems,
+    wedstrijdenItems,
+  ]);
+  const desktopShortcutSections = useMemo<DesktopShortcutSection[]>(() => {
+    const sections: DesktopShortcutSection[] = [];
+
+    if (wedstrijdenItems.length > 0) {
+      sections.push({
+        id: "wedstrijden",
+        title: "Wedstrijden",
+        item: wedstrijdenItems[0],
+      });
+    }
+
+    if (mijnPloegItems.length > 0) {
+      sections.push({
+        id: "mijn-ploeg",
+        title: "Mijn ploeg",
+        item: mijnPloegItems[0],
+      });
+    }
+
+    if (beheerItems.length > 0) {
+      sections.push({
+        id: "beheer",
+        title: "Beheer",
+        item: beheerItems[0],
+      });
+    }
+
+    if (visibleFinancieelItems.length > 0) {
+      sections.push({
+        id: "financieel",
+        title: "Financieel",
+        item: visibleFinancieelItems[0],
+      });
+    }
+
+    if (visibleSpeelformatenItems.length > 0) {
+      sections.push({
+        id: "planning",
+        title: "Planning",
+        item: visibleSpeelformatenItems[0],
+      });
+    }
+
+    if (visibleSysteemItems.length > 0) {
+      sections.push({
+        id: "platform",
+        title: "Platform",
+        item: visibleSysteemItems[0],
+      });
+    }
+
+    return sections.slice(0, 3);
+  }, [
+    beheerItems,
+    mijnPloegItems,
+    visibleFinancieelItems,
+    visibleSpeelformatenItems,
+    visibleSysteemItems,
+    wedstrijdenItems,
+  ]);
+
+  /** Remount nav bij dev-rolwissel zodat menu direct ververst (Accordion defaultValue is anders sticky). */
+  const navSessionKey = useMemo(
+    () =>
+      [
+        isAuthenticated ? "in" : "out",
+        isSuperAdmin ? "sa" : "user",
+        normalizedRole,
+        user?.id ?? "guest",
+        user?.username ?? "",
+      ].join(":"),
+    [isAuthenticated, isSuperAdmin, normalizedRole, user?.id, user?.username],
+  );
+
+  const accordionDefaultValue = useMemo(() => {
+    return sheetSections
+      .filter((section) => section.collapsible)
+      .map((section) => section.id);
+  }, [sheetSections]);
+  const collapsibleSections = useMemo(
+    () => sheetSections.filter((section) => section.collapsible),
+    [sheetSections],
+  );
+  const staticSections = useMemo(
+    () => sheetSections.filter((section) => !section.collapsible),
+    [sheetSections],
+  );
 
   const navigateToTab = (key: string) => {
     setIsSheetOpen(false);
@@ -195,6 +405,46 @@ const Header: React.FC<HeaderProps> = ({
     </div>
   );
 
+  const renderSectionItems = (items: NavItem[]) => (
+    <motion.div
+      className="space-y-2"
+      variants={prefersReducedMotion ? undefined : menuContainerVariants}
+      initial={prefersReducedMotion ? false : "hidden"}
+      animate={prefersReducedMotion ? false : "show"}
+    >
+      {items.map((item, index) => (
+        <NavLinkButton
+          key={`${item.key}-${item.label}-${index}`}
+          item={item}
+          isActive={activeTab === item.key}
+          onNavigate={navigateToTab}
+          index={index}
+        />
+      ))}
+    </motion.div>
+  );
+
+  const renderSheetSection = (section: SheetSection) => {
+    if (!section.collapsible) {
+      return (
+        <div key={section.id}>
+          {renderNavGroup(section.title, section.items)}
+        </div>
+      );
+    }
+
+    return (
+      <AccordionItem key={section.id} value={section.id} className="border-none">
+        <AccordionTrigger className={accordionTriggerClass}>
+          {section.title}
+        </AccordionTrigger>
+        <AccordionContent className="space-y-2 pt-2">
+          {renderSectionItems(section.items)}
+        </AccordionContent>
+      </AccordionItem>
+    );
+  };
+
   return (
     <header className="bg-brand-600 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
       <a
@@ -229,13 +479,41 @@ const Header: React.FC<HeaderProps> = ({
                 ))}
               </nav>
             )}
+            {isAuthenticated && desktopShortcutSections.length > 0 && (
+              <nav
+                className="hidden xl:flex items-center gap-2 min-w-0 overflow-x-auto border-l border-white/20 pl-3"
+                aria-label="Snelle beheerlinks"
+              >
+                {desktopShortcutSections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => navigateToTab(section.item.key)}
+                    aria-current={activeTab === section.item.key ? "page" : undefined}
+                    className={cn(
+                      "inline-flex min-h-[44px] items-center gap-2 rounded-md px-3 py-2 text-sm text-white/85 transition-colors hover:bg-brand-500/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600",
+                      activeTab === section.item.key && "bg-brand-500/60 text-white",
+                    )}
+                  >
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-white/75">
+                      {section.title}
+                    </span>
+                    <span className="font-medium">{section.item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 lg:hidden">
             <Logo onClick={handleLogoClick} />
           </div>
 
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+          <Sheet
+            open={isSheetOpen}
+            onOpenChange={setIsSheetOpen}
+            modal={!allowDevPanelInteraction}
+          >
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -261,6 +539,7 @@ const Header: React.FC<HeaderProps> = ({
 
                 {isAuthenticated && (
                   <button
+                    key={navSessionKey}
                     type="button"
                     className="w-full p-4 bg-brand-200 rounded-xl shadow-sm border border-brand-200 text-left hover:bg-brand-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                     onClick={() => {
@@ -286,6 +565,7 @@ const Header: React.FC<HeaderProps> = ({
               </SheetHeader>
 
               <nav
+                key={navSessionKey}
                 aria-label="Mobiel menu"
                 className="flex-1 min-h-0 overflow-y-auto overscroll-behavior-contain scrollbar-hide px-6 py-4 space-y-6"
               >
@@ -294,137 +574,19 @@ const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 {isAuthenticated && (
-                  <Accordion type="multiple" defaultValue={["wedstrijdformulieren", "beheer"]} className="space-y-2">
-                    {visibleWedstrijdformulierenItems.length > 0 && (
-                      <AccordionItem value="wedstrijdformulieren" className="border-none">
-                        <AccordionTrigger className={accordionTriggerClass}>
-                          Formulieren
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          <motion.div
-                            variants={prefersReducedMotion ? undefined : menuContainerVariants}
-                            initial={prefersReducedMotion ? false : "hidden"}
-                            animate={prefersReducedMotion ? false : "show"}
-                            className="space-y-2"
-                          >
-                            {visibleWedstrijdformulierenItems.map((item, index) => (
-                              <NavLinkButton
-                                key={item.key}
-                                item={item}
-                                isActive={activeTab === item.key}
-                                onNavigate={navigateToTab}
-                                index={index}
-                              />
-                            ))}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
+                  <>
+                    {staticSections.map((section) => renderSheetSection(section))}
+                    {collapsibleSections.length > 0 && (
+                      <Accordion
+                        key={navSessionKey}
+                        type="multiple"
+                        defaultValue={accordionDefaultValue}
+                        className="space-y-2"
+                      >
+                        {collapsibleSections.map((section) => renderSheetSection(section))}
+                      </Accordion>
                     )}
-
-                    {visibleBeheerItems.length > 0 && (
-                      <AccordionItem value="beheer" className="border-none">
-                        <AccordionTrigger className={accordionTriggerClass}>
-                          Beheer
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          <motion.div
-                            variants={prefersReducedMotion ? undefined : menuContainerVariants}
-                            initial={prefersReducedMotion ? false : "hidden"}
-                            animate={prefersReducedMotion ? false : "show"}
-                            className="space-y-2"
-                          >
-                            {visibleBeheerItems.map((item, index) => (
-                              <NavLinkButton
-                                key={`${item.key}-${item.label}-${index}`}
-                                item={item}
-                                isActive={activeTab === item.key}
-                                onNavigate={navigateToTab}
-                                index={index}
-                              />
-                            ))}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )}
-
-                    {visibleFinancieelItems.length > 0 && (
-                      <AccordionItem value="financieel" className="border-none">
-                        <AccordionTrigger className={accordionTriggerClass}>
-                          Financieel
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          <motion.div
-                            variants={prefersReducedMotion ? undefined : menuContainerVariants}
-                            initial={prefersReducedMotion ? false : "hidden"}
-                            animate={prefersReducedMotion ? false : "show"}
-                            className="space-y-2"
-                          >
-                            {visibleFinancieelItems.map((item, index) => (
-                              <NavLinkButton
-                                key={item.key}
-                                item={item}
-                                isActive={activeTab === item.key}
-                                onNavigate={navigateToTab}
-                                index={index}
-                              />
-                            ))}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )}
-
-                    {visibleSpeelformatenItems.length > 0 && (
-                      <AccordionItem value="speelformaten" className="border-none">
-                        <AccordionTrigger className={accordionTriggerClass}>
-                          Speelformaten
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          <motion.div
-                            variants={prefersReducedMotion ? undefined : menuContainerVariants}
-                            initial={prefersReducedMotion ? false : "hidden"}
-                            animate={prefersReducedMotion ? false : "show"}
-                            className="space-y-2"
-                          >
-                            {visibleSpeelformatenItems.map((item, index) => (
-                              <NavLinkButton
-                                key={item.key}
-                                item={item}
-                                isActive={activeTab === item.key}
-                                onNavigate={navigateToTab}
-                                index={index}
-                              />
-                            ))}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )}
-
-                    {visibleSysteemItems.length > 0 && (
-                      <AccordionItem value="instellingen" className="border-none">
-                        <AccordionTrigger className={accordionTriggerClass}>
-                          Instellingen
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2 pt-2">
-                          <motion.div
-                            variants={prefersReducedMotion ? undefined : menuContainerVariants}
-                            initial={prefersReducedMotion ? false : "hidden"}
-                            animate={prefersReducedMotion ? false : "show"}
-                            className="space-y-2"
-                          >
-                            {visibleSysteemItems.map((item, index) => (
-                              <NavLinkButton
-                                key={item.key}
-                                item={item}
-                                isActive={activeTab === item.key}
-                                onNavigate={navigateToTab}
-                                index={index}
-                              />
-                            ))}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    )}
-                  </Accordion>
+                  </>
                 )}
               </nav>
 

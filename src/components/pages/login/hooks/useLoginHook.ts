@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { isLoginError } from "@/lib/loginErrors";
 
 export const useLoginHook = (onLoginSuccess: () => void) => {
   const { toast } = useToast();
@@ -11,19 +12,20 @@ export const useLoginHook = (onLoginSuccess: () => void) => {
   const login = async (usernameOrEmail: string, password: string) => {
     setIsLoading(true);
     try {
-      // Use only the AuthProvider's login method - no double verification
       const loginSuccess = await authLogin(usernameOrEmail, password);
       
       if (loginSuccess) {
         onLoginSuccess();
-      } else {
-        toast({ 
-          title: "Login mislukt", 
-          description: "Gebruikersnaam/e-mail of wachtwoord is incorrect", 
-          variant: "destructive" 
-        });
       }
     } catch (error) {
+      if (isLoginError(error)) {
+        toast({
+          title: "Login mislukt",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
       console.error('Login error:', error);
       toast({ 
         title: "Login mislukt", 

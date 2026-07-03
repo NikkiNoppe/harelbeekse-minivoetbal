@@ -1,121 +1,108 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals";
-import { AppAlertModal } from "@/components/modals";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Settings, Edit, Trash2, Calendar, Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { competitionDataService } from "@/services";
-import { seasonService } from "@/services";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { AppModal, AppAlertModal } from '@/components/modals';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, Edit, Plus, Trash2, Umbrella } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { competitionDataService } from '@/services/competitionDataService';
+import { seasonService } from '@/services/seasonService';
+import type { VacationPeriod } from '@/services/competitionDataService';
+import SlotUnavailabilitySettings from '@/components/pages/admin/settings/components/SlotUnavailabilitySettings';
+import { PUBLIC_CARD_CLASS, PUBLIC_PAGE_CLASS } from '@/components/layout';
+import { cn } from '@/lib/utils';
 
 const VacationsSettings: React.FC = () => {
   const { toast } = useToast();
-  const [vacations, setVacations] = useState<any[]>([]);
+  const [vacations, setVacations] = useState<VacationPeriod[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<VacationPeriod | null>(null);
+  const [deleteItem, setDeleteItem] = useState<VacationPeriod | null>(null);
 
   useEffect(() => {
-    loadVacations();
+    void loadVacations();
   }, []);
 
   const loadVacations = async () => {
     setIsLoading(true);
     try {
-      console.log('\uD83D\uDD04 Loading vacation periods...');
       const vacationsData = await competitionDataService.getVacationPeriods();
-      console.log('\u2705 Vacation periods loaded:', vacationsData);
       setVacations(vacationsData);
-    } catch (error) {
-      console.error('\u274c Error loading vacation periods:', error);
+    } catch {
       toast({
-        title: "Fout",
-        description: "Kon vakantieperiodes niet laden",
-        variant: "destructive",
+        title: 'Fout',
+        description: 'Kon vakantieperiodes niet laden',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEdit = (item: any) => {
+  const handleEdit = (item: VacationPeriod) => {
     setEditingItem({ ...item });
     setIsEditDialogOpen(true);
   };
 
   const handleAdd = () => {
-    const newVacation = {
-      id: Date.now(), // Temporary ID
+    setEditingItem({
+      id: Date.now(),
       name: '',
       start_date: '',
       end_date: '',
-      is_active: true
-    };
-    setEditingItem(newVacation);
+      is_active: true,
+    });
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (item: any) => {
+  const handleDelete = (item: VacationPeriod) => {
     setDeleteItem(item);
     setIsDeleteDialogOpen(true);
   };
 
-  const updateEditingItem = (field: string, value: any) => {
-    setEditingItem(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const updateEditingItem = (field: keyof VacationPeriod, value: string | boolean) => {
+    setEditingItem((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   const handleSave = async () => {
+    if (!editingItem) return;
     setIsLoading(true);
     try {
-      // Get current season data
       const currentData = await seasonService.getSeasonData();
-      
-      // Update vacation periods in season data
-      const updatedVacations = currentData.vacation_periods || [];
-      const existingIndex = updatedVacations.findIndex(v => v.id === editingItem.id);
-      
+      const updatedVacations = [...(currentData.vacation_periods || [])];
+      const existingIndex = updatedVacations.findIndex((v) => v.id === editingItem.id);
+
       if (existingIndex >= 0) {
         updatedVacations[existingIndex] = editingItem;
       } else {
         updatedVacations.push(editingItem);
       }
-      
-      // Save updated season data
+
       const result = await seasonService.saveSeasonData({
         ...currentData,
-        vacation_periods: updatedVacations
+        vacation_periods: updatedVacations,
       });
-      
+
       if (result.success) {
-        toast({
-          title: "Vakantieperiode opgeslagen",
-          description: result.message,
-        });
-        
+        toast({ title: 'Vakantieperiode opgeslagen', description: result.message });
         setIsEditDialogOpen(false);
         setEditingItem(null);
-        loadVacations(); // Reload data
+        await loadVacations();
       } else {
-        toast({
-          title: "Fout bij opslaan",
-          description: result.message,
-          variant: "destructive"
-        });
+        toast({ title: 'Fout bij opslaan', description: result.message, variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Fout bij opslaan",
-        description: "Kon vakantieperiode niet opslaan",
-        variant: "destructive"
+        title: 'Fout bij opslaan',
+        description: 'Kon vakantieperiode niet opslaan',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -123,218 +110,241 @@ const VacationsSettings: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    if (!deleteItem) return;
     setIsLoading(true);
     try {
-      // Get current season data
       const currentData = await seasonService.getSeasonData();
-      
-      // Remove vacation period from season data
-      const updatedVacations = (currentData.vacation_periods || []).filter(v => v.id !== deleteItem.id);
-      
-      // Save updated season data
+      const updatedVacations = (currentData.vacation_periods || []).filter(
+        (v) => v.id !== deleteItem.id,
+      );
+
       const result = await seasonService.saveSeasonData({
         ...currentData,
-        vacation_periods: updatedVacations
+        vacation_periods: updatedVacations,
       });
-      
+
       if (result.success) {
-        toast({
-          title: "Vakantieperiode verwijderd",
-          description: result.message,
-        });
-        
+        toast({ title: 'Vakantieperiode verwijderd', description: result.message });
         setIsDeleteDialogOpen(false);
         setDeleteItem(null);
-        loadVacations(); // Reload data
+        await loadVacations();
       } else {
-        toast({
-          title: "Fout bij verwijderen",
-          description: result.message,
-          variant: "destructive"
-        });
+        toast({ title: 'Fout bij verwijderen', description: result.message, variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Fout bij verwijderen",
-        description: "Kon vakantieperiode niet verwijderen",
-        variant: "destructive"
+        title: 'Fout bij verwijderen',
+        description: 'Kon vakantieperiode niet verwijderen',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setIsEditDialogOpen(false);
-    setEditingItem(null);
-  };
-
-  const handleDeleteCancel = () => {
-    setIsDeleteDialogOpen(false);
-    setDeleteItem(null);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('nl-NL');
-  };
+  const formatDate = (dateString: string) =>
+    new Date(`${dateString.split('T')[0]}T12:00:00`).toLocaleDateString('nl-BE');
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+    <div className={cn(PUBLIC_PAGE_CLASS)}>
+      <Tabs defaultValue="vacations" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto min-h-[44px] p-1">
+          <TabsTrigger value="vacations" className="min-h-[44px] gap-2">
+            <Umbrella className="h-4 w-4 shrink-0" aria-hidden />
             Vakantieperiodes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Beheer de vakantieperiodes waar geen wedstrijden worden gespeeld.
-              <br />
-              <strong>Let op:</strong> Wijzigingen vereisen een herstart van de applicatie.
-            </p>
+          </TabsTrigger>
+          <TabsTrigger value="slots" className="min-h-[44px] gap-2">
+            <Calendar className="h-4 w-4 shrink-0" aria-hidden />
+            Veld niet beschikbaar
+          </TabsTrigger>
+        </TabsList>
 
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Vakantieperiodes</h3>
-              <Button onClick={handleAdd} className="btn-dark">
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuwe Vakantieperiode
-              </Button>
-            </div>
+        <TabsContent value="vacations" className="mt-4 space-y-4">
+          <Card className={cn(PUBLIC_CARD_CLASS)}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-brand-dark">
+                <Umbrella className="h-5 w-5 text-primary" aria-hidden />
+                Vakantieperiodes
+              </CardTitle>
+              <CardDescription>
+                Hele periodes zonder competitiewedstrijden. De planner slaat deze weken over.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-0">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {vacations.length} {vacations.length === 1 ? 'periode' : 'periodes'} geconfigureerd
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleAdd}
+                  className="min-h-[44px] w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2" aria-hidden />
+                  Nieuwe vakantieperiode
+                </Button>
+              </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Naam</TableHead>
-                  <TableHead>Startdatum</TableHead>
-                  <TableHead>Einddatum</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Acties</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vacations.map((vacation) => (
-                  <TableRow key={vacation.id}>
-                    <TableCell className="font-medium">{vacation.name}</TableCell>
-                    <TableCell>{formatDate(vacation.start_date)}</TableCell>
-                    <TableCell>{formatDate(vacation.end_date)}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        vacation.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {vacation.is_active ? 'Actief' : 'Inactief'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-1">
-                        <Button
-                          className="btn btn--icon btn--edit"
-                          onClick={() => handleEdit(vacation)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          className="btn btn--icon btn--danger"
-                          onClick={() => handleDelete(vacation)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+              {vacations.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-primary/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                  Geen vakantieperiodes — alle speelweken zijn in principe beschikbaar.
+                </div>
+              ) : (
+                <div className="overflow-x-auto -mx-1 px-1">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Naam</TableHead>
+                        <TableHead>Start</TableHead>
+                        <TableHead>Eind</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Acties</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vacations.map((vacation) => (
+                        <TableRow key={vacation.id}>
+                          <TableCell className="font-medium">{vacation.name}</TableCell>
+                          <TableCell className="whitespace-nowrap">{formatDate(vacation.start_date)}</TableCell>
+                          <TableCell className="whitespace-nowrap">{formatDate(vacation.end_date)}</TableCell>
+                          <TableCell>
+                            <Badge variant={vacation.is_active ? 'default' : 'secondary'}>
+                              {vacation.is_active ? 'Actief' : 'Inactief'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="min-h-[44px] min-w-[44px]"
+                                aria-label="Bewerken"
+                                onClick={() => handleEdit(vacation)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="min-h-[44px] min-w-[44px] text-destructive"
+                                aria-label="Verwijderen"
+                                onClick={() => handleDelete(vacation)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Edit Dialog */}
+        <TabsContent value="slots" className="mt-4">
+          <SlotUnavailabilitySettings />
+        </TabsContent>
+      </Tabs>
+
       <AppModal
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        title={editingItem?.id ? 'Bewerk Vakantieperiode' : 'Nieuwe Vakantieperiode'}
+        title={
+          editingItem && vacations.some((v) => v.id === editingItem.id)
+            ? 'Vakantieperiode bewerken'
+            : 'Nieuwe vakantieperiode'
+        }
         size="sm"
         primaryAction={{
-          label: isLoading ? 'Opslaan...' : 'Opslaan',
-          onClick: handleSave,
-          variant: "primary",
+          label: isLoading ? 'Opslaan…' : 'Opslaan',
+          onClick: () => void handleSave(),
+          variant: 'primary',
           disabled: isLoading,
           loading: isLoading,
         }}
         secondaryAction={{
-          label: "Annuleren",
-          onClick: handleCancel,
-          variant: "secondary",
+          label: 'Annuleren',
+          onClick: () => {
+            setIsEditDialogOpen(false);
+            setEditingItem(null);
+          },
+          variant: 'secondary',
         }}
       >
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="vacationName">Naam</Label>
-            <Input 
-              id="vacationName" 
-              value={editingItem?.name || ''} 
-              onChange={(e) => updateEditingItem('name', e.target.value)}
-              placeholder="Bijv. Kerstvakantie"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="startDate">Startdatum</Label>
-              <Input 
-                id="startDate" 
-                type="date" 
-                value={editingItem?.start_date || ''} 
-                onChange={(e) => updateEditingItem('start_date', e.target.value)}
+        {editingItem ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="vacationName">Naam</Label>
+              <Input
+                id="vacationName"
+                className="min-h-[44px]"
+                value={editingItem.name}
+                onChange={(e) => updateEditingItem('name', e.target.value)}
+                placeholder="Bijv. Kerstvakantie"
               />
             </div>
-            <div>
-              <Label htmlFor="endDate">Einddatum</Label>
-              <Input 
-                id="endDate" 
-                type="date" 
-                value={editingItem?.end_date || ''} 
-                onChange={(e) => updateEditingItem('end_date', e.target.value)}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Startdatum</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  className="min-h-[44px]"
+                  value={editingItem.start_date.split('T')[0]}
+                  onChange={(e) => updateEditingItem('start_date', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">Einddatum</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  className="min-h-[44px]"
+                  value={editingItem.end_date.split('T')[0]}
+                  onChange={(e) => updateEditingItem('end_date', e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 min-h-[44px]">
+              <Switch
+                id="isActive"
+                checked={editingItem.is_active}
+                onCheckedChange={(checked) => updateEditingItem('is_active', checked)}
               />
+              <Label htmlFor="isActive">Actief in planning</Label>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isActive"
-              checked={editingItem?.is_active || false}
-              onCheckedChange={(checked) => updateEditingItem('is_active', checked)}
-            />
-            <Label htmlFor="isActive">Actief</Label>
-          </div>
-        </div>
+        ) : null}
       </AppModal>
 
-      {/* Delete Confirmation Dialog */}
       <AppAlertModal
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        title="Bevestig Verwijdering"
-        description="Weet je zeker dat je deze vakantieperiode wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        title="Vakantieperiode verwijderen?"
+        description="Deze actie kan niet ongedaan worden gemaakt."
         confirmAction={{
-          label: isLoading ? 'Verwijderen...' : 'Verwijderen',
-          onClick: handleDeleteConfirm,
-          variant: "destructive",
+          label: isLoading ? 'Verwijderen…' : 'Verwijderen',
+          onClick: () => void handleDeleteConfirm(),
+          variant: 'destructive',
           disabled: isLoading,
           loading: isLoading,
         }}
         cancelAction={{
-          label: "Annuleren",
-          onClick: handleDeleteCancel,
-          variant: "secondary",
+          label: 'Annuleren',
+          onClick: () => {
+            setIsDeleteDialogOpen(false);
+            setDeleteItem(null);
+          },
+          variant: 'secondary',
         }}
       />
-    </>
+    </div>
   );
 };
 
-export default VacationsSettings; 
+export default VacationsSettings;

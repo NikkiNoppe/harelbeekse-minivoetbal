@@ -1,18 +1,15 @@
 
-import React, { useMemo, type ReactNode } from "react";
+import React, { useMemo, lazy, Suspense, type ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { useAuth } from "@/hooks/useAuth";
 import PlayerPage from "@/components/pages/admin/players/PlayerPage.tsx";
-import SettingsPanel from "@/components/pages/admin/settings/components/SettingsPanel";
-import CompetitionPage from "@/components/pages/admin/competition/CompetitionPage";
 import FinancialPage from "@/components/pages/admin/financial/FinancialPage";
 import UserPage from "@/components/pages/admin/users/UserPage";
 import TeamsPage from "@/components/pages/admin/teams/TeamsPage";
 import MatchesPage from "@/components/pages/admin/matches/MatchesPage";
-import BekerPage from "@/components/pages/admin/beker/components/BekerPage";
-import PlayoffPage from "@/components/pages/admin/AdminPlayoffPage";
 import NotAvailable from "@/components/common/NotAvailable";
 import AlgemeenPage from "@/components/pages/public/information/AlgemeenPage";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
@@ -26,7 +23,23 @@ import { useSuspensionsData } from "@/domains/cards-suspensions";
 import { formatDateForDisplay } from "@/lib/dateUtils";
 import { Ban } from "lucide-react";
 
-type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification";
+const SettingsPanel = lazy(
+  () => import("@/components/pages/admin/settings/components/SettingsPanel"),
+);
+const CompetitionPage = lazy(
+  () => import("@/components/pages/admin/competition/CompetitionPage"),
+);
+const BekerPage = lazy(
+  () => import("@/components/pages/admin/beker/components/BekerPage"),
+);
+const PlayoffPage = lazy(() => import("@/components/pages/admin/AdminPlayoffPage"));
+const SuperAdminOrgHubPage = lazy(() =>
+  import("@/components/pages/superadmin/SuperAdminOrgHubPage").then((m) => ({
+    default: m.SuperAdminOrgHubPage,
+  })),
+);
+
+type TabName = "match-forms" | "match-forms-league" | "match-forms-cup" | "match-forms-playoffs" | "players" | "teams" | "users" | "competition" | "playoffs" | "financial" | "settings" | "platform-beheer" | "cup" | "suspensions" | "schorsingen" | "polls" | "scheidsrechters" | "blog-management" | "notification";
 
 interface AdminDashboardProps {
   activeTab: TabName;
@@ -44,7 +57,17 @@ const LazyTabContent = ({
   children: ReactNode;
 }) => (
   <TabsContent value={value} className="mt-0">
-    {activeTab === value ? children : null}
+    {activeTab === value ? (
+      <Suspense
+        fallback={
+          <div className="flex min-h-[40vh] items-center justify-center py-12">
+            <LoadingSpinner />
+          </div>
+        }
+      >
+        {children}
+      </Suspense>
+    ) : null}
   </TabsContent>
 );
 
@@ -213,6 +236,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 <LazyTabContent value="settings" activeTab={activeTab}>
                   <SettingsPanel />
+                </LazyTabContent>
+
+                <LazyTabContent value="platform-beheer" activeTab={activeTab}>
+                  <SuperAdminOrgHubPage embedded />
                 </LazyTabContent>
 
                 <LazyTabContent value="blog-management" activeTab={activeTab}>
