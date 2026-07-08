@@ -3,7 +3,8 @@ import { useTabVisibilitySettings, RoleKey } from "@/hooks/useTabVisibilitySetti
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
+import { SectionAccordionItem } from "@/components/layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Users, Shield, UserCog, Globe, ClipboardList, Settings, DollarSign, Cog, Trophy } from "lucide-react";
 
@@ -258,19 +259,23 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </CardHeader>
 
       <CardContent className="px-2 sm:px-6">
-        <Accordion type="multiple" defaultValue={TAB_GROUPS.map(g => g.id)} className="space-y-2 sm:space-y-4">
+        <Accordion type="multiple" defaultValue={TAB_GROUPS.map(g => g.id)} className="space-y-3">
           {TAB_GROUPS.map(group => (
-            <AccordionItem key={group.id} value={group.id} className="border rounded-lg px-2 sm:px-4">
-              <AccordionTrigger className="hover:no-underline py-2 sm:py-4">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <group.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                  <div className="text-left">
-                    <div className="font-semibold text-sm sm:text-base">{group.title}</div>
-                    <div className="text-xs sm:text-sm text-muted-foreground font-normal hidden sm:block">{group.description}</div>
+            <SectionAccordionItem
+              key={group.id}
+              value={group.id}
+              triggerContent={
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 text-left">
+                  <group.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" aria-hidden />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm sm:text-base truncate">{group.title}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground font-normal hidden sm:block">
+                      {group.description}
+                    </div>
                   </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="pb-2 sm:pb-4">
+              }
+            >
                 {/* Desktop view */}
                 <div className="hidden md:block">
                   {renderGroupTable(group)}
@@ -279,8 +284,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
                 <div className="md:hidden">
                   {renderGroupMobile(group)}
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+            </SectionAccordionItem>
           ))}
         </Accordion>
       </CardContent>

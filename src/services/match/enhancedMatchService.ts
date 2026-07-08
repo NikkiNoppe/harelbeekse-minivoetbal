@@ -123,20 +123,6 @@ export const enhancedMatchService = {
       
       // Use configurable settings or defaults
       const settings = matchFormSettings || MATCH_FORM_DEFAULTS;
-      
-      // Check for late submission
-      let isLateSubmission = false;
-      if (updateData.date && updateData.time) {
-        const now = new Date();
-        const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
-        const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
-        
-        if (userRole === "player_manager") {
-          isLateSubmission = now >= lockThreshold && settings.allow_late_submission;
-        } else if (isAdmin && updateData.forceLatePenaltyTeamIds && updateData.forceLatePenaltyTeamIds.length > 0) {
-          isLateSubmission = true;
-        }
-      }
 
       // --- CHANGED-ONLY PAYLOAD ---
       // Fetch current DB state to only send fields that actually changed.
@@ -151,6 +137,22 @@ export const enhancedMatchService = {
 
       const updateObject: any = {};
       const cur = currentMatch as any; // may be null
+
+      // Late penalty only on first submission (is_submitted false→true), not on edits to an already submitted form
+      const submissionTransition = !!(cur && cur.is_submitted === false && updateData.isCompleted === true);
+
+      let isLateSubmission = false;
+      if (updateData.date && updateData.time) {
+        const now = new Date();
+        const matchDateTime = new Date(`${updateData.date}T${updateData.time}`);
+        const lockThreshold = new Date(matchDateTime.getTime() - settings.lock_minutes_before * 60 * 1000);
+
+        if (userRole === "player_manager") {
+          isLateSubmission = now >= lockThreshold && settings.allow_late_submission && submissionTransition;
+        } else if (isAdmin && updateData.forceLatePenaltyTeamIds && updateData.forceLatePenaltyTeamIds.length > 0) {
+          isLateSubmission = true;
+        }
+      }
 
       // Helper: only add field if value differs from current DB state
       const addIfChanged = (dbField: string, newValue: any) => {
@@ -250,8 +252,6 @@ export const enhancedMatchService = {
         : "Wedstrijd succesvol bijgewerkt";
 
       // FIRE-AND-FORGET: Schedule non-critical side effects without blocking
-      // Detect submission transition: only trigger cost/penalty sync when is_submitted goes false→true
-      const submissionTransition = !!(cur && cur.is_submitted === false && updateData.isCompleted === true);
       const sideEffectData = {
         ...updateData,
         _submissionTransition: submissionTransition

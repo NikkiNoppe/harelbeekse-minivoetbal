@@ -7,21 +7,26 @@ import type { RefereeAssignment } from '@/services/scheidsrechter/types';
 interface AssignedMatchesSectionProps {
   assignments: RefereeAssignment[];
   isLoading: boolean;
+  embedded?: boolean;
 }
 
-export function AssignedMatchesSection({ assignments, isLoading }: AssignedMatchesSectionProps) {
+export function AssignedMatchesSection({ assignments, isLoading, embedded = false }: AssignedMatchesSectionProps) {
   const now = Date.now();
   const upcomingAssignments = assignments.filter(a => {
     const matchDate = a.match_date ? new Date(a.match_date).getTime() : 0;
     return matchDate > now;
   });
 
+  const headingClass = embedded
+    ? "text-sm font-semibold flex items-center gap-2 text-foreground"
+    : "text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]";
+
   if (isLoading) {
     return (
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-          <Shield className="h-5 w-5 text-primary" />
-          Mijn Wedstrijden
+        <h2 className={headingClass}>
+          <Shield className="h-4 w-4 text-primary" />
+          Toegewezen wedstrijden
         </h2>
         <div className="grid gap-3">
           {[1, 2, 3].map(i => (
@@ -35,9 +40,9 @@ export function AssignedMatchesSection({ assignments, isLoading }: AssignedMatch
   if (assignments.length === 0) {
     return (
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-          <Shield className="h-5 w-5 text-primary" />
-          Mijn Wedstrijden
+        <h2 className={headingClass}>
+          <Shield className="h-4 w-4 text-primary" />
+          Toegewezen wedstrijden
         </h2>
 
         <Card className="shadow-[var(--shadow-elevation-1)] border-dashed">
@@ -64,9 +69,9 @@ export function AssignedMatchesSection({ assignments, isLoading }: AssignedMatch
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-          <Shield className="h-5 w-5 text-primary" />
-          Mijn Wedstrijden
+        <h2 className={headingClass}>
+          <Shield className="h-4 w-4 text-primary" />
+          Toegewezen wedstrijden
           <span className="text-sm font-normal text-muted-foreground">
             ({upcomingAssignments.length} komend)
           </span>

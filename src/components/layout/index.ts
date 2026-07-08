@@ -7,4 +7,20 @@ export {
   PUBLIC_SECTION_HEADING_CLASS,
   PUBLIC_CARD_CLASS,
 } from "./public-page";
+export { SectionCollapsibleCard } from "./SectionCollapsibleCard";
+export { SectionAccordionItem } from "./SectionAccordionItem";
+export {
+  ProfileSectionsAccordion,
+  useProfileAccordionItem,
+} from "./ProfileSectionsAccordion";
+export {
+  SECTION_COLLAPSIBLE_SURFACE,
+  SECTION_COLLAPSIBLE_TRIGGER,
+  SECTION_COLLAPSIBLE_CONTENT,
+  SECTION_COLLAPSIBLE_NESTED_TRIGGER,
+  PROFILE_INSET_PANEL,
+  PROFILE_INSET_SECTION,
+  PROFILE_INSET_SECTION_MUTED,
+  PROFILE_SECTION_LABEL,
+} from "./section-collapsible-styles";
 

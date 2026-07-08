@@ -1,7 +1,11 @@
 import React from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PageHeader, PublicPage } from "@/components/layout";
-import { cn } from "@/lib/utils";
+import {
+  SECTION_COLLAPSIBLE_CONTENT,
+  SECTION_COLLAPSIBLE_SURFACE,
+  SECTION_COLLAPSIBLE_TRIGGER,
+} from "@/components/layout/section-collapsible-styles";
 
 const reglement = [
   {
@@ -149,9 +153,6 @@ const reglement = [
   },
 ];
 
-const REGLEMENT_ACCORDION_ITEM_CLASS =
-  "border border-primary/20 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 card-hover bg-card";
-
 const ReglementPage: React.FC = () => {
   return (
     <PublicPage>
@@ -163,18 +164,12 @@ const ReglementPage: React.FC = () => {
             <AccordionItem
               key={h.title}
               value={h.title}
-              className={REGLEMENT_ACCORDION_ITEM_CLASS}
+              className={SECTION_COLLAPSIBLE_SURFACE}
             >
-              <AccordionTrigger
-                className={cn(
-                  "text-base font-semibold px-5 py-4 gap-4",
-                  "text-brand-dark hover:bg-brand-50 data-[state=open]:bg-brand-50",
-                  "transition-colors duration-200 hover:no-underline",
-                )}
-              >
+              <AccordionTrigger className={SECTION_COLLAPSIBLE_TRIGGER}>
                 <span className="text-left flex-1">{h.title}</span>
               </AccordionTrigger>
-              <AccordionContent className="px-5 py-4 text-sm text-card-foreground border-t border-primary/10 bg-card">
+              <AccordionContent className={SECTION_COLLAPSIBLE_CONTENT}>
                 {h.content}
               </AccordionContent>
             </AccordionItem>

@@ -36,17 +36,20 @@ import { MatchFormScoreSection } from "@/components/modals/matches/MatchFormScor
 import { MatchFormSectionCard } from "@/components/modals/matches/MatchFormSectionCard";
 import { MatchFormWedstrijdinfoSection } from "@/components/modals/matches/MatchFormWedstrijdinfoSection";
 import {
+  coerceMatchFormMobileTab,
   getDefaultMatchFormMobileTab,
   getDefaultSectionOpenState,
   getMatchFormRole,
   type MatchFormMobileTab,
 } from "@/components/modals/matches/matchFormLayout";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { normalizeRole } from "@/config/navigation";
 import { fetchMatchTeamsContactForSession } from "@/services/match/matchTeamsContactSessionFetch";
+import { fetchTeamForSession } from "@/services/core/teamsSessionFetch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { withOrgQueryKey } from "@/lib/orgQueryKey";
-import { fetchPublicTeams } from "@/services/public/publicScheduleFetch";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegisterDevMatchFormModal } from "@/context/DevDebugContext";
 import {
   clearSkipAutoMatchCostsForAdmin,
   costNameImpliesMatchCostSuppression,
@@ -72,11 +75,25 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   open,
   onOpenChange,
   match,
-  isAdmin,
-  isReferee,
-  teamId,
-  onComplete
+  teamId: teamIdProp,
+  onComplete,
 }) => {
+  const { user, isAuthenticated } = useAuth();
+  useRegisterDevMatchFormModal(open);
+
+  const normalizedRole = normalizeRole(user?.role ?? "");
+  const isAdmin =
+    isAuthenticated && (normalizedRole === "admin" || user?.id === -1);
+  const isReferee = isAuthenticated && normalizedRole === "referee";
+  const isTeamManager = isAuthenticated && normalizedRole === "player_manager";
+  const teamId = useMemo(() => {
+    if (normalizedRole === "player_manager" && user?.teamId) {
+      return user.teamId;
+    }
+    if (teamIdProp > 0) return teamIdProp;
+    return user?.teamId ?? 0;
+  }, [normalizedRole, user?.teamId, teamIdProp]);
+
   const queryClient = useQueryClient();
   const {
     homeScore,
@@ -114,7 +131,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   const [awayCardsOpen, setAwayCardsOpen] = React.useState(false);
   const [isKaartenOpen, setIsKaartenOpen] = useState(false);
   const [isNotitiesOpen, setIsNotitiesOpen] = useState(false);
-  const [isGegevensOpen, setIsGegevensOpen] = useState(true);
+  const [isGegevensOpen, setIsGegevensOpen] = useState(false);
   // Referee query with robust retry logic
   const { 
     data: referees = [], 
@@ -183,15 +200,37 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     [matchTeamsContact, match.awayTeamId],
   );
 
-  const homeClubColors = useMemo(() => {
-    const fromPublic = publicTeams?.find((team) => team.team_id === match.homeTeamId)?.club_colors;
-    return fromPublic ?? homeTeamInfo?.club_colors ?? null;
-  }, [publicTeams, match.homeTeamId, homeTeamInfo?.club_colors]);
+  const { data: ownTeamKit } = useQuery({
+    queryKey: withOrgQueryKey(["match-form-own-team-kit", teamId], organizationId),
+    enabled: open && orgQueryEnabled && isTeamManager && teamId > 0,
+    staleTime: 0,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: () => fetchTeamForSession(teamId),
+  });
 
-  const awayClubColors = useMemo(() => {
-    const fromPublic = publicTeams?.find((team) => team.team_id === match.awayTeamId)?.club_colors;
-    return fromPublic ?? awayTeamInfo?.club_colors ?? null;
-  }, [publicTeams, match.awayTeamId, awayTeamInfo?.club_colors]);
+  const resolveClubColors = useCallback(
+    (targetTeamId: number, contactColors: string | null | undefined) => {
+      const fromPublic = publicTeams?.find((team) => team.team_id === targetTeamId)?.club_colors;
+      if (fromPublic) return fromPublic;
+      if (contactColors) return contactColors;
+      if (isTeamManager && targetTeamId === teamId && ownTeamKit?.club_colors) {
+        return ownTeamKit.club_colors;
+      }
+      return null;
+    },
+    [publicTeams, isTeamManager, teamId, ownTeamKit?.club_colors],
+  );
+
+  const homeClubColors = useMemo(
+    () => resolveClubColors(match.homeTeamId, homeTeamInfo?.club_colors),
+    [resolveClubColors, match.homeTeamId, homeTeamInfo?.club_colors],
+  );
+
+  const awayClubColors = useMemo(
+    () => resolveClubColors(match.awayTeamId, awayTeamInfo?.club_colors),
+    [resolveClubColors, match.awayTeamId, awayTeamInfo?.club_colors],
+  );
 
   const scoreSectionStyle = useMemo(
     () => getSubtleMatchScoreBackground(homeClubColors, awayClubColors),
@@ -838,7 +877,6 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
 
   const userRole = useMemo(() => (isAdmin ? "admin" : isReferee ? "referee" : "player_manager"), [isAdmin, isReferee]);
-  const isTeamManager = useMemo(() => !isAdmin && !isReferee, [isAdmin, isReferee]);
   const canEditScore = useMemo(() => isAdmin || isReferee, [isAdmin, isReferee]);
   const canEdit = useMemo(() => canEditMatch(match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings?.lock_minutes_before, matchFormSettings?.allow_late_submission), [match.isLocked, match.date, match.time, isAdmin, isReferee, matchFormSettings]);
   const showRefereeFields = useMemo(() => isReferee || isAdmin, [isReferee, isAdmin]);
@@ -859,11 +897,11 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     [match.isLocked, match.date, match.time, match.homeTeamId, match.awayTeamId, teamId, matchFormSettings]
   );
   
-  // Detect if this is a late submission (past lock deadline but allowed)
+  // Late penalty only on first submission after deadline — not when form was already submitted on time
   const isLateSubmission = useMemo(() => {
-    if (!isTeamManager || !matchFormSettings?.allow_late_submission) return false;
+    if (!isTeamManager || !matchFormSettings?.allow_late_submission || match.isCompleted) return false;
     return shouldAutoLockMatch(match.date, match.time, matchFormSettings.lock_minutes_before);
-  }, [isTeamManager, match.date, match.time, matchFormSettings]);
+  }, [isTeamManager, match.isCompleted, match.date, match.time, matchFormSettings]);
 
   const handleComplete = useCallback(() => {
     if (onComplete) {
@@ -1299,16 +1337,25 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     () => getMatchFormRole(isAdmin, isReferee),
     [isAdmin, isReferee],
   );
-  const isMobile = useIsMobile();
   const [mobileTab, setMobileTab] = useState<MatchFormMobileTab>(() =>
-    getDefaultMatchFormMobileTab(formRole),
+    getDefaultMatchFormMobileTab(getMatchFormRole(isAdmin, isReferee)),
   );
+  const activeMobileTab = useMemo(
+    () => coerceMatchFormMobileTab(formRole, mobileTab),
+    [formRole, mobileTab],
+  );
+  const prevFormRoleRef = useRef(formRole);
 
   useEffect(() => {
-    if (open) {
-      setMobileTab(getDefaultMatchFormMobileTab(formRole));
-    }
-  }, [open, formRole]);
+    if (!open) return;
+    setMobileTab(getDefaultMatchFormMobileTab(formRole));
+  }, [open, match.matchId, formRole]);
+
+  useEffect(() => {
+    if (prevFormRoleRef.current === formRole) return;
+    prevFormRoleRef.current = formRole;
+    setMobileTab((current) => coerceMatchFormMobileTab(formRole, current));
+  }, [formRole]);
 
   // Rol-specifieke default open state bij openen modal
   useEffect(() => {
@@ -1327,24 +1374,16 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     setIsFinancieelOpen(defaults.isFinancieelOpen);
   }, [open, formRole, match.homeTeamId, match.awayTeamId, teamId]);
 
-  // Focus: team manager → eerste speler-select; scheids/admin → score
+  // Focus bij openen: invulbare score voor scheids/admin (score-tab is default voor alle rollen)
   useEffect(() => {
-    if (!open || !canActuallyEdit) return;
+    if (!open || !canActuallyEdit || !canEditScore) return;
     const timer = setTimeout(() => {
-      if (isTeamManager) {
-        const ownSide = match.homeTeamId === teamId ? "home" : "away";
-        const section = document.getElementById(`match-form-${ownSide}-players`);
-        const triggers = section?.querySelectorAll<HTMLElement>("[data-match-form-first-player]");
-        const visibleTrigger = triggers
-          ? Array.from(triggers).find((el) => el.offsetParent !== null)
-          : undefined;
-        visibleTrigger?.focus();
-      } else if (canEditScore && !homeScore && !awayScore) {
+      if (!homeScore && !awayScore) {
         document.getElementById("home-score")?.focus();
       }
-    }, isTeamManager ? 250 : 150);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [open, canActuallyEdit, isTeamManager, canEditScore, match.homeTeamId, teamId, homeScore, awayScore]);
+  }, [open, canActuallyEdit, canEditScore, homeScore, awayScore]);
 
   // Memoize referees for performance (now using useRefereesQuery hook above)
   const memoizedReferees = useMemo(() => referees, [referees]);
@@ -1625,74 +1664,14 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       )}
       <MatchFormMobileTabBar
         role={formRole}
-        value={mobileTab}
+        value={activeMobileTab}
         onValueChange={setMobileTab}
       />
       <div className="flex flex-col gap-6">
         <MatchFormSectionShell
-          section="score"
-          role={formRole}
-          mobileTab={mobileTab}
-          isMobile={isMobile}
-        >
-        <MatchFormScoreSection
-          homeTeamName={match.homeTeamName}
-          awayTeamName={match.awayTeamName}
-          homeClubColors={homeClubColors}
-          awayClubColors={awayClubColors}
-          homeColumnStyle={homeColumnStyle}
-          awayColumnStyle={awayColumnStyle}
-          homeTeamContact={homeTeamInfo}
-          awayTeamContact={awayTeamInfo}
-          homeContactEnabled={!isTeamManager || match.homeTeamId !== teamId}
-          awayContactEnabled={!isTeamManager || match.awayTeamId !== teamId}
-          canEditScore={canEditScore}
-          isTeamManager={isTeamManager}
-          displayHomeScore={displayHomeScore}
-          displayAwayScore={displayAwayScore}
-          homeScoreClassName={homeScoreClassName}
-          awayScoreClassName={awayScoreClassName}
-          onHomeScoreChange={setHomeScore}
-          onAwayScoreChange={setAwayScore}
-        />
-        </MatchFormSectionShell>
-
-        <MatchFormSectionShell
-          section="gegevens"
-          role={formRole}
-          mobileTab={mobileTab}
-          isMobile={isMobile}
-        >
-        {/* Basisgegevens */}
-        <div className="space-y-4">
-          <MatchFormWedstrijdinfoSection
-            open={isGegevensOpen}
-            onOpenChange={setIsGegevensOpen}
-            date={matchData.date}
-            time={matchData.time}
-            location={matchData.location}
-            matchday={matchData.matchday || ""}
-            onFieldChange={handleMatchDataChange}
-            isAdmin={isAdmin}
-            isTeamManager={isTeamManager}
-            canEdit={canEdit}
-            refereeSelectValue={refereeSelectValue}
-            selectedReferee={selectedReferee}
-            onRefereeChange={setSelectedReferee}
-            loadingReferees={loadingReferees}
-            referees={memoizedReferees}
-            refereesError={refereesError}
-            onRefetchReferees={refetchReferees}
-            selectedRefereeExists={!!selectedRefereeExists}
-          />
-        </div>
-        </MatchFormSectionShell>
-
-        <MatchFormSectionShell
           section="spelers"
           role={formRole}
-          mobileTab={mobileTab}
-          isMobile={isMobile}
+          mobileTab={activeMobileTab}
         >
         {/* Spelers */}
         <h3 className="text-center text-xl font-semibold text-brand-dark">Spelers</h3>
@@ -1792,10 +1771,66 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
         </MatchFormSectionShell>
 
         <MatchFormSectionShell
+          section="score"
+          role={formRole}
+          mobileTab={activeMobileTab}
+        >
+        <MatchFormScoreSection
+          homeTeamName={match.homeTeamName}
+          awayTeamName={match.awayTeamName}
+          homeClubColors={homeClubColors}
+          awayClubColors={awayClubColors}
+          homeColumnStyle={homeColumnStyle}
+          awayColumnStyle={awayColumnStyle}
+          homeTeamContact={homeTeamInfo}
+          awayTeamContact={awayTeamInfo}
+          homeContactEnabled={!isTeamManager || match.homeTeamId !== teamId}
+          awayContactEnabled={!isTeamManager || match.awayTeamId !== teamId}
+          canEditScore={canEditScore}
+          isTeamManager={isTeamManager}
+          displayHomeScore={displayHomeScore}
+          displayAwayScore={displayAwayScore}
+          homeScoreClassName={homeScoreClassName}
+          awayScoreClassName={awayScoreClassName}
+          onHomeScoreChange={setHomeScore}
+          onAwayScoreChange={setAwayScore}
+        />
+        </MatchFormSectionShell>
+
+        <MatchFormSectionShell
+          section="gegevens"
+          role={formRole}
+          mobileTab={activeMobileTab}
+        >
+        {/* Basisgegevens */}
+        <div className="space-y-4">
+          <MatchFormWedstrijdinfoSection
+            open={isGegevensOpen}
+            onOpenChange={setIsGegevensOpen}
+            date={matchData.date}
+            time={matchData.time}
+            location={matchData.location}
+            matchday={matchData.matchday || ""}
+            onFieldChange={handleMatchDataChange}
+            isAdmin={isAdmin}
+            isTeamManager={isTeamManager}
+            canEdit={canEdit}
+            refereeSelectValue={refereeSelectValue}
+            selectedReferee={selectedReferee}
+            onRefereeChange={setSelectedReferee}
+            loadingReferees={loadingReferees}
+            referees={memoizedReferees}
+            refereesError={refereesError}
+            onRefetchReferees={refetchReferees}
+            selectedRefereeExists={!!selectedRefereeExists}
+          />
+        </div>
+        </MatchFormSectionShell>
+
+        <MatchFormSectionShell
           section="wedstrijd"
           role={formRole}
-          mobileTab={mobileTab}
-          isMobile={isMobile}
+          mobileTab={activeMobileTab}
         >
         {/* Kaarten, Boetes & Notities - Hidden for team managers */}
         {!isTeamManager && (

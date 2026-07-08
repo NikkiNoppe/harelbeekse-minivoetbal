@@ -11,9 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 export const usePlayerOperations = (
   selectedTeam: number | null, 
   refreshPlayers: () => Promise<void>,
-  setEditDialogOpen?: (open: boolean) => void
+  setEditDialogOpen?: (open: boolean) => void,
+  rosterSize?: number,
 ) => {
-  const { canEdit, isLocked, lockDate } = usePlayerListLock();
+  const { canEdit, isLocked, lockMessage } = usePlayerListLock();
   const [newPlayer, setNewPlayer] = useState<NewPlayerData>({
     firstName: "",
     lastName: "",
@@ -21,11 +22,11 @@ export const usePlayerOperations = (
   });
   const [editingPlayer, setEditingPlayer] = useState<EditingPlayerData | null>(null);
 
-  const { showLockWarning } = usePlayerLockToast(isLocked, lockDate);
+  const { showLockWarning } = usePlayerLockToast(isLocked, lockMessage);
   const { toast } = useToast();
 
   const { handleAddPlayer } = useAddPlayerOperation(
-    selectedTeam, refreshPlayers, canEdit, showLockWarning, newPlayer, setNewPlayer
+    selectedTeam, refreshPlayers, canEdit, showLockWarning, newPlayer, setNewPlayer, rosterSize
   );
 
   const { handleSaveEditedPlayer } = useEditPlayerOperation(
@@ -46,6 +47,6 @@ export const usePlayerOperations = (
     handleRemovePlayer,
     canEdit,
     isLocked,
-    lockDate
+    lockMessage,
   };
 };

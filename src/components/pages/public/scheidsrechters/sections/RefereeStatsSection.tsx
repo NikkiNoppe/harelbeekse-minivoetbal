@@ -1,14 +1,16 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, CheckCircle2, CalendarRange } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { RefereeAssignment } from '@/services/scheidsrechter/types';
 
 interface RefereeStatsSectionProps {
   assignments: RefereeAssignment[];
   isLoading: boolean;
+  embedded?: boolean;
 }
 
-export function RefereeStatsSection({ assignments, isLoading }: RefereeStatsSectionProps) {
+export function RefereeStatsSection({ assignments, isLoading, embedded = false }: RefereeStatsSectionProps) {
   const stats = useMemo(() => {
     const now = Date.now();
     const total = assignments.length;
@@ -58,12 +60,14 @@ export function RefereeStatsSection({ assignments, isLoading }: RefereeStatsSect
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-        <TrendingUp className="h-5 w-5 text-primary" />
-        Mijn statistieken
-      </h2>
+      {!embedded && (
+        <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
+          <TrendingUp className="h-5 w-5 text-primary" />
+          Mijn statistieken
+        </h2>
+      )}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className={cn("grid gap-3", embedded ? "grid-cols-3" : "grid-cols-3")}>
         {items.map((it) => {
           const Icon = it.icon;
           return (

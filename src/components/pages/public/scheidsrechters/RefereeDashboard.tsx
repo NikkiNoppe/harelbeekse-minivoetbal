@@ -67,6 +67,7 @@ export function RefereeDashboard() {
           clusters={clusters}
           myAvailability={myAvailability}
           onSubmitAvailability={submitAvailability}
+          onBulkSubmitAvailability={submitBulkAvailability}
           isLoading={isLoadingSchedule}
         />
 

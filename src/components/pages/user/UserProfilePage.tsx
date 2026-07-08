@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { 
-  User, Mail, Shield, Users, Trophy, Award, Phone, 
+  User, Mail, Shield, Users, Award, Phone, 
   AlertCircle, MapPin, Calendar, Clock, ArrowRight,
   CheckCircle, Lock, Edit2, Save, X, Loader2, ChevronDown, History,
-  Wallet, MessageSquare, TrendingDown, CreditCard, Download, FileSpreadsheet, FileJson
+  Wallet, MessageSquare, TrendingDown, CreditCard, Download, FileSpreadsheet, FileJson,
+  ClipboardList,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -16,10 +17,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PageHeader } from "@/components/layout";
+import { PageHeader, PublicPage, PublicSectionHeading, PUBLIC_CARD_CLASS, SectionCollapsibleCard, ProfileSectionsAccordion, SECTION_COLLAPSIBLE_NESTED_TRIGGER, useProfileAccordionItem } from "@/components/layout";
+import { FilterSelect } from "@/components/ui/filter-select";
+import { useOrganizationContent } from "@/hooks/useOrganizationContent";
+import { useMinLoadingGate } from "@/hooks/useMinLoadingGate";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUpcomingMatches } from "@/hooks/useUpcomingMatches";
@@ -29,7 +33,6 @@ import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
 import MatchesCard from "@/components/pages/admin/matches/components/MatchesCard";
 import { WedstrijdformulierModal } from "@/components/modals/matches/wedstrijdformulier-modal";
 import { MatchFormData } from "@/components/pages/admin/matches/types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TeamModal } from "@/components/modals";
 import { useToast } from "@/hooks/use-toast";
 import { teamService } from "@/services/core";
@@ -38,20 +41,25 @@ import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTra
 import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import RefereeNotesCard from "./RefereeNotesCard";
+import { ProfileTeamSuspensionsCard } from "./ProfileTeamSuspensionsCard";
+import { ProfileTeamPlayersCard } from "./ProfileTeamPlayersCard";
 import { ProfilePollAdminCollapsible } from "./profile-polls/ProfilePollAdminCollapsible";
 import { ProfilePollRespondentCollapsible } from "./profile-polls/ProfilePollRespondentCollapsible";
-import { useTeamPlayerStats, type PlayerStat } from "@/hooks/useTeamPlayerStats";
 import { rowsToCsv, buildCsvZip } from "@/lib/backupExportUtils";
 import { fetchAdminDatabaseBackupForSession } from "@/services/core/adminBackupSessionFetch";
 import { ColorPreview } from "@/components/common/ColorPreview";
+import { ProfileRefereePlanningCard } from "./ProfileRefereePlanningCard";
+
+const ICON_BUTTON_CLASS =
+  "h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
-  <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
-    <PageHeader title="Profiel" />
+  <PublicPage>
+    <PageHeader title="Mijn Profiel" />
     
     <div className="space-y-4 sm:space-y-6">
-      <Card>
+      <Card className={cn(PUBLIC_CARD_CLASS, "bg-gradient-to-br from-primary/5 to-primary/10")}>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-3 sm:gap-4">
             <Skeleton className="h-12 w-12 sm:h-14 sm:w-14 rounded-full" />
@@ -66,7 +74,7 @@ const ProfileSkeleton = memo(() => (
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardHeader className="pb-3">
           <Skeleton className="h-5 w-40" />
         </CardHeader>
@@ -75,7 +83,7 @@ const ProfileSkeleton = memo(() => (
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardHeader className="pb-3">
           <Skeleton className="h-5 w-32" />
         </CardHeader>
@@ -87,16 +95,17 @@ const ProfileSkeleton = memo(() => (
         </CardContent>
       </Card>
     </div>
-  </div>
+  </PublicPage>
 ));
 
 // Error component
 const ProfileError = memo(() => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   return (
-    <div className="space-y-6 animate-slide-up">
-      <PageHeader title="Profiel" />
-      <Card>
+    <PublicPage>
+      <PageHeader title="Mijn Profiel" />
+      <Card className={PUBLIC_CARD_CLASS}>
         <CardContent className="py-12">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
@@ -104,13 +113,23 @@ const ProfileError = memo(() => {
             <p className="text-muted-foreground mb-6">
               Kon profielgegevens niet laden
             </p>
-            <Button onClick={() => navigate(-1)} variant="outline">
-              Terug
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                onClick={() => {
+                  void queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+                }}
+                className="min-h-[44px]"
+              >
+                Opnieuw proberen
+              </Button>
+              <Button onClick={() => navigate(-1)} variant="outline" className="min-h-[44px]">
+                Terug
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
-    </div>
+    </PublicPage>
   );
 });
 
@@ -206,116 +225,6 @@ const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
   );
 };
 
-// Sort options for player stats
-type PlayerSortOption = 'name' | 'matches' | 'cards';
-
-const sortLabels: Record<PlayerSortOption, string> = {
-  name: 'Naam',
-  matches: 'Wedstrijden',
-  cards: 'Kaarten',
-};
-
-const sortPlayers = (players: PlayerStat[], sortBy: PlayerSortOption): PlayerStat[] => {
-  return [...players].sort((a, b) => {
-    switch (sortBy) {
-      case 'matches':
-        return b.matchCount - a.matchCount || a.last_name.localeCompare(b.last_name);
-      case 'cards':
-        // Red first, then most yellows, then name
-        if (b.redCards !== a.redCards) return b.redCards - a.redCards;
-        if (b.yellowCards !== a.yellowCards) return b.yellowCards - a.yellowCards;
-        return a.last_name.localeCompare(b.last_name);
-      case 'name':
-      default:
-        return a.last_name.localeCompare(b.last_name);
-    }
-  });
-};
-
-// Team Players Overview Content (without Card wrapper, for use inside collapsible)
-const TeamPlayersOverviewContent: React.FC<{ teamId: number }> = memo(({ teamId }) => {
-  const { data: players, isLoading } = useTeamPlayerStats(teamId);
-  const [sortBy, setSortBy] = useState<PlayerSortOption>('matches');
-
-  const sortedPlayers = useMemo(() => {
-    if (!players) return [];
-    return sortPlayers(players, sortBy);
-  }, [players, sortBy]);
-
-  if (isLoading) {
-    return (
-      <CardContent className="pt-0 space-y-2">
-        {[1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </CardContent>
-    );
-  }
-
-  if (!players || players.length === 0) {
-    return (
-      <CardContent className="pt-0">
-        <p className="text-sm text-muted-foreground italic">Geen spelers gevonden</p>
-      </CardContent>
-    );
-  }
-
-  return (
-    <CardContent className="pt-0">
-      {/* Sort + count row */}
-      <div className="flex items-center justify-between mb-3">
-        <Badge variant="outline" className="text-xs">{players.length} spelers</Badge>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Sorteer:</span>
-          <Select value={sortBy} onValueChange={(val) => setSortBy(val as PlayerSortOption)}>
-            <SelectTrigger className="h-7 min-h-[32px] w-[140px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Naam</SelectItem>
-              <SelectItem value="matches">Wedstrijden</SelectItem>
-              <SelectItem value="cards">Kaarten</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="divide-y divide-border/50">
-        {sortedPlayers.map((player) => (
-          <div
-            key={player.player_id}
-            className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-          >
-            <span className="text-sm font-medium text-foreground truncate mr-3">
-              {player.last_name}, {player.first_name}
-            </span>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              {/* Yellow cards */}
-              {player.yellowCards > 0 && (
-                <span className="flex items-center gap-1 text-xs" title="Gele kaarten">
-                  <span className="w-3 h-4 rounded-[2px] bg-yellow-400 inline-block" />
-                  <span className="font-medium text-foreground">{player.yellowCards}</span>
-                </span>
-              )}
-              {/* Red cards */}
-              {player.redCards > 0 && (
-                <span className="flex items-center gap-1 text-xs" title="Rode kaarten">
-                  <span className="w-3 h-4 rounded-[2px] bg-red-500 inline-block" />
-                  <span className="font-medium text-foreground">{player.redCards}</span>
-                </span>
-              )}
-              {/* Match count */}
-              <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Wedstrijden">
-                <Trophy className="h-3.5 w-3.5" />
-                <span className="font-medium">{player.matchCount}</span>
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </CardContent>
-  );
-});
-TeamPlayersOverviewContent.displayName = 'TeamPlayersOverviewContent';
 // Combined User & Team Info Card Component
 const UserTeamInfoCard: React.FC<{
   user: {
@@ -333,16 +242,6 @@ const UserTeamInfoCard: React.FC<{
   } | null;
   onTeamUpdate?: () => void;
 }> = memo(({ user, team, onTeamUpdate }) => {
-  // Debug: log when component receives new team data
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 UserTeamInfoCard received team update:', {
-        team_id: team?.team_id,
-        club_colors: team?.club_colors,
-        contact_person: team?.contact_person
-      });
-    }
-  }, [team?.team_id, team?.club_colors, team?.contact_person, team?.contact_email, team?.contact_phone]);
   const { user: authUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDownloadingBackup, setIsDownloadingBackup] = useState(false);
@@ -537,7 +436,7 @@ const UserTeamInfoCard: React.FC<{
 
   return (
     <>
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+      <Card className={cn(PUBLIC_CARD_CLASS, "bg-gradient-to-br from-primary/5 to-primary/10")}>
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3 sm:gap-4 flex-1">
@@ -561,8 +460,7 @@ const UserTeamInfoCard: React.FC<{
                     <Button
                       variant="outline"
                       size="icon"
-                      className="border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150"
-                      style={{ height: '32px', width: '32px', minHeight: '32px', maxHeight: '32px', minWidth: '32px', maxWidth: '32px' }}
+                      className={ICON_BUTTON_CLASS}
                       disabled={isDownloadingBackup}
                       title="Database backup downloaden"
                       aria-label="Database backup downloaden"
@@ -588,20 +486,9 @@ const UserTeamInfoCard: React.FC<{
                   variant="outline"
                   size="icon"
                   className={cn(
-                    "border-[var(--color-300)]",
-                    "bg-white hover:bg-brand-50 hover:border-[var(--color-400)]",
-                    "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                    "transition-colors duration-150"
+                    ICON_BUTTON_CLASS,
+                    "border-[var(--color-300)] bg-white hover:bg-brand-50 hover:border-[var(--color-400)] text-brand-dark hover:text-[var(--color-900)]",
                   )}
-                  style={{ 
-                    color: 'var(--accent)',
-                    height: '32px',
-                    width: '32px',
-                    minHeight: '32px',
-                    maxHeight: '32px',
-                    minWidth: '32px',
-                    maxWidth: '32px'
-                  }}
                   onClick={handleEditClick}
                   title="Team gegevens bewerken"
                   aria-label="Team gegevens bewerken"
@@ -614,8 +501,7 @@ const UserTeamInfoCard: React.FC<{
                   variant="outline"
                   size="icon"
                   onClick={() => setDetailsOpen((v) => !v)}
-                  className="border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150"
-                  style={{ height: '32px', width: '32px', minHeight: '32px', maxHeight: '32px', minWidth: '32px', maxWidth: '32px' }}
+                  className={ICON_BUTTON_CLASS}
                   title={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
                   aria-label={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
                   aria-expanded={detailsOpen}
@@ -812,7 +698,9 @@ const NextMatchCard: React.FC<{
   };
   teamName: string;
   onSelectMatch: (match: MatchFormData) => void;
-}> = memo(({ match, teamName, onSelectMatch }) => {
+  /** Geen sectiekop — voor gebruik binnen SectionCollapsibleCard op profiel */
+  embedded?: boolean;
+}> = memo(({ match, teamName, onSelectMatch, embedded = false }) => {
   // Determine home and away team names
   const homeTeam = match.is_home ? teamName : (match.opponent_name || match.away_team_name || '');
   const awayTeam = match.is_home ? (match.opponent_name || match.away_team_name || '') : teamName;
@@ -862,49 +750,53 @@ const NextMatchCard: React.FC<{
     };
     onSelectMatch(matchFormData);
   }, [match, homeTeam, awayTeam, date, time, onSelectMatch]);
-  
-  return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-          Eerstvolgende Wedstrijd
-        </h2>
-      </div>
-      
-      <button
-        onClick={handleClick}
-        className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
-      >
-        <MatchesCard
-          id={undefined}
-          home={homeTeam}
-          away={awayTeam}
-          homeScore={undefined}
-          awayScore={undefined}
-          date={match.match_date}
-          time={time}
-          location={match.location || 'Te bepalen'}
-          status={undefined}
-          badgeSlot={
-            <span className="ml-auto flex items-center gap-2">
-              {match.unique_number && (
-                <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-                  {match.unique_number}
-                </span>
+
+  const matchButton = (
+    <button
+      onClick={handleClick}
+      className="border-none bg-transparent p-0 transition-all duration-200 text-left w-full group hover:shadow-none hover:border-none hover:bg-transparent cursor-pointer"
+    >
+      <MatchesCard
+        id={undefined}
+        home={homeTeam}
+        away={awayTeam}
+        homeScore={undefined}
+        awayScore={undefined}
+        date={match.match_date}
+        time={time}
+        location={match.location || 'Te bepalen'}
+        status={undefined}
+        badgeSlot={
+          <span className="ml-auto flex items-center gap-2">
+            <span
+              className={cn(
+                `${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`,
+                status.label === "Open" && "bg-warning text-black",
               )}
-              <span 
-                className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
-                style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
-              >
-                <StatusIcon className="h-3 w-3 mr-1" />
-                {status.label}
-              </span>
+            >
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {status.label}
             </span>
-          }
-        />
-      </button>
-    </div>
+          </span>
+        }
+      />
+    </button>
+  );
+
+  if (embedded) {
+    return matchButton;
+  }
+
+  return (
+    <section aria-labelledby="next-match-heading" className="space-y-3 sm:space-y-4">
+      <PublicSectionHeading id="next-match-heading">
+        <span className="inline-flex items-center gap-2">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+          Eerstvolgende wedstrijd
+        </span>
+      </PublicSectionHeading>
+      {matchButton}
+    </section>
   );
 });
 NextMatchCard.displayName = 'NextMatchCard';
@@ -912,9 +804,22 @@ NextMatchCard.displayName = 'NextMatchCard';
 // Financial Overview Card - Detailed breakdown for team managers
 const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = memo(({ teamId, teamName }) => {
   const { user } = useAuth();
+  const { profileFinancial } = useOrganizationContent();
+  const {
+    seasonDepositTarget,
+    depositDeadlineLabel,
+    accountHolder,
+    iban,
+    seasonDepositNotice,
+  } = profileFinancial;
   
   // Fetch balance
-  const { data: balanceData, isLoading: balanceLoading } = useQuery({
+  const {
+    data: balanceData,
+    isLoading: balanceLoading,
+    isError: balanceError,
+    refetch: refetchBalance,
+  } = useQuery({
     queryKey: ['teamBalanceProfile', teamId],
     queryFn: async () => {
       const balance = await fetchTeamBalanceForSession(teamId);
@@ -922,11 +827,18 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
       return balance;
     },
     enabled: !!user && !!teamId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
   });
 
   // Fetch transaction breakdown
-  const { data: breakdown, isLoading: breakdownLoading } = useQuery({
+  const {
+    data: breakdown,
+    isLoading: breakdownLoading,
+    isError: breakdownError,
+    refetch: refetchBreakdown,
+  } = useQuery({
     queryKey: ['teamFinancialBreakdown', teamId],
     queryFn: async () => {
       const rows = await fetchTeamTransactionsByTeamId(teamId);
@@ -971,19 +883,52 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
       return { matchCount, fieldCosts, adminCosts, refereeCosts, fines, deposits };
     },
     enabled: !!user && !!teamId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnReconnect: true,
   });
 
   const balance = balanceData ?? 0;
   const isNegative = balance < 0;
-  const isLoading = balanceLoading || breakdownLoading;
+  const hasData = balanceData !== undefined && breakdown !== undefined;
+  const waitingForInitialLoad =
+    !hasData && (balanceLoading || breakdownLoading);
+  const loadingGate = useMinLoadingGate(waitingForInitialLoad);
+  const isError = balanceError || breakdownError;
+  const showSkeleton =
+    !loadingGate.timedOut &&
+    !isError &&
+    (waitingForInitialLoad || !loadingGate.minReady);
+  const showTimeoutError = loadingGate.timedOut && !hasData;
   const fmt = (n: number) => `€${n.toFixed(2)}`;
-  const remainingAmount = balance < 600 ? (600 - balance) : 0;
+  const remainingAmount =
+    balance < seasonDepositTarget ? seasonDepositTarget - balance : 0;
+  const hasPaymentDetails = Boolean(accountHolder && iban);
+
+  const handleRetry = () => {
+    void refetchBalance();
+    void refetchBreakdown();
+  };
+
+  if ((isError || showTimeoutError) && !showSkeleton) {
+    return (
+      <div className="py-4 text-center space-y-3">
+        <p className="text-sm text-muted-foreground">
+          {showTimeoutError
+            ? "Het laden van het financieel overzicht duurt te lang."
+            : "Kon financieel overzicht niet laden."}
+        </p>
+        <Button variant="outline" className="min-h-[44px]" onClick={handleRetry}>
+          Opnieuw proberen
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <CardContent className="pt-0">
-      {isLoading ? (
-        <div className="py-4 space-y-2">
+    <div>
+      {showSkeleton ? (
+        <div className="py-4 space-y-2" aria-busy="true" aria-label="Financieel overzicht laden">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-4 w-3/4" />
         </div>
@@ -1034,41 +979,49 @@ const FinancialOverviewCard: React.FC<{ teamId: number; teamName?: string }> = m
                 Einde seizoen — saldo aanvullen
               </p>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Gelieve tegen <span className="font-medium text-foreground">15 augustus</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€600,00</span>.
-                {balance < 600 ? (
-                  <> U dient nog <span className="font-semibold text-foreground">€{remainingAmount.toFixed(2)}</span> over te maken.</>
+                {seasonDepositNotice ? (
+                  seasonDepositNotice
                 ) : (
-                  <> Uw saldo is reeds boven €600,00 — er is geen extra storting nodig.</>
+                  <>
+                    Gelieve tegen <span className="font-medium text-foreground">{depositDeadlineLabel}</span> uw saldo aan te vullen tot <span className="font-medium text-foreground">€{seasonDepositTarget.toFixed(2)}</span>.
+                    {balance < seasonDepositTarget ? (
+                      <> U dient nog <span className="font-semibold text-foreground">€{remainingAmount.toFixed(2)}</span> over te maken.</>
+                    ) : (
+                      <> Uw saldo is reeds boven €{seasonDepositTarget.toFixed(2)} — er is geen extra storting nodig.</>
+                    )}
+                  </>
                 )}
               </p>
             </div>
             
-            <div className="bg-background/80 rounded border border-primary/15 p-3 space-y-1.5 text-xs sm:text-sm">
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Naam</span>
-                <span className="font-semibold text-foreground text-right">Nikki Noppe</span>
-              </div>
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Rekeningnummer</span>
-                <span className="font-mono font-semibold text-foreground text-right select-all whitespace-nowrap">BE48 6504 6890 7727</span>
-              </div>
-              {balance < 600 && (
+            {hasPaymentDetails && (
+              <div className="bg-background/80 rounded border border-primary/15 p-3 space-y-1.5 text-xs sm:text-sm">
                 <div className="flex justify-between items-center gap-2">
-                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Bedrag</span>
-                  <span className="font-semibold text-foreground text-right select-all whitespace-nowrap">€{remainingAmount.toFixed(2)}</span>
+                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Naam</span>
+                  <span className="font-semibold text-foreground text-right">{accountHolder}</span>
                 </div>
-              )}
-              {teamName && (
                 <div className="flex justify-between items-center gap-2">
-                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Vermelding</span>
-                  <span className="font-semibold text-foreground text-right select-all">{teamName}</span>
+                  <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Rekeningnummer</span>
+                  <span className="font-mono font-semibold text-foreground text-right select-all whitespace-nowrap">{iban}</span>
                 </div>
-              )}
-            </div>
+                {balance < seasonDepositTarget && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Bedrag</span>
+                    <span className="font-semibold text-foreground text-right select-all whitespace-nowrap">€{remainingAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {teamName && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-muted-foreground text-[11px] sm:text-xs shrink-0">Vermelding</span>
+                    <span className="font-semibold text-foreground text-right select-all">{teamName}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
-    </CardContent>
+    </div>
   );
 });
 FinancialOverviewCard.displayName = 'FinancialOverviewCard';
@@ -1137,7 +1090,7 @@ const AdminMessageCardContent: React.FC = memo(() => {
   };
 
   return (
-    <CardContent className="pt-0">
+    <div>
       {isLoading ? (
         <Skeleton className="h-10 w-full" />
       ) : filteredMessages.length > 0 ? (
@@ -1172,7 +1125,7 @@ const AdminMessageCardContent: React.FC = memo(() => {
       ) : (
         <p className="text-sm text-muted-foreground italic py-2">Geen berichten</p>
       )}
-    </CardContent>
+    </div>
   );
 });
 AdminMessageCardContent.displayName = 'AdminMessageCardContent';
@@ -1181,7 +1134,10 @@ AdminMessageCardContent.displayName = 'AdminMessageCardContent';
 const RefereeUpcomingMatches: React.FC<{
   refereeUsername: string;
   onSelectMatch: (match: MatchFormData) => void;
-}> = memo(({ refereeUsername, onSelectMatch }) => {
+  embedded?: boolean;
+  accordionValue?: string;
+  onRequestOpen?: () => void;
+}> = memo(({ refereeUsername, onSelectMatch, embedded = false, accordionValue, onRequestOpen }) => {
   const now = new Date();
   const currentMonth = now.getMonth() + 1; // 1-12
   const currentYear = now.getFullYear();
@@ -1271,43 +1227,36 @@ const RefereeUpcomingMatches: React.FC<{
     return { label: "Open", color: "bg-muted", icon: Clock };
   }, []);
 
-  return (
-    <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-          Komende Wedstrijden
-        </h2>
-        {/* Month Filter - Only current and next month */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={`${selectedMonth}-${selectedYear}`}
-            onValueChange={(value) => {
-              const [month, year] = value.split('-').map(Number);
-              setSelectedMonth(month);
-              setSelectedYear(year);
-            }}
-          >
-            <SelectTrigger className="h-8 min-h-[44px] w-[180px] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableMonths.map((option) => (
-                <SelectItem key={`${option.month}-${option.year}`} value={`${option.month}-${option.year}`}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+  const monthFilterOptions = useMemo(
+    () =>
+      availableMonths.map((option) => ({
+        value: `${option.month}-${option.year}`,
+        label: option.label,
+      })),
+    [availableMonths],
+  );
 
-      {matchesLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      ) : refereeMatches && refereeMatches.length > 0 ? (
+  const monthFilter = (
+    <FilterSelect
+      label="Maand"
+      value={`${selectedMonth}-${selectedYear}`}
+      onValueChange={(value) => {
+        const [month, year] = value.split("-").map(Number);
+        setSelectedMonth(month);
+        setSelectedYear(year);
+      }}
+      options={monthFilterOptions}
+      className="w-full sm:w-[200px]"
+    />
+  );
+
+  const matchesContent = matchesLoading ? (
+    <div className="space-y-3" aria-busy="true">
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-32 w-full" />
+      <span className="sr-only">Wedstrijden laden…</span>
+    </div>
+  ) : refereeMatches && refereeMatches.length > 0 ? (
         (() => {
           // Split into pending (no scores) and completed (has scores)
           const pendingMatches = refereeMatches.filter((match) => 
@@ -1350,14 +1299,11 @@ const RefereeUpcomingMatches: React.FC<{
                             status={undefined}
                             badgeSlot={
                               <span className="ml-auto flex items-center gap-2">
-                                {match.unique_number && (
-                                  <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-                                    {match.unique_number}
-                                  </span>
-                                )}
                                 <span 
-                                  className={`${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`}
-                                  style={status.label === "Open" ? { backgroundColor: 'var(--accent)' } : undefined}
+                                  className={cn(
+                                    `${status.color} text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1`,
+                                    status.label === "Open" && "bg-warning text-black",
+                                  )}
                                 >
                                   <StatusIcon className="h-3 w-3 mr-1" />
                                   {status.label}
@@ -1371,7 +1317,7 @@ const RefereeUpcomingMatches: React.FC<{
                   </div>
                 </div>
               ) : (
-                <Card>
+                <Card className={PUBLIC_CARD_CLASS}>
                   <CardContent className="py-4 text-center">
                     <p className="text-sm text-muted-foreground">
                       Geen openstaande wedstrijden voor {availableMonths.find(m => m.month === selectedMonth && m.year === selectedYear)?.label || `${monthNames[selectedMonth - 1]} ${selectedYear}`}
@@ -1383,7 +1329,7 @@ const RefereeUpcomingMatches: React.FC<{
               {/* Completed matches - collapsible */}
               {completedMatches.length > 0 && (
                 <Collapsible>
-                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
+                  <CollapsibleTrigger className={cn(SECTION_COLLAPSIBLE_NESTED_TRIGGER, "group")}>
                     <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                     <History className="h-3.5 w-3.5" />
                     Afgelopen wedstrijden ({completedMatches.length})
@@ -1411,11 +1357,6 @@ const RefereeUpcomingMatches: React.FC<{
                               status={undefined}
                               badgeSlot={
                                 <span className="ml-auto flex items-center gap-2">
-                                  {match.unique_number && (
-                                    <span className="text-xs font-semibold bg-primary text-white px-1.5 py-0.5 rounded">
-                                      {match.unique_number}
-                                    </span>
-                                  )}
                                   <span className="bg-green-500 text-white text-xs px-2 py-0.5 shadow-sm rounded flex items-center gap-1">
                                     <CheckCircle className="h-3 w-3 mr-1" />
                                     Gespeeld
@@ -1434,7 +1375,7 @@ const RefereeUpcomingMatches: React.FC<{
           );
         })()
       ) : (
-        <Card>
+        <Card className={PUBLIC_CARD_CLASS}>
           <CardContent className="py-6 text-center">
             <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
                 <p className="text-sm text-muted-foreground">
@@ -1442,11 +1383,75 @@ const RefereeUpcomingMatches: React.FC<{
                 </p>
           </CardContent>
         </Card>
-      )}
-    </div>
+      );
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Vul wedstrijdformulieren in voor wedstrijden waar jij scheidsrechter bent.
+          </p>
+          {monthFilter}
+        </div>
+        {matchesContent}
+      </div>
+    );
+  }
+
+  return (
+    <section aria-labelledby="referee-matches-heading" className="space-y-3 sm:space-y-4">
+      <PublicSectionHeading id="referee-matches-heading" action={monthFilter}>
+        <span className="inline-flex items-center gap-2">
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+          Komende wedstrijden
+        </span>
+      </PublicSectionHeading>
+      {matchesContent}
+    </section>
   );
 });
 RefereeUpcomingMatches.displayName = 'RefereeUpcomingMatches';
+
+const ProfileRefereeMatchFormsCard: React.FC<{
+  refereeUsername: string;
+  onSelectMatch: (match: MatchFormData) => void;
+  onRequestOpen?: () => void;
+}> = memo(({ refereeUsername, onSelectMatch, onRequestOpen }) => {
+  const location = useLocation();
+  const isOpen = useProfileAccordionItem("referee-match-forms");
+
+  useEffect(() => {
+    if (location.hash === "#referee-formulieren" || location.hash === "#referee-match-forms") {
+      onRequestOpen?.();
+      const timer = window.setTimeout(() => {
+        document
+          .getElementById("profile-referee-formulieren")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+      return () => window.clearTimeout(timer);
+    }
+  }, [location.hash, onRequestOpen]);
+
+  return (
+    <SectionCollapsibleCard
+      id="profile-referee-formulieren"
+      itemClassName="scroll-mt-24"
+      accordionValue="referee-match-forms"
+      title="Wedstrijdformulieren"
+      icon={ClipboardList}
+    >
+      {isOpen ? (
+        <RefereeUpcomingMatches
+          embedded
+          refereeUsername={refereeUsername}
+          onSelectMatch={onSelectMatch}
+        />
+      ) : null}
+    </SectionCollapsibleCard>
+  );
+});
+ProfileRefereeMatchFormsCard.displayName = 'ProfileRefereeMatchFormsCard';
 
 // Main profile page component
 const UserProfilePage: React.FC = () => {
@@ -1458,6 +1463,11 @@ const UserProfilePage: React.FC = () => {
   // Modal state
   const [selectedMatchForm, setSelectedMatchForm] = useState<MatchFormData | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [profileSection, setProfileSection] = useState<string | undefined>();
+
+  const openProfileSection = useCallback((value: string) => {
+    setProfileSection(value);
+  }, []);
 
   const isAdmin = authUser?.role === "admin";
   const isReferee = authUser?.role === "referee";
@@ -1498,7 +1508,6 @@ const UserProfilePage: React.FC = () => {
     handleDialogClose(true);
   }, [handleDialogClose, queryClient]);
   
-  const hasElevatedPermissions = authUser?.role === "admin" || authUser?.role === "referee";
   const effectiveTeamId = firstTeam?.team_id || authUser?.teamId || 0;
 
   if (isLoading) {
@@ -1520,12 +1529,11 @@ const UserProfilePage: React.FC = () => {
   const { user } = profileData;
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
+    <PublicPage>
       <PageHeader title="Mijn Profiel" />
 
-      {/* Mobile-first layout: Stack cards vertically on mobile */}
+      {/* Profiel accordion (teamverantwoordelijke): komende wedstrijd → spelers → schorsingen → financieel → berichten */}
       <div className="space-y-4 sm:space-y-6">
-        {/* 0. User & Team Info Card - ALTIJD bovenaan */}
         <MemoizedUserTeamInfoCard 
           user={user} 
           team={firstTeam || null}
@@ -1535,170 +1543,115 @@ const UserProfilePage: React.FC = () => {
           }}
         />
 
-        {/* 1. Enquêtes */}
-        <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
-
-        {/* 2. Financial Overview - Collapsible (default open) */}
-        {user.role === 'player_manager' && firstTeam && (
-          <Collapsible defaultOpen>
-            <Card>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
-                      Financieel Overzicht
-                    </CardTitle>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <FinancialOverviewCard teamId={firstTeam.team_id} teamName={firstTeam.team_name} />
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        {/* 3. Admin Messages - Collapsible */}
-        <Collapsible>
-          <Card className="border-primary/20">
-            <CollapsibleTrigger className="w-full">
-              <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-                    Berichten
-                  </CardTitle>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
+        <ProfileSectionsAccordion
+          value={profileSection}
+          onValueChange={setProfileSection}
+        >
+          {user.role === 'player_manager' && firstTeam && (
+            <SectionCollapsibleCard
+              title="Komende wedstrijd"
+              icon={Calendar}
+              accordionValue="next-match"
+            >
+              {matchesLoading ? (
+                <div className="space-y-3" aria-busy="true">
+                  <Skeleton className="h-24 w-full rounded-lg" />
+                  <span className="sr-only">Komende wedstrijd laden…</span>
                 </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <AdminMessageCardContent />
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
+              ) : nextMatch ? (
+                <NextMatchCard
+                  match={nextMatch}
+                  teamName={firstTeam.team_name}
+                  onSelectMatch={handleSelectMatch}
+                  embedded
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Geen komende wedstrijden gepland.
+                </p>
+              )}
+            </SectionCollapsibleCard>
+          )}
 
+          {user.role === 'player_manager' && firstTeam && (
+            <ProfileTeamPlayersCard
+              teamId={firstTeam.team_id}
+              teamName={firstTeam.team_name}
+              onRequestOpen={() => openProfileSection('spelers')}
+            />
+          )}
 
-        {/* Next Match Card - Team managers */}
-        {user.role === 'player_manager' && firstTeam && !matchesLoading && nextMatch && (
-          <NextMatchCard 
-            match={nextMatch} 
-            teamName={firstTeam.team_name}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
+          {user.role === 'player_manager' && firstTeam && (
+            <ProfileTeamSuspensionsCard
+              teamId={firstTeam.team_id}
+              teamName={firstTeam.team_name}
+              onRequestOpen={() => openProfileSection('schorsingen')}
+            />
+          )}
 
-        {/* Referee Upcoming Matches */}
-        {isReferee && authUser?.username && (
-          <RefereeUpcomingMatches
-            refereeUsername={authUser.username}
-            onSelectMatch={handleSelectMatch}
-          />
-        )}
+          {user.role === 'player_manager' && firstTeam && (
+            <SectionCollapsibleCard
+              title="Financieel"
+              icon={Wallet}
+              accordionValue="financial"
+            >
+              <FinancialOverviewCard teamId={firstTeam.team_id} teamName={firstTeam.team_name} />
+            </SectionCollapsibleCard>
+          )}
 
-        {/* Referee Notes Card - Admin only */}
-        {isAdmin && <RefereeNotesCard />}
+          {isReferee && authUser?.username && (
+            <>
+              <ProfileRefereePlanningCard onRequestOpen={() => openProfileSection('referee-planning')} />
+              <ProfileRefereeMatchFormsCard
+                refereeUsername={authUser.username}
+                onSelectMatch={handleSelectMatch}
+                onRequestOpen={() => openProfileSection('referee-match-forms')}
+              />
+            </>
+          )}
 
-        {/* Profielpolls beheer - Admin only */}
-        {isAdmin && <ProfilePollAdminCollapsible />}
+          <SectionCollapsibleCard
+            title="Berichten"
+            icon={MessageSquare}
+            accordionValue="messages"
+          >
+            <AdminMessageCardContent />
+          </SectionCollapsibleCard>
 
-        {/* Additional Teams Section — only for managers with multiple teams */}
+          <ProfilePollRespondentCollapsible enabled={canRespondToPolls} />
+
+          {isAdmin && <RefereeNotesCard accordionValue="referee-notes" />}
+
+          {isAdmin && <ProfilePollAdminCollapsible accordionValue="admin-polls" />}
+        </ProfileSectionsAccordion>
+
         {!isAdmin && managerTeams.length > 1 && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
+          <section aria-labelledby="other-teams-heading" className="space-y-3 sm:space-y-4">
+            <PublicSectionHeading
+              id="other-teams-heading"
+              action={
+                <Badge variant="outline" className="text-xs">
+                  {managerTeams.length - 1}
+                </Badge>
+              }
+            >
+              <span className="inline-flex items-center gap-2">
                 <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                Overige Teams
-              </h2>
-              <Badge variant="outline" className="text-xs">{managerTeams.length - 1}</Badge>
-            </div>
+                Overige teams
+              </span>
+            </PublicSectionHeading>
             
             <div className="space-y-2">
               {managerTeams.slice(1).map((team) => (
-                <Card
-                  key={team.team_id}
-                  className="hover:shadow-md transition-shadow duration-200 border border-[var(--color-200)]"
-                >
-                  <CardContent className="!p-4 !sm:p-5">
+                <Card key={team.team_id} className={PUBLIC_CARD_CLASS}>
+                  <CardContent className="!p-4 sm:!p-5">
                     <ProfileTeamDetails team={team} />
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
-
-        {/* Voorlaatste: Gespeelde wedstrijden per speler - Collapsible */}
-        {user.role === 'player_manager' && firstTeam && (
-          <Collapsible>
-            <Card>
-              <CollapsibleTrigger className="w-full">
-                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-                      Gespeelde wedstrijden per speler
-                    </CardTitle>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 [&[data-state=open]]:rotate-180" />
-                  </div>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <TeamPlayersOverviewContent teamId={firstTeam.team_id} />
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
-        )}
-
-        {/* Laatste: Snelle Acties - Collapsible */}
-        <Collapsible>
-          <Card>
-            <CollapsibleTrigger className="w-full">
-              <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent className="space-y-2 pt-0">
-                {user.role === 'player_manager' && (
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-sm sm:text-base"
-                    onClick={() => navigate('/admin/players')}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Spelers Beheren
-                  </Button>
-                )}
-                {user.role === 'admin' && (
-                  <>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-sm sm:text-base"
-                      onClick={() => navigate('/admin/users')}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      Gebruikers Beheren
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-sm sm:text-base"
-                      onClick={() => navigate('/admin/settings')}
-                    >
-                      <Shield className="h-4 w-4 mr-2" />
-                      Instellingen
-                    </Button>
-                  </>
-                )}
-              </CardContent>
-            </CollapsibleContent>
-          </Card>
-        </Collapsible>
       </div>
       
       {/* Match Form Modal */}
@@ -1718,7 +1671,7 @@ const UserProfilePage: React.FC = () => {
           onComplete={handleFormComplete}
         />
       )}
-    </div>
+    </PublicPage>
   );
 };
 

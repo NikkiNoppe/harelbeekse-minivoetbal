@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SectionCollapsibleCard } from "@/components/layout";
 import { AppAlertModal } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronDown, ChevronRight, Settings, MapPin, Palmtree, Archive } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive } from "lucide-react";
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -799,12 +799,12 @@ const AdminPlayoffPage: React.FC = () => {
 
               {/* Mobile: Collapsible advanced options */}
               <div className="sm:hidden">
-                <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg">
-                    <span className="text-sm font-medium">Geavanceerde Opties</span>
-                    <ChevronDown className={cn("w-4 h-4 transition-transform", advancedOpen && "rotate-180")} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-3">
+                <SectionCollapsibleCard
+                  title="Geavanceerde opties"
+                  open={advancedOpen}
+                  onOpenChange={setAdvancedOpen}
+                  contentClassName="space-y-3"
+                >
                     <div className="space-y-1.5">
                       <Label className="text-xs">Top Playoff Teams</Label>
                       <Select value={topTeamCount.toString()} onValueChange={v => setTopTeamCount(parseInt(v))}>
@@ -839,8 +839,7 @@ const AdminPlayoffPage: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                </SectionCollapsibleCard>
               </div>
 
               {/* Desktop: Grid layout for advanced options */}

@@ -28,11 +28,7 @@ App layout
 
 ### Pagina-wrapper (standaard)
 
-```tsx
-<div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
-  {/* secties */}
-</div>
-```
+Gebruik `PublicPage` uit `@/components/layout` (exporteert `PUBLIC_PAGE_CLASS` met `motion-safe:animate-slide-up`).
 
 ### Card-sectie (standaard)
 
@@ -109,6 +105,8 @@ Thema via `useThemeColorsInit` + `application_settings.theme_colors` per org.
 | Voorbeeld | Bestand |
 |-----------|---------|
 | Publieke pagina + cards | `CompetitiePage.tsx`, `AlgemeenPage` |
+| Ingelogde pagina (profiel) | `UserProfilePage.tsx`, `SectionCollapsibleCard.tsx` |
+| Inklapbare sectie (reglement-profiel) | `section-collapsible-styles.ts`, `ReglementPage.tsx` |
 | Admin settings | `SettingsPage.tsx` |
 | Modal met data | `useTeamFinancialDetailModal.ts` |
 | Header/nav | `Header.tsx` |

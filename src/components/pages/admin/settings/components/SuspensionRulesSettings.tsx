@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Trash2, Plus, Save, ShieldAlert, ChevronDown } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Trash2, Plus, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -32,7 +31,6 @@ export const SuspensionRulesSettings: React.FC = () => {
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadRules();
@@ -176,45 +174,21 @@ export const SuspensionRulesSettings: React.FC = () => {
   }
 
   return (
-    <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-2 text-2xl font-semibold leading-none tracking-tight text-left text-inherit hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md -m-1 p-1"
-                aria-expanded={settingsOpen}
-                aria-controls="suspension-rules-settings-panel"
-                id="suspension-rules-settings-trigger"
-              >
-                <ChevronDown
-                  className={cn(
-                    "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
-                    settingsOpen ? "rotate-0" : "-rotate-90"
-                  )}
-                  aria-hidden
-                />
-                <ShieldAlert className="h-5 w-5 text-destructive shrink-0" />
-                Kaarten & Schorsingen
-              </button>
-            </CollapsibleTrigger>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={isSaving || !isDirty}
-              className="btn btn--primary"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Opslaan...' : 'Opslaan'}
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CollapsibleContent id="suspension-rules-settings-panel" role="region" aria-labelledby="suspension-rules-settings-trigger">
-          <CardContent className="space-y-4 pt-0">
-            <p className="text-sm text-muted-foreground">
-              Aanpasbaar tijdens het seizoen. Na opslaan worden de huidige kaarttotalen opnieuw tegen deze regels berekend.
-            </p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Aanpasbaar tijdens het seizoen. Na opslaan worden de huidige kaarttotalen opnieuw tegen deze regels berekend.
+        </p>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={isSaving || !isDirty}
+          className="min-h-[44px] shrink-0"
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {isSaving ? "Opslaan…" : "Opslaan"}
+        </Button>
+      </div>
 
             {/* Yellow Card Rules */}
             <div className="space-y-3">
@@ -343,9 +317,6 @@ export const SuspensionRulesSettings: React.FC = () => {
                 {isSaving ? 'Bezig…' : 'Wijzigingen bewaren'}
               </Button>
             </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+    </div>
   );
 }; 

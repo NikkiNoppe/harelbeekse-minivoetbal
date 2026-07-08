@@ -184,12 +184,11 @@ export const ALL_ROUTES = {
   ...ADMIN_ROUTES,
 } as const;
 
-// SuperAdmin-only routes (speelformaten + instellingen/systeem)
+// SuperAdmin-only routes (speelformaten + platform/systeem)
 export const SUPERADMIN_ONLY_ROUTES = [
   ADMIN_ROUTES.competition,
   ADMIN_ROUTES.cup,
   ADMIN_ROUTES.playoffs,
-  ADMIN_ROUTES.settings,
   ADMIN_ROUTES['platform-beheer'],
   ADMIN_ROUTES['blog-management'],
   ADMIN_ROUTES.notification,
@@ -410,13 +409,13 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   },
   [ADMIN_ROUTES.settings]: {
     title: 'Instellingen',
-    description: 'Beheer applicatie instellingen',
+    description: 'Competitie-, seizoen- en wedstrijdformulier-instellingen per organisatie',
     requiresAuth: true,
     requiresAdmin: true,
   },
   [ADMIN_ROUTES['platform-beheer']]: {
     title: 'Platform beheer',
-    description: 'Beheer organisaties, branding en tenant-configuratie',
+    description: 'Tenants, branding, tab-zichtbaarheid en kleuren (superadmin)',
     requiresAuth: true,
     requiresAdmin: true,
   },

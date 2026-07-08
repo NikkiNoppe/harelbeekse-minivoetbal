@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getRpcSessionArgs } from "@/lib/authSession";
+import { getRpcSessionArgs, getStoredAuthData } from "@/lib/authSession";
 
 export interface MatchFormsRow {
   match_id: number;
@@ -54,6 +54,114 @@ export async function fetchCupMatchesForSession(): Promise<MatchFormsRow[]> {
 
 export async function fetchAllMatchesForSession(): Promise<MatchFormsRow[]> {
   return fetchMatchesForForms(null);
+}
+
+/** Ingediende wedstrijden mét spelers-JSON — werkt ook voor team managers (niet alleen admin). */
+export async function fetchMatchesWithPlayersForCardHistory(
+  teamIds: number[] = [],
+): Promise<MatchFormsRow[]> {
+  const auth = getStoredAuthData();
+  const role = auth?.user?.role?.toLowerCase() ?? "";
+  const isElevated =
+    role === "admin" ||
+    role === "referee" ||
+    auth?.user?.isSuperAdmin === true ||
+    auth?.user?.id === -1;
+
+  const byMatchId = new Map<number, MatchFormsRow>();
+
+  const mergeMatches = (rows: MatchFormsRow[] | null | undefined) => {
+    for (const match of rows ?? []) {
+      if (!match.is_submitted) continue;
+      if (match.home_players == null && match.away_players == null) continue;
+      byMatchId.set(match.match_id, match);
+    }
+  };
+
+  if (isElevated) {
+    mergeMatches(await fetchMatchesForForms(null));
+    return [...byMatchId.values()];
+  }
+
+  const ids = [
+    ...new Set(
+      [
+        ...teamIds.filter((id) => id > 0),
+        ...(auth?.user?.teamId && auth.user.teamId > 0 ? [auth.user.teamId] : []),
+      ],
+    ),
+  ];
+
+  for (const teamId of ids) {
+    const { data, error } = await supabase.rpc("get_matches_for_forms", {
+      ...getRpcSessionArgs(),
+      p_team_id: teamId,
+      p_has_elevated_permissions: false,
+      p_competition_type: null,
+      p_referee_user_id: null,
+      p_referee_username: null,
+    });
+    if (error) throw error;
+    mergeMatches((data ?? []) as MatchFormsRow[]);
+  }
+
+  return [...byMatchId.values()].sort((a, b) =>
+    a.match_date.localeCompare(b.match_date),
+  );
+}
+
+/** Volledige teamkalender voor schorsingsplanning (ook toekomstige wedstrijden zonder spelers-JSON). */
+export async function fetchTeamScheduleForSuspensions(
+  teamIds: number[] = [],
+): Promise<MatchFormsRow[]> {
+  const auth = getStoredAuthData();
+  const role = auth?.user?.role?.toLowerCase() ?? "";
+  const isElevated =
+    role === "admin" ||
+    role === "referee" ||
+    auth?.user?.isSuperAdmin === true ||
+    auth?.user?.id === -1;
+
+  const byMatchId = new Map<number, MatchFormsRow>();
+
+  const mergeMatches = (rows: MatchFormsRow[] | null | undefined) => {
+    for (const match of rows ?? []) {
+      byMatchId.set(match.match_id, match);
+    }
+  };
+
+  if (isElevated) {
+    mergeMatches(await fetchMatchesForForms(null));
+    return [...byMatchId.values()].sort((a, b) =>
+      a.match_date.localeCompare(b.match_date),
+    );
+  }
+
+  const ids = [
+    ...new Set(
+      [
+        ...teamIds.filter((id) => id > 0),
+        ...(auth?.user?.teamId && auth.user.teamId > 0 ? [auth.user.teamId] : []),
+      ],
+    ),
+  ];
+
+  for (const teamId of ids) {
+    const { data, error } = await supabase.rpc("get_matches_for_forms", {
+      ...getRpcSessionArgs(),
+      p_team_id: teamId,
+      p_has_elevated_permissions: false,
+      p_competition_type: null,
+      p_referee_user_id: null,
+      p_referee_username: null,
+    });
+    if (error) throw error;
+    mergeMatches((data ?? []) as MatchFormsRow[]);
+  }
+
+  return [...byMatchId.values()].sort((a, b) =>
+    a.match_date.localeCompare(b.match_date),
+  );
 }
 
 export async function fetchMatchesForMonth(

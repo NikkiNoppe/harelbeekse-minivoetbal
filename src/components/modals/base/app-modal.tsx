@@ -140,6 +140,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
+        data-app-modal-overlay
         data-modal-size={size}
       >
         <div 

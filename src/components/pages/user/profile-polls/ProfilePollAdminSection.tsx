@@ -1,5 +1,4 @@
 import React, { useState, useCallback, forwardRef, useImperativeHandle } from "react";
-import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipboardList, RefreshCw, AlertCircle } from "lucide-react";
@@ -99,7 +98,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
 
     return (
       <>
-        <CardContent className="pt-0 space-y-4 min-w-0 overflow-hidden">
+        <div className="space-y-4 min-w-0 overflow-hidden">
           {isFetching && adminPolls.length > 0 && (
             <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
               <RefreshCw className="h-3 w-3 animate-spin" />
@@ -200,7 +199,7 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
               )}
             </div>
           )}
-        </CardContent>
+        </div>
 
         <CreateProfilePollModal
           isOpen={modalOpen}

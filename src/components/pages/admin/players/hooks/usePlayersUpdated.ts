@@ -37,7 +37,7 @@ export const usePlayersUpdated = () => {
     handleAddPlayer,
     handleSaveEditedPlayer,
     handleRemovePlayer
-  } = usePlayerOperations(selectedTeam, refreshPlayers, setEditDialogOpen);
+  } = usePlayerOperations(selectedTeam, refreshPlayers, setEditDialogOpen, players.length);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleTeamChangeWrapper = useCallback((teamId: number) => {

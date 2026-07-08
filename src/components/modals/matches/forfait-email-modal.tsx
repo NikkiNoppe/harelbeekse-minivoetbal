@@ -3,13 +3,13 @@ import { AppModal } from "@/components/modals/base/app-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { AlertTriangle, Loader2, ChevronDown, Copy, MessageCircle } from "lucide-react";
+import { SectionCollapsibleCard } from "@/components/layout";
 import { supabase } from "@/integrations/supabase/client";
 import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { fetchTeamRecipientsForSession } from "@/services/core/userProfileSessionFetch";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
 import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle, Loader2, Copy, MessageCircle } from "lucide-react";
 
 const DEFAULT_RECIPIENTS = [
   "noppe.nikki@icloud.com",
@@ -353,61 +353,47 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
           };
 
           return (
-            <Collapsible
+            <SectionCollapsibleCard
+              title={
+                <span className="flex flex-col gap-0.5 min-w-0 text-left">
+                  <span>WhatsApp / copy bericht</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Kant-en-klare tekst om door te sturen via WhatsApp.
+                  </span>
+                </span>
+              }
               open={waOpen}
               onOpenChange={setWaOpen}
-              className="rounded-xl border border-border bg-card shadow-sm"
+              contentClassName="space-y-3"
             >
-              <CollapsibleTrigger asChild>
-                <button
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
                   type="button"
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 px-2"
+                  onClick={copyText}
                 >
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-foreground">WhatsApp / copy bericht</div>
-                    <div className="text-xs text-muted-foreground">
-                      Kant-en-klare tekst om door te sturen via WhatsApp.
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                      waOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="space-y-3 border-t border-border p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5 px-2"
-                      onClick={copyText}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Kopieer
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="h-8 gap-1.5 bg-[#25D366] px-2 text-white hover:bg-[#1ebe57]"
-                      onClick={() => window.open(waUrl, "_blank", "noopener,noreferrer")}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      Open WhatsApp
-                    </Button>
-                  </div>
-                  <textarea
-                    readOnly
-                    value={message}
-                    className="min-h-[140px] w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onFocus={(event) => event.currentTarget.select()}
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                  <Copy className="h-3.5 w-3.5" />
+                  Kopieer
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 gap-1.5 bg-[#25D366] px-2 text-white hover:bg-[#1ebe57]"
+                  onClick={() => window.open(waUrl, "_blank", "noopener,noreferrer")}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Open WhatsApp
+                </Button>
+              </div>
+              <textarea
+                readOnly
+                value={message}
+                className="min-h-[140px] w-full resize-y rounded-md border border-border bg-background p-2 font-mono text-xs leading-relaxed text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onFocus={(event) => event.currentTarget.select()}
+              />
+            </SectionCollapsibleCard>
           );
         })()}
       </div>

@@ -30,6 +30,16 @@ export function getMatchFormMobileTabs(role: MatchFormRole): MatchFormMobileTab[
   return ["score", "spelers", "overig"];
 }
 
+/** Zorg dat actieve tab geldig is voor de huidige rol (o.a. na dev-rolwissel). */
+export function coerceMatchFormMobileTab(
+  role: MatchFormRole,
+  tab: MatchFormMobileTab,
+): MatchFormMobileTab {
+  const tabs = getMatchFormMobileTabs(role);
+  if (tabs.includes(tab)) return tab;
+  return getDefaultMatchFormMobileTab(role);
+}
+
 export function getMatchFormMobileTabLabel(tab: MatchFormMobileTab): string {
   return MOBILE_TAB_LABELS[tab];
 }
@@ -69,6 +79,22 @@ export function getSectionDesktopOrder(
   return index >= 0 ? index + 1 : 99;
 }
 
+const DESKTOP_FLEX_ORDER_CLASS: Record<number, string> = {
+  1: "md:order-1",
+  2: "md:order-2",
+  3: "md:order-3",
+  4: "md:order-4",
+};
+
+/** Tailwind flex-order class voor desktop sectievolgorde (statische strings i.v.m. purge). */
+export function getSectionDesktopOrderClass(
+  section: MatchFormDesktopSection,
+  role: MatchFormRole,
+): string {
+  const order = getSectionDesktopOrder(section, role);
+  return DESKTOP_FLEX_ORDER_CLASS[order] ?? "md:order-last";
+}
+
 /** Desktop sectievolgorde per rol */
 export function getDesktopSectionOrder(role: MatchFormRole): MatchFormDesktopSection[] {
   switch (role) {
@@ -96,7 +122,7 @@ export function getDefaultSectionOpenState(
       homeTeamOpen: ownIsHome,
       awayTeamOpen: ownIsAway,
       isKaartenOpen: false,
-      isGegevensOpen: true,
+      isGegevensOpen: false,
       isNotitiesOpen: false,
       isFinancieelOpen: false,
     };
@@ -107,7 +133,7 @@ export function getDefaultSectionOpenState(
       homeTeamOpen: false,
       awayTeamOpen: false,
       isKaartenOpen: true,
-      isGegevensOpen: true,
+      isGegevensOpen: false,
       isNotitiesOpen: false,
       isFinancieelOpen: false,
     };
@@ -117,7 +143,7 @@ export function getDefaultSectionOpenState(
     homeTeamOpen: false,
     awayTeamOpen: false,
     isKaartenOpen: false,
-    isGegevensOpen: true,
+    isGegevensOpen: false,
     isNotitiesOpen: false,
     isFinancieelOpen: false,
   };

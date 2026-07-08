@@ -85,7 +85,7 @@ export const monthScheduleService = {
     return clusterMatchesForMonth(month, rows);
   },
 
-  async getUpcomingClusters(monthsAhead = 2): Promise<ScheduleCluster[]> {
+  async getUpcomingClusters(monthsAhead = 4): Promise<ScheduleCluster[]> {
     const now = new Date();
     const months: string[] = [];
     for (let i = 0; i < monthsAhead; i++) {
@@ -97,10 +97,15 @@ export const monthScheduleService = {
       months.map((m) => this.getClustersForMonth(m)),
     );
 
-    return allClusters.flat().sort((a, b) => {
-      const dateCmp = a.match_date.localeCompare(b.match_date);
-      if (dateCmp !== 0) return dateCmp;
-      return a.location.localeCompare(b.location);
-    });
+    const todayKey = toDateKey(now.toISOString());
+
+    return allClusters
+      .flat()
+      .filter((cluster) => cluster.match_date >= todayKey)
+      .sort((a, b) => {
+        const dateCmp = a.match_date.localeCompare(b.match_date);
+        if (dateCmp !== 0) return dateCmp;
+        return a.location.localeCompare(b.location);
+      });
   },
 };

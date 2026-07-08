@@ -11,7 +11,8 @@ import {
   sortGroupKeys 
 } from "@/lib/matchSortingUtils";
 import { shouldAutoLockMatch } from "@/lib/matchLockUtils";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
+import { SectionAccordionItem } from "@/components/layout";
 
 interface MatchFormListProps {
   matches: MatchFormData[];
@@ -308,26 +309,22 @@ const getGridClassName = (groupKey: string) => {
       className="space-y-3"
     >
       {groupedMatches.sortedGroupKeys.map(groupKey => (
-        <AccordionItem 
+        <SectionAccordionItem
           key={groupKey}
-          value={groupKey} 
-          className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white"
-        >
-          <AccordionTrigger 
-            className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4"
-            style={{ color: 'var(--color-700)' }}
-          >
-            <span className="text-left flex-1">{groupedMatches.groupLabels?.[groupKey] ?? groupKey}</span>
-            {groupedMatches.groupDates?.[groupKey] && (
-              <span className="text-xs font-normal text-muted-foreground ml-auto mr-2">
-                {groupedMatches.groupDates[groupKey]}
+          value={groupKey}
+          triggerContent={
+            <>
+              <span className="text-left flex-1 min-w-0">
+                {groupedMatches.groupLabels?.[groupKey] ?? groupKey}
               </span>
-            )}
-          </AccordionTrigger>
-          <AccordionContent 
-            className="px-5 pb-4 text-card-foreground border-t border-[var(--color-200)]" 
-            style={{ backgroundColor: 'white' }}
-          >
+              {groupedMatches.groupDates?.[groupKey] && (
+                <span className="text-xs font-normal text-muted-foreground shrink-0">
+                  {groupedMatches.groupDates[groupKey]}
+                </span>
+              )}
+            </>
+          }
+        >
             <div className={`grid gap-4 ${getGridClassName(groupKey)}`}>
               {groupedMatches.sortedGroups[groupKey].map(match => {
                 const isTeamManager = userRole === 'player_manager';
@@ -361,8 +358,7 @@ const getGridClassName = (groupKey: string) => {
                 );
               })}
             </div>
-          </AccordionContent>
-        </AccordionItem>
+        </SectionAccordionItem>
       ))}
     </Accordion>
   );

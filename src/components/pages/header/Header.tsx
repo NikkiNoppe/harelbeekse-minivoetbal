@@ -6,25 +6,19 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useAuth } from "@/hooks/useAuth";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, ChevronRight } from "lucide-react";
 import HamburgerIcon from "@/components/ui/hamburger-icon";
 import Logo from "./Logo";
 import { useTabVisibility } from "@/context/TabVisibilityContext";
 import { ADMIN_ROUTES, getPathFromTab } from "@/config/routes";
 import {
   type NavItem,
+  type MobileSheetSection,
   NAV_ROUTE_MAP,
   normalizeRole,
   getRoleLabel,
   getOrderedPublicNavItems,
-  HEADER_WEDSTRIJDFORMULIEREN_ITEMS,
-  HEADER_BEHEER_ITEMS,
-  FINANCIEEL_ITEMS,
-  HEADER_SYSTEEM_ITEMS,
-  filterWedstrijdformulierenItems,
-  filterBeheerItems,
-  filterAdminOnlyItems,
-  filterSpeelformatenItems,
+  getMobileSheetSections,
 } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { isTenantDebugPanelEnabled } from "@/components/admin/TenantDebugPanel";
@@ -54,6 +48,12 @@ const menuItemVariants = {
 const accordionTriggerClass =
   "text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 py-2 min-h-[44px] items-center hover:no-underline";
 
+const superadminAccordionTriggerClass =
+  "text-sm font-semibold text-violet-800 uppercase tracking-wider px-2 py-2 min-h-[44px] items-center hover:no-underline bg-violet-50/80 rounded-lg";
+
+const superadminBadgeClass =
+  "rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800";
+
 interface NavLinkButtonProps {
   item: NavItem;
   isActive: boolean;
@@ -63,12 +63,7 @@ interface NavLinkButtonProps {
   animate?: boolean;
 }
 
-interface SheetSection {
-  id: string;
-  title: string;
-  items: NavItem[];
-  collapsible?: boolean;
-}
+interface SheetSection extends MobileSheetSection {}
 
 interface DesktopShortcutSection {
   id: string;
@@ -152,195 +147,33 @@ const Header: React.FC<HeaderProps> = ({
 
   const normalizedRole = normalizeRole(user?.role || "");
   const isAdmin = normalizedRole === "admin";
-  const roleLabel = getRoleLabel(normalizedRole, isAdmin);
+  const roleLabel = getRoleLabel(normalizedRole, isAdmin, isSuperAdmin);
 
   const visiblePublicItems = getOrderedPublicNavItems(isTabVisible, isSuperAdmin);
 
-  const filterOpts = {
-    isTabVisible,
-    isAdmin,
-    isSuperAdmin,
-    normalizedRole,
-    userRole: user?.role,
-    variant: "header" as const,
-  };
+  const sheetSections = useMemo<SheetSection[]>(
+    () =>
+      getMobileSheetSections({
+        isTabVisible,
+        isAdmin,
+        isSuperAdmin,
+        normalizedRole,
+        userRole: user?.role,
+        isAuthenticated,
+      }),
+    [isTabVisible, isAdmin, isSuperAdmin, normalizedRole, user?.role, isAuthenticated],
+  );
 
-  const visibleWedstrijdformulierenItems = isAuthenticated
-    ? filterWedstrijdformulierenItems(HEADER_WEDSTRIJDFORMULIEREN_ITEMS, filterOpts)
-    : [];
-  const visibleBeheerItems = isAuthenticated
-    ? filterBeheerItems(HEADER_BEHEER_ITEMS, filterOpts)
-    : [];
-  const visibleFinancieelItems = isAuthenticated
-    ? filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts)
-    : [];
-  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin, isTabVisible);
-  const visibleSysteemItems = isAuthenticated
-    ? filterAdminOnlyItems(HEADER_SYSTEEM_ITEMS, filterOpts)
-    : [];
-
-  const wedstrijdenItems = useMemo(() => {
-    const items = [...visibleWedstrijdformulierenItems];
-
-    if (normalizedRole === "referee") {
-      const scheidsrechtersItem = visibleBeheerItems.find((item) => item.key === "scheidsrechters");
-      if (scheidsrechtersItem) {
-        items.push(scheidsrechtersItem);
-      }
-    }
-
-    return items;
-  }, [normalizedRole, visibleBeheerItems, visibleWedstrijdformulierenItems]);
-
-  const mijnPloegItems = useMemo(() => {
-    if (normalizedRole !== "player_manager") {
-      return [];
-    }
-
-    return visibleBeheerItems
-      .filter((item) => item.key === "players" || item.key === "schorsingen")
-      .map((item) =>
-        item.key === "schorsingen"
-          ? { ...item, label: "Mijn schorsingen" }
-          : item,
-      );
-  }, [normalizedRole, visibleBeheerItems]);
-
-  const beheerItems = useMemo(() => {
-    if (!isAdmin && !isSuperAdmin) {
-      return [];
-    }
-
-    const allowedKeys = new Set(["players", "teams", "scheidsrechters", "users", "schorsingen"]);
-    return visibleBeheerItems.filter((item) => allowedKeys.has(item.key));
-  }, [isAdmin, isSuperAdmin, visibleBeheerItems]);
-
-  const sheetSections = useMemo<SheetSection[]>(() => {
-    const sections: SheetSection[] = [];
-
-    if (wedstrijdenItems.length > 0) {
-      sections.push({
-        id: "wedstrijden",
-        title: "Wedstrijden",
-        items: wedstrijdenItems,
-        collapsible: wedstrijdenItems.length > 1,
-      });
-    }
-
-    if (mijnPloegItems.length > 0) {
-      sections.push({
-        id: "mijn-ploeg",
-        title: "Mijn ploeg",
-        items: mijnPloegItems,
-        collapsible: mijnPloegItems.length > 1,
-      });
-    }
-
-    if (beheerItems.length > 0) {
-      sections.push({
-        id: "beheer",
-        title: "Beheer",
-        items: beheerItems,
-        collapsible: beheerItems.length > 1,
-      });
-    }
-
-    if (visibleFinancieelItems.length > 0) {
-      sections.push({
-        id: "financieel",
-        title: "Financieel",
-        items: visibleFinancieelItems,
-        collapsible: visibleFinancieelItems.length > 1,
-      });
-    }
-
-    if (visibleSpeelformatenItems.length > 0) {
-      sections.push({
-        id: "planning",
-        title: "Planning",
-        items: visibleSpeelformatenItems,
-        collapsible: visibleSpeelformatenItems.length > 1,
-      });
-    }
-
-    if (visibleSysteemItems.length > 0) {
-      sections.push({
-        id: "platform",
-        title: "Platform",
-        items: visibleSysteemItems,
-        collapsible: visibleSysteemItems.length > 1,
-      });
-    }
-
-    return sections;
-  }, [
-    beheerItems,
-    mijnPloegItems,
-    visibleFinancieelItems,
-    visibleSpeelformatenItems,
-    visibleSysteemItems,
-    wedstrijdenItems,
-  ]);
   const desktopShortcutSections = useMemo<DesktopShortcutSection[]>(() => {
-    const sections: DesktopShortcutSection[] = [];
-
-    if (wedstrijdenItems.length > 0) {
-      sections.push({
-        id: "wedstrijden",
-        title: "Wedstrijden",
-        item: wedstrijdenItems[0],
-      });
-    }
-
-    if (mijnPloegItems.length > 0) {
-      sections.push({
-        id: "mijn-ploeg",
-        title: "Mijn ploeg",
-        item: mijnPloegItems[0],
-      });
-    }
-
-    if (beheerItems.length > 0) {
-      sections.push({
-        id: "beheer",
-        title: "Beheer",
-        item: beheerItems[0],
-      });
-    }
-
-    if (visibleFinancieelItems.length > 0) {
-      sections.push({
-        id: "financieel",
-        title: "Financieel",
-        item: visibleFinancieelItems[0],
-      });
-    }
-
-    if (visibleSpeelformatenItems.length > 0) {
-      sections.push({
-        id: "planning",
-        title: "Planning",
-        item: visibleSpeelformatenItems[0],
-      });
-    }
-
-    if (visibleSysteemItems.length > 0) {
-      sections.push({
-        id: "platform",
-        title: "Platform",
-        item: visibleSysteemItems[0],
-      });
-    }
-
-    return sections.slice(0, 3);
-  }, [
-    beheerItems,
-    mijnPloegItems,
-    visibleFinancieelItems,
-    visibleSpeelformatenItems,
-    visibleSysteemItems,
-    wedstrijdenItems,
-  ]);
+    return sheetSections
+      .filter((section) => section.items.length > 0)
+      .slice(0, 3)
+      .map((section) => ({
+        id: section.id,
+        title: section.title,
+        item: section.items[0],
+      }));
+  }, [sheetSections]);
 
   /** Remount nav bij dev-rolwissel zodat menu direct ververst (Accordion defaultValue is anders sticky). */
   const navSessionKey = useMemo(
@@ -357,15 +190,12 @@ const Header: React.FC<HeaderProps> = ({
 
   const accordionDefaultValue = useMemo(() => {
     return sheetSections
-      .filter((section) => section.collapsible)
+      .filter((section) => section.collapsible && section.defaultOpen)
       .map((section) => section.id);
   }, [sheetSections]);
-  const collapsibleSections = useMemo(
-    () => sheetSections.filter((section) => section.collapsible),
-    [sheetSections],
-  );
-  const staticSections = useMemo(
-    () => sheetSections.filter((section) => !section.collapsible),
+
+  const firstCollapsibleIndex = useMemo(
+    () => sheetSections.findIndex((section) => section.collapsible),
     [sheetSections],
   );
 
@@ -425,6 +255,9 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   const renderSheetSection = (section: SheetSection) => {
+    const triggerClass =
+      section.variant === "superadmin" ? superadminAccordionTriggerClass : accordionTriggerClass;
+
     if (!section.collapsible) {
       return (
         <div key={section.id}>
@@ -434,9 +267,18 @@ const Header: React.FC<HeaderProps> = ({
     }
 
     return (
-      <AccordionItem key={section.id} value={section.id} className="border-none">
-        <AccordionTrigger className={accordionTriggerClass}>
-          {section.title}
+      <AccordionItem
+        key={section.id}
+        value={section.id}
+        className={cn("border-none", section.variant === "superadmin" && "rounded-lg")}
+      >
+        <AccordionTrigger className={triggerClass}>
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="truncate">{section.title}</span>
+            {section.badge ? (
+              <span className={superadminBadgeClass}>{section.badge}</span>
+            ) : null}
+          </span>
         </AccordionTrigger>
         <AccordionContent className="space-y-2 pt-2">
           {renderSectionItems(section.items)}
@@ -541,24 +383,26 @@ const Header: React.FC<HeaderProps> = ({
                   <button
                     key={navSessionKey}
                     type="button"
-                    className="w-full p-4 bg-brand-200 rounded-xl shadow-sm border border-brand-200 text-left hover:bg-brand-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                    className="w-full min-h-[44px] p-4 bg-brand-200 rounded-xl shadow-sm border border-brand-200 text-left hover:bg-brand-300/80 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
                     onClick={() => {
                       setIsSheetOpen(false);
                       navigate(ADMIN_ROUTES.profile);
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-brand-800 rounded-full flex items-center justify-center shadow-md">
+                      <div className="w-12 h-12 bg-brand-800 rounded-full flex items-center justify-center shadow-md shrink-0">
                         <User size={24} className="text-white" />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-brand-900 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-brand-900 text-sm">Mijn profiel</p>
+                        <p className="truncate text-xs text-brand-800/90 mt-0.5">
                           {user?.username || user?.email}
                         </p>
-                        <span className="text-xs text-brand-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1">
+                        <span className="text-xs text-brand-900 bg-white/80 px-2 py-1 rounded-full inline-block mt-1.5">
                           {roleLabel}
                         </span>
                       </div>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-brand-800" aria-hidden />
                     </div>
                   </button>
                 )}
@@ -569,23 +413,53 @@ const Header: React.FC<HeaderProps> = ({
                 aria-label="Mobiel menu"
                 className="flex-1 min-h-0 overflow-y-auto overscroll-behavior-contain scrollbar-hide px-6 py-4 space-y-6"
               >
-                <div className="lg:hidden">
-                  {renderNavGroup("Informatie", visiblePublicItems)}
-                </div>
-
-                {isAuthenticated && (
-                  <>
-                    {staticSections.map((section) => renderSheetSection(section))}
-                    {collapsibleSections.length > 0 && (
-                      <Accordion
-                        key={navSessionKey}
-                        type="multiple"
-                        defaultValue={accordionDefaultValue}
-                        className="space-y-2"
-                      >
-                        {collapsibleSections.map((section) => renderSheetSection(section))}
+                {visiblePublicItems.length > 0 && (
+                  <div className="lg:hidden">
+                    {isAuthenticated ? (
+                      <Accordion type="multiple" defaultValue={[]} className="space-y-2">
+                        <AccordionItem value="public-info" className="border-none">
+                          <AccordionTrigger className={accordionTriggerClass}>
+                            Informatie
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-2 pt-2">
+                            {renderSectionItems(visiblePublicItems)}
+                          </AccordionContent>
+                        </AccordionItem>
                       </Accordion>
+                    ) : (
+                      renderNavGroup("Informatie", visiblePublicItems)
                     )}
+                  </div>
+                )}
+
+                {isAuthenticated && sheetSections.length > 0 && (
+                  <>
+                    {sheetSections.map((section, index) => {
+                      if (!section.collapsible) {
+                        return (
+                          <div key={section.id}>
+                            {renderNavGroup(section.title, section.items)}
+                          </div>
+                        );
+                      }
+
+                      if (index !== firstCollapsibleIndex) {
+                        return null;
+                      }
+
+                      return (
+                        <Accordion
+                          key={`${navSessionKey}-work`}
+                          type="multiple"
+                          defaultValue={accordionDefaultValue}
+                          className="space-y-2"
+                        >
+                          {sheetSections
+                            .filter((item) => item.collapsible)
+                            .map((item) => renderSheetSection(item))}
+                        </Accordion>
+                      );
+                    })}
                   </>
                 )}
               </nav>

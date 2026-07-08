@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/components/pages/login/AuthProvider";
+import { DevDebugProvider } from "@/context/DevDebugContext";
 import { lazyImport } from "@/utils/lazyImport";
 import { OrganizationProvider } from "@/context/OrganizationContext";
 import { OrganizationGate } from "@/components/common/OrganizationGate";
@@ -53,6 +54,7 @@ function RouteMeta() {
 const App = () => (
   <ThemeProvider defaultTheme="light">
     <AuthProvider>
+      <DevDebugProvider>
       <ModalProvider>
         <PlayerListLockProvider>
           <BrowserRouter>
@@ -293,6 +295,7 @@ const App = () => (
           </BrowserRouter>
         </PlayerListLockProvider>
       </ModalProvider>
+      </DevDebugProvider>
     </AuthProvider>
   </ThemeProvider>
 );

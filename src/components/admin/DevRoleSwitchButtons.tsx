@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { isLoginError } from '@/lib/loginErrors';
 import { cn } from '@/lib/utils';
+import { isTenantDebugPanelEnabled } from '@/components/admin/TenantDebugPanel';
+import { useDevDebugContext } from '@/context/DevDebugContext';
 import {
   DEV_PERSONA_LABELS,
   DEV_PERSONA_ORDER,
@@ -102,6 +104,13 @@ export const DevRoleSwitchButtons: React.FC<DevRoleSwitchButtonsProps> = ({
     }
   };
 
+  const devDebug = useDevDebugContext();
+  const hideGuestPersona =
+    isTenantDebugPanelEnabled() && (devDebug?.matchFormModalCount ?? 0) > 0;
+  const visiblePersonas = hideGuestPersona
+    ? DEV_PERSONA_ORDER.filter((persona) => persona !== 'guest')
+    : DEV_PERSONA_ORDER;
+
   return (
     <div
       className={cn('flex flex-nowrap items-center justify-end gap-2', className)}
@@ -109,7 +118,7 @@ export const DevRoleSwitchButtons: React.FC<DevRoleSwitchButtonsProps> = ({
       aria-label="Wissel gebruikersrol (dev)"
     >
       <span className="font-medium text-amber-900">Rol:</span>
-      {DEV_PERSONA_ORDER.map((persona) => {
+      {visiblePersonas.map((persona) => {
         const isActive = activePersona === persona;
         const disabled = isPersonaDisabled(persona) || switching !== null;
         const title = getDisabledTitle(persona);

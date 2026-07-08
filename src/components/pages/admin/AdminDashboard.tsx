@@ -19,8 +19,12 @@ import ScheidsrechtersPage from "@/components/pages/admin/scheidsrechter/Scheids
 import BlogPage from "@/components/pages/admin/blog/BlogPage";
 import NotificationPage from "@/components/pages/admin/notifications/NotificationPage";
 import SchorsingenPage from "@/components/pages/admin/schorsingen/SchorsingenPage";
+import { ADMIN_ROUTES } from "@/config/routes";
+import { Navigate } from "react-router-dom";
 import { useSuspensionsData } from "@/domains/cards-suspensions";
-import { formatDateForDisplay } from "@/lib/dateUtils";
+import {
+  formatSuspensionMatchLines,
+} from "@/domains/cards-suspensions";
 import { Ban } from "lucide-react";
 
 const SettingsPanel = lazy(
@@ -94,33 +98,42 @@ const TeamManagerSuspensionNotice: React.FC = () => {
       <AlertTitle className="text-destructive">
         Speler geschorst voor komende wedstrijd
       </AlertTitle>
-      <AlertDescription className="space-y-2">
-        {activeTeamSuspensions.map((suspension) => (
-          <div key={suspension.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <span className="font-medium text-foreground">{suspension.playerName}</span>
-              <span className="text-muted-foreground"> · {suspension.reason}</span>
-              {suspension.suspendedForMatches && suspension.suspendedForMatches.length > 0 ? (
-                <span className="text-muted-foreground">
-                  {' '}· {suspension.suspendedForMatches.map((match) => `${formatDateForDisplay(match.date)} tegen ${match.opponent}`).join(' + ')}
-                </span>
-              ) : suspension.suspendedForMatch && (
-                <span className="text-muted-foreground">
-                  {' '}· {formatDateForDisplay(suspension.suspendedForMatch.date)} tegen {suspension.suspendedForMatch.opponent}
-                </span>
+      <AlertDescription className="space-y-3">
+        {activeTeamSuspensions.map((suspension) => {
+          const matchLines = formatSuspensionMatchLines(suspension);
+          return (
+          <div key={suspension.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1">
+              <p>
+                <span className="font-medium text-foreground">{suspension.playerName}</span>
+                <span className="text-muted-foreground"> · {suspension.reason}</span>
+              </p>
+              {matchLines.length > 0 ? (
+                <div className="space-y-0.5 text-sm text-muted-foreground">
+                  {matchLines.map((line, index) => (
+                    <p key={`${suspension.id}-match-${index}`}>
+                      Geschorst voor {line}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Komende wedstrijd(en) nog niet ingepland
+                </p>
               )}
               {suspension.notes && (
-                <span className="block mt-1 text-sm text-foreground/90 border-l-2 border-primary/30 pl-2">
+                <p className="text-sm text-foreground/90 border-l-2 border-primary/30 pl-2">
                   <span className="font-medium">Bericht: </span>
                   {suspension.notes}
-                </span>
+                </p>
               )}
             </div>
-            <Badge variant="destructive" className="w-fit">
+            <Badge variant="destructive" className="w-fit shrink-0">
               Niet speelgerechtigd
             </Badge>
           </div>
-        ))}
+          );
+        })}
       </AlertDescription>
     </Alert>
   );
@@ -181,7 +194,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
             </LazyTabContent>
             
             <LazyTabContent value="players" activeTab={activeTab}>
-              <PlayerPage />
+              {isTeamManager ? (
+                <Navigate to={`${ADMIN_ROUTES.profile}#spelers`} replace />
+              ) : (
+                <PlayerPage />
+              )}
             </LazyTabContent>
             
             {isTabVisible("teams") && (
@@ -192,7 +209,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
 
             {isTeamManager && (
               <LazyTabContent value="schorsingen" activeTab={activeTab}>
-                <SchorsingenPage />
+                <Navigate to={`${ADMIN_ROUTES.profile}#schorsingen`} replace />
               </LazyTabContent>
             )}
             
@@ -217,6 +234,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 <LazyTabContent value="polls" activeTab={activeTab}>
                   <ScheidsrechtersPage />
                 </LazyTabContent>
+
+                <LazyTabContent value="settings" activeTab={activeTab}>
+                  <SettingsPanel />
+                </LazyTabContent>
               </>
             )}
 
@@ -232,10 +253,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 
                 <LazyTabContent value="playoffs" activeTab={activeTab}>
                   <PlayoffPage />
-                </LazyTabContent>
-                
-                <LazyTabContent value="settings" activeTab={activeTab}>
-                  <SettingsPanel />
                 </LazyTabContent>
 
                 <LazyTabContent value="platform-beheer" activeTab={activeTab}>

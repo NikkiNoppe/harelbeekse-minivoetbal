@@ -5,11 +5,11 @@ import { Trophy, Award, AlertCircle, Archive } from "lucide-react";
 import { Link } from "react-router-dom";
 import MatchesCupCard from "../../admin/matches/components/MatchesCupCard";
 import { useCupData, CupMatchDisplay } from "@/hooks/useCupData";
-import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from "@/components/layout";
+import { PageHeader, PublicPage, PUBLIC_CARD_CLASS, SectionAccordionItem } from "@/components/layout";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { Accordion } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -222,30 +222,27 @@ const TournamentRound = memo(({
   return (
     <section aria-labelledby={headingId}>
       <h2 id={headingId} className="sr-only">{title}</h2>
-      <AccordionItem 
+      <SectionAccordionItem
         value={roundKey}
-        className="border border-[var(--color-400)] rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 bg-white mb-3"
-      >
-        <AccordionTrigger 
-          className="text-base font-semibold px-5 py-4 hover:bg-[var(--color-50)] data-[state=open]:bg-[var(--color-100)] transition-colors duration-200 text-[var(--color-700)] hover:text-[var(--color-900)] gap-4 hover:no-underline"
-          style={{ color: 'var(--color-700)' }}
-          aria-labelledby={headingId}
-        >
-        <div className="flex items-center justify-between w-full pr-4">
-          <div className="flex items-center gap-2">
-            {isFinal ? <Trophy className="h-5 w-5 text-primary" aria-hidden /> : <Award className="h-5 w-5" aria-hidden />}
-            <span className="text-left flex-1">
-              {title}
-            </span>
+        itemClassName="mb-3"
+        triggerContent={
+          <div className="flex items-center justify-between w-full gap-3 pr-1">
+            <div className="flex items-center gap-2 min-w-0">
+              {isFinal ? (
+                <Trophy className="h-5 w-5 text-primary shrink-0" aria-hidden />
+              ) : (
+                <Award className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+              )}
+              <span className="text-left truncate">{title}</span>
+            </div>
+            {matches.length > 0 && (
+              <Badge variant="outline" className="text-xs shrink-0">
+                {matches.length} {matches.length === 1 ? "wedstrijd" : "wedstrijden"}
+              </Badge>
+            )}
           </div>
-          {matches.length > 0 && (
-            <Badge variant="outline" className="text-xs">
-              {matches.length} {matches.length === 1 ? 'wedstrijd' : 'wedstrijden'}
-            </Badge>
-          )}
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-5 py-4 text-card-foreground border-t border-[var(--color-200)]" style={{ backgroundColor: 'white' }}>
+        }
+      >
         {matches.length > 0 ? (
           <div className={cn(
             "grid gap-3 sm:gap-4 pt-2",
@@ -274,8 +271,7 @@ const TournamentRound = memo(({
             {emptyMessage}
           </p>
         )}
-      </AccordionContent>
-      </AccordionItem>
+      </SectionAccordionItem>
     </section>
   );
 });

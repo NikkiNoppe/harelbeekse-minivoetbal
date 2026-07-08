@@ -1,0 +1,98 @@
+---
+description: Uniforme UI voor ingelogde pagina's (profiel, toekomstige user/admin flows in public layout)
+globs:
+  - src/components/pages/user/**
+  - src/components/pages/login/**
+---
+
+# Ingelogde pagina's — uniforme UI
+
+**Lees vóór wijzigingen aan profiel of andere ingelogde pagina's in de publieke layout (Header, geen admin-sidebar).** Combineer met `ui-frontend-workflow.mdc`, `ui-design-system.mdc`, `ui-mobile-first.mdc`.
+
+## Pagina-shell (zelfde als publiek)
+
+```tsx
+import {
+  PageHeader,
+  PublicPage,
+  PublicSectionHeading,
+  PUBLIC_CARD_CLASS,
+} from "@/components/layout";
+
+<PublicPage>
+  <PageHeader title="…" />
+  {/* secties */}
+</PublicPage>
+```
+
+Geen handmatige `space-y-4 animate-slide-up` wrappers — gebruik `PublicPage`.
+
+## Cards & collapsibles
+
+| Patroon | Component / tokens |
+|---------|-------------------|
+| Statische sectie | `Card className={PUBLIC_CARD_CLASS}` |
+| **Inklapbare sectie** | `SectionCollapsibleCard` uit `@/components/layout` |
+| Accordion-lijst (meerdere items) | `SectionAccordionItem` + `Accordion` |
+| Ingeneste sub-sectie | `SECTION_COLLAPSIBLE_NESTED_TRIGGER` + `Collapsible` |
+| Accordion (Reglement-stijl) | `SECTION_COLLAPSIBLE_*` tokens + `Accordion` |
+| Sectiekop (h2, niet inklapbaar) | `PublicSectionHeading` met optioneel `action` |
+
+### Inklapbare sectie (verplicht patroon)
+
+Zelfde trigger-hoogte als **ReglementPage**: `px-5 py-4`, `text-base font-semibold`, geen `CardHeader` met `p-6`.
+
+```tsx
+import { SectionCollapsibleCard } from "@/components/layout";
+
+<SectionCollapsibleCard title="Financieel overzicht" icon={Wallet} defaultOpen>
+  {content}
+</SectionCollapsibleCard>
+```
+
+Tokens (ook voor custom accordion):
+
+```tsx
+import {
+  SECTION_COLLAPSIBLE_SURFACE,
+  SECTION_COLLAPSIBLE_TRIGGER,
+  SECTION_COLLAPSIBLE_CONTENT,
+  SECTION_COLLAPSIBLE_NESTED_TRIGGER,
+} from "@/components/layout";
+```
+
+**Niet:** `Card` + `CardHeader className="pb-3"` + `p-6 sm:p-8` voor inklapbare koppen — te hoog t.o.v. reglement.
+
+## Form controls
+
+- Selects/filters: `FilterSelect` of `SelectTrigger` met `h-11 min-h-[44px]`
+- Icon-knoppen: `h-11 w-11 min-h-[44px] min-w-[44px]`
+- Snelle-actieknoppen: `variant="outline"` + `w-full justify-start min-h-[44px]`
+
+## Rol-varianten
+
+- **Zelfde visuele shell** voor alle rollen (`player_manager`, `referee`, `admin`)
+- Alleen **inhoud en volgorde** van secties verschilt per rol
+- Lege secties verbergen (geen lege collapsible voor referee zonder acties)
+
+## Tenant & branding
+
+- Teksten via `useOrganizationContent()` / `useBranding()` — geen hardcoded tenant-naam, IBAN of bedragen
+- Kleuren via `text-brand-dark`, `brand-*` — geen `style={{ color: 'var(--primary)' }}`
+
+## Laad-UX
+
+Zie `data-snel-laden.mdc`: `staleTime: 0` voor live data, skeleton min. 250 ms (`useMinLoadingGate`), fout + Opnieuw-knop.
+
+## Referentie
+
+- Inklapbare sectie: `SectionCollapsibleCard.tsx`, `ReglementPage.tsx`
+- Profiel: `UserProfilePage.tsx`
+- Publiek: `AlgemeenPage.tsx`, `CompetitiePage.tsx`
+
+## Anti-patterns
+
+- Plain `<Card>` + dikke `CardHeader` voor inklapbare secties
+- Inline styles voor koppen of knopgroottes
+- Select triggers kleiner dan 44px
+- Hardcoded financiële / contactgegevens per tenant

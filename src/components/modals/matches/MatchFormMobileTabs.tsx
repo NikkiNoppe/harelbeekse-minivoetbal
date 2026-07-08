@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
+  coerceMatchFormMobileTab,
   getMatchFormMobileTabLabel,
   getMatchFormMobileTabs,
-  getSectionDesktopOrder,
+  getSectionDesktopOrderClass,
   getSectionMobileTab,
   type MatchFormDesktopSection,
   type MatchFormMobileTab,
@@ -26,10 +27,12 @@ export function MatchFormMobileTabBar({
   className,
 }: MatchFormMobileTabBarProps) {
   const tabs = getMatchFormMobileTabs(role);
+  const safeValue = coerceMatchFormMobileTab(role, value);
 
   return (
     <Tabs
-      value={value}
+      key={role}
+      value={safeValue}
       onValueChange={(next) => onValueChange(next as MatchFormMobileTab)}
       className={cn("md:hidden", className)}
     >
@@ -55,7 +58,6 @@ interface MatchFormSectionShellProps {
   section: MatchFormDesktopSection;
   role: MatchFormRole;
   mobileTab: MatchFormMobileTab;
-  isMobile: boolean;
   children: React.ReactNode;
   className?: string;
 }
@@ -65,12 +67,11 @@ export function MatchFormSectionShell({
   section,
   role,
   mobileTab,
-  isMobile,
   children,
   className,
 }: MatchFormSectionShellProps) {
   const sectionTab = getSectionMobileTab(section, role);
-  const hiddenOnMobile = isMobile && sectionTab !== null && sectionTab !== mobileTab;
+  const hiddenOnMobile = sectionTab !== null && sectionTab !== mobileTab;
 
   if (section === "wedstrijd" && role === "team_manager") {
     return null;
@@ -78,8 +79,12 @@ export function MatchFormSectionShell({
 
   return (
     <div
-      className={cn(hiddenOnMobile && "hidden", "md:block", className)}
-      style={{ order: getSectionDesktopOrder(section, role) }}
+      className={cn(
+        hiddenOnMobile ? "max-md:hidden" : undefined,
+        "md:block",
+        getSectionDesktopOrderClass(section, role),
+        className,
+      )}
       data-match-form-section={section}
     >
       {children}

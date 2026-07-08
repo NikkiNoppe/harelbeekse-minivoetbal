@@ -22,7 +22,7 @@ export interface RefereeDashboardData {
   userId: number;
   username: string;
   submitAvailability: (clusterKey: string, pollMonth: string, isAvailable: boolean) => Promise<void>;
-  submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<void>;
+  submitBulkAvailability: (pollMonth: string, availabilities: AvailabilityInput[]) => Promise<boolean>;
   refreshData: () => Promise<void>;
 }
 
@@ -44,7 +44,7 @@ export function useRefereeDashboard(): RefereeDashboardData {
     if (!userId) return;
     setIsLoadingSchedule(true);
     try {
-      const upcoming = await monthScheduleService.getUpcomingClusters(2);
+      const upcoming = await monthScheduleService.getUpcomingClusters(4);
       setClusters(upcoming);
 
       const months = Array.from(new Set(upcoming.map((c) => c.poll_month)));
@@ -126,8 +126,8 @@ export function useRefereeDashboard(): RefereeDashboardData {
   );
 
   const submitBulkAvailability = useCallback(
-    async (pollMonth: string, availabilities: AvailabilityInput[]) => {
-      if (!userId) return;
+    async (pollMonth: string, availabilities: AvailabilityInput[]): Promise<boolean> => {
+      if (!userId) return false;
       setIsSubmitting(true);
       try {
         const result = await refereeAvailabilityService.submitAvailability(
@@ -138,12 +138,14 @@ export function useRefereeDashboard(): RefereeDashboardData {
         if (result.success) {
           toast.success('Beschikbaarheid opgeslagen!');
           await fetchScheduleData();
-        } else {
-          toast.error(result.error || 'Kon beschikbaarheid niet opslaan');
+          return true;
         }
+        toast.error(result.error || 'Kon beschikbaarheid niet opslaan');
+        return false;
       } catch (error) {
         console.error('Error submitting availability:', error);
         toast.error('Kon beschikbaarheid niet opslaan');
+        return false;
       } finally {
         setIsSubmitting(false);
       }

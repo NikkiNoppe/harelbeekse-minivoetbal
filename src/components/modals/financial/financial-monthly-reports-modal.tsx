@@ -1,11 +1,17 @@
 import React, { useState } from "react";
+import { cn } from "@/lib/utils";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw, Ban } from "lucide-react";
+import {
+  SECTION_COLLAPSIBLE_CONTENT,
+  SECTION_COLLAPSIBLE_SURFACE,
+  SECTION_COLLAPSIBLE_TRIGGER,
+} from "@/components/layout/section-collapsible-styles";
+import { Download, Euro, ChevronDown, Users, Loader2, RefreshCw, Ban } from "lucide-react";
 import { useFinancialSeasonReportModal } from "./useFinancialSeasonReportModal";
 
 interface FinancialMonthlyReportsModalProps {
@@ -436,32 +442,26 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
               </CardHeader>
               <CardContent className="bg-white p-0">
                 {/* Mobile: Collapsible cards */}
-                <div className="block divide-y divide-border">
+                <div className="block space-y-3 p-3">
                   {report.refereeCosts.map((referee, index) => (
                     <Collapsible 
                       key={index}
                       open={expandedReferees.has(referee.referee)}
                       onOpenChange={() => toggleRefereeExpanded(referee.referee)}
                     >
-                      <CollapsibleTrigger className="w-full p-4 hover:bg-muted transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="text-left">
-                            <p className="font-medium text-brand-dark">{referee.referee}</p>
-                            <p className="text-sm text-muted-foreground">{referee.matchCount} wedstrijden</p>
+                      <div className={SECTION_COLLAPSIBLE_SURFACE}>
+                        <CollapsibleTrigger className={SECTION_COLLAPSIBLE_TRIGGER}>
+                          <div className="flex flex-1 items-center justify-between gap-3 min-w-0 text-left">
+                            <div className="min-w-0">
+                              <p className="font-medium text-brand-dark truncate">{referee.referee}</p>
+                              <p className="text-sm font-normal text-muted-foreground">{referee.matchCount} wedstrijden</p>
+                            </div>
+                            <span className="font-semibold text-brand-dark shrink-0">{formatCurrency(referee.totalCost)}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-brand-dark">{formatCurrency(referee.totalCost)}</span>
-                            {expandedReferees.has(referee.referee) ? (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        {referee.matches && referee.matches.length > 0 && (
-                          <div className="px-4 pb-4 space-y-2">
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          {referee.matches && referee.matches.length > 0 && (
+                            <div className={cn(SECTION_COLLAPSIBLE_CONTENT, "space-y-2")}>
                             {referee.matches.map((match, mIdx) => (
                               <div key={mIdx} className="bg-muted/50 rounded-md p-2 text-sm">
                                 <div className="flex justify-between items-start gap-2">
@@ -475,7 +475,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                             ))}
                           </div>
                         )}
-                      </CollapsibleContent>
+                        </CollapsibleContent>
+                      </div>
                     </Collapsible>
                   ))}
                   {/* Mobile Total row */}

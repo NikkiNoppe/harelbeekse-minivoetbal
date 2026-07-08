@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/layout";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InlineRetry } from "@/components/modals/matches/inline-player-retry";
+import { isTeamRosterFull } from "./utils/playerUtils";
 
 const PlayerPage: React.FC = () => {
   const { user: authUser } = useAuth();
@@ -42,7 +43,7 @@ const PlayerPage: React.FC = () => {
     refetch,
     refreshPlayers
   } = usePlayersUpdatedWithQuery();
-  const { isLocked, lockDate, canEdit } = usePlayerListLock();
+  const { isLocked, lockMessage, canEdit } = usePlayerListLock();
   
   // Memoized values to prevent unnecessary re-renders
   const isAdmin = useMemo(() => authUser?.role === "admin", [authUser?.role]);
@@ -54,7 +55,10 @@ const PlayerPage: React.FC = () => {
 
   const hasTeams = useMemo(() => teams.length > 0, [teams.length]);
   const showLockMessage = useMemo(() => isLocked && !isAdmin, [isLocked, isAdmin]);
-  const showAddButton = useMemo(() => canEdit, [canEdit]);
+  const showAddButton = useMemo(
+    () => canEdit && !isTeamRosterFull(players.length),
+    [canEdit, players.length],
+  );
   const modalOpen = useMemo(() => dialogOpen || editDialogOpen, [dialogOpen, editDialogOpen]);
 
   // Memoized handlers to prevent unnecessary re-renders
@@ -106,7 +110,7 @@ const PlayerPage: React.FC = () => {
       {/* Header */}
       <PageHeader 
         title="Spelerslijst"
-        subtitle={showLockMessage ? `Vergrendeld vanaf ${formatDateShort(lockDate)}` : currentTeamName || undefined}
+        subtitle={showLockMessage ? lockMessage ?? undefined : currentTeamName || undefined}
       />
 
       {/* Team Selector and Add Button for Admin */}

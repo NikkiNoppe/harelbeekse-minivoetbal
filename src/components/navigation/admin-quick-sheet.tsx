@@ -55,12 +55,15 @@ const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange })
   const normalizedRole = String(user?.role || "").toLowerCase();
   const isAdmin = normalizedRole === "admin";
   const isReferee = normalizedRole === "referee";
+  const isTeamManager = normalizedRole === "player_manager";
 
   const filterActions = (actions: ActionItem[]) => {
     return actions.filter(action => {
       if (action.superAdminOnly && !isSuperAdmin) return false;
       if (action.adminOnly && !isAdmin) return false;
       if (action.refereeOnly && !(isAdmin || isReferee)) return false;
+      if (action.key === "scheidsrechters" && isReferee && !isAdmin) return false;
+      if (action.key === "players" && isTeamManager) return false;
       return true;
     });
   };

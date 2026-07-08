@@ -9,7 +9,6 @@ import {
   Star,
   Minus,
   Wand2,
-  ChevronDown,
   Copy,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { SectionCollapsibleCard } from '@/components/layout';
 import { toast } from 'sonner';
 import { getRpcSessionArgs } from '@/lib/authSession';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,6 +125,92 @@ interface AvailabilityMatrixProps {
 const SESSION_COLUMN_WIDTH = 220;
 const REFEREE_COLUMN_WIDTH = 64;
 const SESSION_ROW_HEIGHT = 76;
+
+function MatrixStatusLegend({
+  className,
+  variant = 'default',
+}: {
+  className?: string;
+  variant?: 'default' | 'embedded';
+}) {
+  const items = (
+    <>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-success shadow-sm">
+          <Star className="h-2.5 w-2.5 fill-white text-white" aria-hidden />
+        </span>
+        <span className="truncate">Toegewezen</span>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-success/40 bg-success/15">
+          <Check className="h-2.5 w-2.5 text-success" aria-hidden />
+        </span>
+        <span className="truncate">Beschikbaar</span>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border bg-muted">
+          <X className="h-2.5 w-2.5 text-muted-foreground" aria-hidden />
+        </span>
+        <span className="truncate">Niet beschikbaar</span>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-dashed border-border bg-card">
+          <Minus className="h-2.5 w-2.5 text-muted-foreground/60" aria-hidden />
+        </span>
+        <span className="truncate">Geen reactie</span>
+      </div>
+    </>
+  );
+
+  if (variant === 'embedded') {
+    return (
+      <div
+        className={`mx-auto flex max-w-[180px] flex-col gap-1 text-[10px] leading-tight ${className ?? ''}`}
+        role="note"
+        aria-label="Legenda beschikbaarheid"
+      >
+        <div className="flex flex-col gap-1">{items}</div>
+        <p className="mt-1 border-t border-border/60 pt-1 text-[9px] font-normal italic text-muted-foreground">
+          Klik op een cel om handmatig toe te wijzen.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-[11px] leading-tight ${className ?? ''}`}
+      role="note"
+      aria-label="Legenda beschikbaarheid"
+    >
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">{items}</div>
+      <p className="mt-2 border-t border-border/50 pt-2 text-[10px] font-normal italic text-muted-foreground">
+        Tik op een scheidsrechter om status te wijzigen of toe te wijzen.
+      </p>
+    </div>
+  );
+}
+
+function sortRefereesForSession(
+  refereeList: RefereeInfo[],
+  session: Session,
+  assignedRefId: number | null,
+  isAvailable: (session: Session, refereeId: number) => boolean,
+  hasResponded: (session: Session, refereeId: number) => boolean,
+): RefereeInfo[] {
+  const priority = (refereeId: number) => {
+    if (assignedRefId === refereeId) return 0;
+    if (isAvailable(session, refereeId)) return 1;
+    if (hasResponded(session, refereeId)) return 2;
+    return 3;
+  };
+
+  return [...refereeList].sort((a, b) => {
+    const diff = priority(a.user_id) - priority(b.user_id);
+    if (diff !== 0) return diff;
+    return a.username.localeCompare(b.username);
+  });
+}
 
 const formatSessionLocation = (location: string) => {
   const [place] = location.split(' - ');
@@ -738,7 +823,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       size="sm"
       onClick={handleBulkAutoAssign}
       disabled={bulkAssigning || openSessionsCount === 0 || referees.length === 0}
-      className="btn btn--primary btn--sm h-10 !min-h-10 w-full min-w-0 gap-1.5 !rounded-md px-3 shadow-sm lg:w-auto"
+      className="btn btn--primary btn--sm min-h-[44px] h-11 w-full min-w-0 gap-1.5 !rounded-md px-3 shadow-sm sm:w-auto"
       title={openSessionsCount === 0 ? 'Alle sessies zijn al toegewezen' : 'Wijs open sessies automatisch toe'}
     >
       {bulkAssigning ? (
@@ -782,6 +867,28 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     <div className="space-y-4">
       {toolbarPortal}
 
+      {hideHeader && sessions.length > 0 && referees.length > 0 && (
+        <div className="flex flex-col gap-3 lg:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <Badge variant="outline" className="min-h-[36px] px-3 text-xs sm:text-sm">
+              {assignedSessions}/{totalSessions} sessies toegewezen
+            </Badge>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="min-h-[44px] min-w-[44px] shrink-0"
+              onClick={() => void fetchData()}
+              disabled={loading}
+              aria-label="Gegevens vernieuwen"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+          <MatrixStatusLegend />
+        </div>
+      )}
+
       {!hideHeader && (
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="flex items-center gap-3">
@@ -824,8 +931,8 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
         </Card>
       ) : (
         <TooltipProvider delayDuration={200}>
-          {/* Desktop Matrix */}
-          <div className="hidden md:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          {/* Desktop matrix — vanaf lg; tablet en mobiel gebruiken kaarten */}
+          <div className="hidden lg:block rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="overflow-auto max-h-[70vh]">
               <table
                 className="w-full table-fixed text-sm border-collapse"
@@ -847,35 +954,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         minWidth: SESSION_COLUMN_WIDTH,
                       }}
                     >
-                      <div className="mx-auto flex max-w-[180px] flex-col gap-1 text-[10px] leading-tight">
-                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-4 w-4 items-center justify-center rounded bg-success shadow-sm">
-                            <Star className="h-2.5 w-2.5 fill-white text-white" />
-                          </span>
-                          <span className="truncate">Toegewezen</span>
-                        </div>
-                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-4 w-4 items-center justify-center rounded border border-success/40 bg-success/15">
-                            <Check className="h-2.5 w-2.5 text-success" />
-                          </span>
-                          <span className="truncate">Beschikbaar</span>
-                        </div>
-                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-4 w-4 items-center justify-center rounded border border-border bg-muted">
-                            <X className="h-2.5 w-2.5 text-muted-foreground" />
-                          </span>
-                          <span className="truncate">Niet beschikbaar</span>
-                        </div>
-                        <div className="grid grid-cols-[16px_minmax(0,1fr)] items-center gap-2">
-                          <span className="flex h-4 w-4 items-center justify-center rounded border border-dashed border-border bg-card">
-                            <Minus className="h-2.5 w-2.5 text-muted-foreground/60" />
-                          </span>
-                          <span className="truncate">Geen reactie</span>
-                        </div>
-                        <div className="mt-1 border-t border-border/60 pt-1 text-[9px] font-normal italic text-muted-foreground">
-                          Klik op een cel om handmatig toe te wijzen.
-                        </div>
-                      </div>
+                      <MatrixStatusLegend variant="embedded" />
                     </th>
                     {referees.map(ref => (
                       <th
@@ -1060,30 +1139,55 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             </div>
           </div>
 
-          {/* Mobile: Card per session */}
-          <div className="md:hidden space-y-3">
+          {/* Mobiel & tablet: kaart per sessie */}
+          <div className="space-y-3 lg:hidden">
             {sessions.map((session) => {
               const assignedRefId = getSessionAssignedReferee(session);
+              const assignedRef = assignedRefId
+                ? referees.find((ref) => ref.user_id === assignedRefId)
+                : undefined;
+              const sortedRefs = sortRefereesForSession(
+                referees,
+                session,
+                assignedRefId,
+                isRefereeAvailable,
+                hasRefereeResponded,
+              );
+
               return (
-                <Card key={session.key}>
-                  <CardContent className="p-3 space-y-2">
-                    <div>
-                      <div className="font-semibold text-sm">{formatDateWithDay(session.date)}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
-                        {session.location} · {formatTimeForDisplay(session.date)}
+                <Card key={session.key} className="border-border/80 shadow-sm">
+                  <CardContent className="space-y-3 p-3 sm:p-4">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold">{formatDateWithDay(session.date)}</div>
+                      <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                        <span className="truncate">
+                          {session.location} · {formatTimeForDisplay(session.date)}
+                        </span>
                       </div>
-                      <div className="mt-1 flex flex-col gap-0.5">
+                      <ul className="mt-1 space-y-0.5">
                         {session.matches.map((m, i) => (
-                          <div key={i} className="text-[10px] leading-tight text-muted-foreground/70">
+                          <li key={i} className="text-[11px] leading-snug text-muted-foreground/80">
                             {m.home_team_name} – {m.away_team_name}
-                          </div>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-1.5 pt-1 lg:grid-cols-2">
-                      {referees.map(ref => {
+                    {assignedRef ? (
+                      <div className="flex min-h-[44px] items-center gap-2 rounded-lg border border-success/40 bg-success/15 px-3 py-2">
+                        <Star className="h-4 w-4 shrink-0 fill-success text-success" aria-hidden />
+                        <span className="min-w-0 truncate text-sm font-medium">{assignedRef.username}</span>
+                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">Toegewezen</span>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                        Nog geen scheidsrechter toegewezen
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {sortedRefs.map((ref) => {
                         const available = isRefereeAvailable(session, ref.user_id);
                         const hasResponded = hasRefereeResponded(session, ref.user_id);
                         const assignment = getSessionAssignment(session, ref.user_id);
@@ -1098,28 +1202,39 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                         else if (available) pillClass = 'bg-success/15 border border-success/40 text-foreground';
                         else if (hasResponded) pillClass = 'bg-destructive/5 border border-destructive/30 text-foreground';
 
+                        const statusLabel = isAssigned
+                          ? 'toegewezen'
+                          : !hasResponded
+                            ? 'geen reactie'
+                            : available
+                              ? 'beschikbaar'
+                              : 'niet beschikbaar';
+
                         return (
                           <DropdownMenu key={ref.user_id}>
                             <DropdownMenuTrigger asChild disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}>
                               <button
                                 type="button"
+                                aria-label={`${ref.username} – ${statusLabel}`}
                                 className={`
-                                  inline-flex min-h-[36px] w-full min-w-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium
-                                  transition-all
+                                  inline-flex min-h-[44px] w-full min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium
+                                  transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
                                   ${pillClass}
                                   ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                                   disabled:cursor-not-allowed
                                 `}
                               >
                                 {isLoadingCell ? (
-                                  <RefreshCw className="h-3 w-3 shrink-0 animate-spin" />
+                                  <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
                                 ) : isAssigned ? (
-                                  <Star className="h-3 w-3 shrink-0 fill-white" />
+                                  <Star className="h-4 w-4 shrink-0 fill-white" />
                                 ) : !hasResponded ? (
-                                  <Minus className="h-3 w-3 shrink-0 opacity-60" />
+                                  <Minus className="h-4 w-4 shrink-0 opacity-60" />
                                 ) : !available ? (
-                                  <X className="h-3 w-3 shrink-0 opacity-60" />
-                                ) : null}
+                                  <X className="h-4 w-4 shrink-0 opacity-60" />
+                                ) : (
+                                  <Check className="h-4 w-4 shrink-0 text-success" />
+                                )}
                                 <span className="truncate">{ref.username}</span>
                               </button>
                             </DropdownMenuTrigger>
@@ -1160,31 +1275,19 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             })}
           </div>
 
-          <Collapsible
+          <SectionCollapsibleCard
+            title={
+              <span className="flex flex-col gap-0.5 min-w-0 text-left">
+                <span>Copy/paste berichten</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Kant-en-klare tekst per scheidsrechter voor de toegewezen wedstrijden.
+                </span>
+              </span>
+            }
             open={copyMessagesOpen}
             onOpenChange={setCopyMessagesOpen}
-            className="rounded-xl border border-border bg-card shadow-sm"
+            contentClassName="space-y-3"
           >
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-foreground">Copy/paste berichten</div>
-                  <div className="text-xs text-muted-foreground">
-                    Kant-en-klare tekst per scheidsrechter voor de toegewezen wedstrijden.
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                    copyMessagesOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-3 border-t border-border p-3">
                 <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -1242,9 +1345,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                     />
                   </div>
                 ))}
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          </SectionCollapsibleCard>
         </TooltipProvider>
       )}
     </div>

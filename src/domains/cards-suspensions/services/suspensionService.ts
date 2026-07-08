@@ -10,9 +10,18 @@ import {
   listApplicationSettingsForSession,
   updateApplicationSettingForSession,
 } from "@/services/core/applicationSettingsSessionFetch";
-import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import {
+  fetchAllMatchesForSession,
+  fetchMatchesWithPlayersForCardHistory,
+  fetchTeamScheduleForSuspensions,
+} from "@/services/core/matchesSessionFetch";
 import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { derivePlayerSuspensionEpisodes } from "../utils/playerSuspensionHistory";
+import {
+  resolveSuspensionMatchesAfterCard,
+  type CardSuspensionTrigger,
+} from "../utils/suspensionMatchSchedule";
 
 const AUTOMATIC_SUSPENSION_OVERRIDE_CATEGORY = 'automatic_suspension_overrides' as const;
 
@@ -25,6 +34,8 @@ export interface PlayerCard {
   redCards: number;
   suspendedMatches?: number;
   cardEvents?: PlayerCardEvent[];
+  /** Afgeleide schorsingshistoriek uit kaarten + wedstrijdkalender (ook afgelopen). */
+  suspensionEpisodes?: Suspension[];
 }
 
 export interface PlayerCardEvent {
@@ -121,7 +132,24 @@ export const suspensionService = {
         suspendedMatches: player.suspended_matches_remaining || 0
       }));
 
-      const events = await suspensionService.getPlayerCardEvents(playerCards.map((player) => player.playerId));
+      const teamIds = [
+        ...new Set(
+          playerCards
+            .map((player) => player.teamId)
+            .filter((id): id is number => typeof id === "number" && id > 0),
+        ),
+      ];
+
+      const [scheduleMatches, cardHistoryMatches] = await Promise.all([
+        fetchTeamScheduleForSuspensions(teamIds),
+        fetchMatchesWithPlayersForCardHistory(teamIds),
+      ]);
+      const events = await suspensionService.getPlayerCardEvents(
+        playerCards.map((player) => player.playerId),
+        teamIds,
+        cardHistoryMatches,
+      );
+      const rules = await suspensionRulesService.getSuspensionRules();
       const eventsByPlayerId = new Map<number, PlayerCardEvent[]>();
       events.forEach((event) => {
         const currentEvents = eventsByPlayerId.get(event.playerId) || [];
@@ -131,14 +159,15 @@ export const suspensionService = {
 
       return playerCards.map((player) => {
         const cardEvents = eventsByPlayerId.get(player.playerId) || [];
-        const yellowCardsFromEvents = cardEvents.filter((event) => event.cardType === 'yellow').length;
-        const redCardsFromEvents = cardEvents.filter((event) => event.cardType === 'red').length;
+        const card: PlayerCard = {
+          ...player,
+          // RPC-totalen blijven bron voor drempels/schorsingen; events alleen voor wedstrijdhistoriek
+          cardEvents,
+        };
 
         return {
-          ...player,
-          yellowCards: cardEvents.length > 0 ? yellowCardsFromEvents : player.yellowCards,
-          redCards: cardEvents.length > 0 ? redCardsFromEvents : player.redCards,
-          cardEvents
+          ...card,
+          suspensionEpisodes: derivePlayerSuspensionEpisodes(card, rules, scheduleMatches),
         };
       });
     } catch (error) {
@@ -147,15 +176,18 @@ export const suspensionService = {
     }
   },
 
-  async getPlayerCardEvents(playerIds: number[] = []): Promise<Array<PlayerCardEvent & { playerId: number }>> {
+  async getPlayerCardEvents(
+    playerIds: number[] = [],
+    teamIds: number[] = [],
+    prefetchedMatches?: Awaited<ReturnType<typeof fetchMatchesWithPlayersForCardHistory>>,
+  ): Promise<Array<PlayerCardEvent & { playerId: number }>> {
     if (playerIds.length === 0) return [];
 
     try {
       const playerIdSet = new Set(playerIds);
-      const allMatches = await fetchAllMatchesForSession();
-      const data = allMatches.filter(
-        (match) => match.home_players != null || match.away_players != null,
-      );
+      const allMatches =
+        prefetchedMatches ?? (await fetchMatchesWithPlayersForCardHistory(teamIds));
+      const data = allMatches;
 
       const normalizeCardType = (raw: unknown): 'yellow' | 'red' | 'double_yellow' | 'none' => {
         const value = (typeof raw === 'string' ? raw : '').toLowerCase();
@@ -208,7 +240,7 @@ export const suspensionService = {
         cardType: 'yellow' | 'red',
         cardIndex: number,
       ) => {
-        const matchDate = match.match_date ? new Date(match.match_date).toISOString().slice(0, 10) : '';
+        const matchDate = match.match_date ?? "";
         events.push({
           id: `${match.match_id}-${playerId}-${cardType}-${cardIndex}`,
           playerId,
@@ -611,40 +643,93 @@ export const suspensionService = {
       // Get dynamic suspension rules
       const rules = await suspensionRulesService.getSuspensionRules();
 
-      const allMatchesFetched = await fetchAllMatchesForSession();
-      const matchesData = allMatchesFetched.filter((m) => m.is_submitted);
-      const allMatchesData = [...allMatchesFetched].sort((a, b) =>
+      const teamIds = [
+        ...new Set(
+          playerCards
+            .map((player) => player.teamId)
+            .filter((id): id is number => typeof id === "number" && id > 0),
+        ),
+      ];
+
+      const [scheduleMatches, cardHistoryMatches] = await Promise.all([
+        fetchTeamScheduleForSuspensions(teamIds),
+        fetchMatchesWithPlayersForCardHistory(teamIds),
+      ]);
+      const allMatchesFetched = scheduleMatches;
+      const matchesData = cardHistoryMatches.filter((m) => m.is_submitted);
+      const allMatchesData = [...scheduleMatches].sort((a, b) =>
         a.match_date.localeCompare(b.match_date),
       );
 
-      const lastCardDateByPlayer = new Map<string, string>();
-      for (const match of matchesData || []) {
-        const homePlayers = Array.isArray(match.home_players) ? match.home_players : [];
-        const awayPlayers = Array.isArray(match.away_players) ? match.away_players : [];
-        const allPlayers = [...homePlayers, ...awayPlayers];
+      const normalizeCardType = (raw: unknown): 'yellow' | 'red' | 'double_yellow' | 'none' => {
+        const value = (typeof raw === 'string' ? raw : '').toLowerCase();
+        if (value === 'yellow' || value === 'geel') return 'yellow';
+        if (value === 'red' || value === 'rood') return 'red';
+        if (value === 'double_yellow' || value === '2x geel' || value === 'double-yellow') return 'double_yellow';
+        return 'none';
+      };
 
-        for (const p of allPlayers) {
-          if (!p || typeof p !== 'object' || !('playerId' in p)) continue;
-
-          const playerId = Number((p as { playerId?: number }).playerId);
-          const cardTypeValue = (p as { cardType?: string }).cardType?.toLowerCase();
-          const matchDate = match.match_date ? new Date(match.match_date).toISOString() : undefined;
-          if (!playerId || !matchDate || !cardTypeValue) continue;
-
-          if (
-            (cardTypeValue === 'yellow' || cardTypeValue === 'geel' || cardTypeValue === 'double_yellow' || cardTypeValue === '2x geel' || cardTypeValue === 'double-yellow') &&
-            !lastCardDateByPlayer.has(`${playerId}:yellow`)
-          ) {
-            lastCardDateByPlayer.set(`${playerId}:yellow`, matchDate);
-          }
-
-          if (
-            (cardTypeValue === 'red' || cardTypeValue === 'rood') &&
-            !lastCardDateByPlayer.has(`${playerId}:red`)
-          ) {
-            lastCardDateByPlayer.set(`${playerId}:red`, matchDate);
+      const normalizePlayers = (rawPlayers: unknown): any[] => {
+        if (Array.isArray(rawPlayers)) return rawPlayers;
+        if (typeof rawPlayers === 'string') {
+          try {
+            const parsed = JSON.parse(rawPlayers);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
           }
         }
+        if (rawPlayers && typeof rawPlayers === 'object') {
+          const maybePlayers = rawPlayers as { players?: unknown; data?: unknown; items?: unknown };
+          if (Array.isArray(maybePlayers.players)) return maybePlayers.players;
+          if (Array.isArray(maybePlayers.data)) return maybePlayers.data;
+          if (Array.isArray(maybePlayers.items)) return maybePlayers.items;
+        }
+        return [];
+      };
+
+      const getPlayerIdFromMatchPlayer = (player: any): number | undefined => {
+        const id = player?.playerId ?? player?.player_id ?? player?.id;
+        return typeof id === 'number' ? id : Number(id) || undefined;
+      };
+
+      const matchToDateKey = (matchDate: string): string => {
+        const date = new Date(matchDate);
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const lastCardDateByPlayer = new Map<string, string>();
+      const setLastCardDate = (playerId: number, cardType: 'yellow' | 'red', matchDate: string) => {
+        const key = `${playerId}:${cardType}`;
+        const existing = lastCardDateByPlayer.get(key);
+        if (!existing || matchDate > existing) {
+          lastCardDateByPlayer.set(key, matchDate);
+        }
+      };
+
+      for (const match of matchesData || []) {
+        const matchDate = match.match_date ? new Date(match.match_date).toISOString() : undefined;
+        if (!matchDate) continue;
+
+        const handlePlayers = (players: any[]) => {
+          players.forEach((p) => {
+            const playerId = getPlayerIdFromMatchPlayer(p);
+            if (!playerId) return;
+            const normalized = normalizeCardType(p?.cardType ?? p?.card ?? p?.card_type ?? p?.kaart);
+            if (normalized === 'yellow' || normalized === 'double_yellow') {
+              setLastCardDate(playerId, 'yellow', matchDate);
+            }
+            if (normalized === 'red') {
+              setLastCardDate(playerId, 'red', matchDate);
+            }
+          });
+        };
+
+        handlePlayers(normalizePlayers(match.home_players));
+        handlePlayers(normalizePlayers(match.away_players));
       }
 
       const matchesByTeamId = new Map<number, any[]>();
@@ -665,121 +750,106 @@ export const suspensionService = {
         String(today.getDate()).padStart(2, '0')
       ].join('-');
 
-      // Helper function to get last card date for a player
-      const getLastCardDate = (playerId: number, cardType: 'yellow' | 'red'): string | undefined => {
-        return lastCardDateByPlayer.get(`${playerId}:${cardType}`);
+      // Helper: laatste kaart-event (met match_id voor correcte schorsingsplanning)
+      const getLastCardTrigger = (
+        player: PlayerCard,
+        cardType: 'yellow' | 'red',
+      ): CardSuspensionTrigger | undefined => {
+        const fromEvent = player.cardEvents
+          ?.filter((event) => event.cardType === cardType)
+          .sort((a, b) => b.matchDate.localeCompare(a.matchDate))[0];
+        if (fromEvent) {
+          return { matchId: fromEvent.matchId, matchDate: fromEvent.matchDate };
+        }
+        const fallbackDate = lastCardDateByPlayer.get(`${player.playerId}:${cardType}`);
+        return fallbackDate ? { matchDate: fallbackDate } : undefined;
       };
 
-      const getStatusForSuspendedMatches = (
-        suspendedForMatches?: Array<{ date: string; opponent: string }>
+      const getLastCardDate = (
+        player: PlayerCard,
+        cardType: 'yellow' | 'red',
+      ): string | undefined => getLastCardTrigger(player, cardType)?.matchDate;
+
+      const mapTeamMatch = (
+        match: (typeof allMatchesData)[number],
+        teamId: number,
+      ): { date: string; opponent: string } => {
+        const isHome = match.home_team_id === teamId;
+        const opponent = isHome
+          ? match.away_team_name || 'Onbekend'
+          : match.home_team_name || 'Onbekend';
+        return {
+          date: matchToDateKey(match.match_date),
+          opponent,
+        };
+      };
+
+      const getUpcomingTeamMatches = (
+        teamId: number,
+        count: number,
+      ): Array<{ date: string; opponent: string }> => {
+        if (count <= 0) return [];
+        return (matchesByTeamId.get(teamId) || [])
+          .filter((match) => matchToDateKey(match.match_date) >= todayDate)
+          .slice(0, count)
+          .map((match) => mapTeamMatch(match, teamId));
+      };
+
+      const resolveSuspendedForMatches = (
+        teamId: number | undefined,
+        trigger: CardSuspensionTrigger | undefined,
+        count: number,
+      ): Array<{ date: string; opponent: string }> => {
+        if (!teamId || count <= 0) return [];
+        if (trigger) {
+          const fromTrigger = resolveSuspensionMatchesAfterCard(
+            teamId,
+            trigger,
+            count,
+            allMatchesData,
+          );
+          if (fromTrigger.length > 0) return fromTrigger;
+        }
+        return getUpcomingTeamMatches(teamId, count);
+      };
+
+      const getAutomaticStatus = (
+        remaining: number,
+        suspendedForMatches?: Array<{ date: string; opponent: string }>,
       ): Suspension['status'] => {
+        if (remaining <= 0) return 'completed';
+        // DB `suspended_matches_remaining` is leidend — niet als afgelopen markeren op kalender-gok
+        if (remaining > 0) return 'active';
         if (!suspendedForMatches?.length) return 'active';
         const lastSuspendedMatch = suspendedForMatches[suspendedForMatches.length - 1];
         return lastSuspendedMatch.date < todayDate ? 'completed' : 'active';
       };
 
-      // Helper function to get next matches AFTER a specific date for a team
-      const getNextMatchesAfterDate = (
-        teamId: number, 
-        afterDate: string,
-        count: number
-      ): Array<{ date: string; opponent: string }> => {
-        if (!allMatchesData || !afterDate || count <= 0) return [];  // Use allMatchesData (includes unplayed matches)
-        
-        const afterDateTime = new Date(afterDate).getTime();
-        
-        // Matches are already ordered ascending by the database query.
-        const nextMatches = matchesByTeamId
-          .get(teamId)
-          ?.filter(match => new Date(match.match_date).getTime() > afterDateTime)
-          .slice(0, count) || [];
-
-        return nextMatches.map((match) => {
-          const isHome = match.home_team_id === teamId;
-          const opponent = isHome
-            ? match.away_team_name || 'Onbekend'
-            : match.home_team_name || 'Onbekend';
-          
-          // Use UTC date components to avoid timezone shifts
-          const matchDate = new Date(match.match_date);
-          const year = matchDate.getUTCFullYear();
-          const month = String(matchDate.getUTCMonth() + 1).padStart(2, '0');
-          const day = String(matchDate.getUTCDate()).padStart(2, '0');
-          
-          return {
-            date: `${year}-${month}-${day}`,
-            opponent
-          };
-        });
-      };
-
       const autoOverrides = await suspensionService.getAutomaticSuspensionOverridesMap();
 
-      // Process each player
+      // Process each player — DB `suspended_matches_remaining` is bron van waarheid voor actieve schorsing
       for (const player of playerCards) {
-        // Logic voor schorsingen op basis van gele kaarten - hoogste bereikte drempel.
-        if (player.yellowCards >= 2) {
-          const applicableRule = suspensionRulesService.findApplicableYellowCardRule(player.yellowCards, rules.yellow_card_rules);
-          const baselineMatches = applicableRule?.suspension_matches || 0;
-          const ruleCardCount = applicableRule ? ((applicableRule as any).card_count ?? (applicableRule as any).min_cards) : 0;
-          const baselineReason = ruleCardCount > 0
-            ? `${player.yellowCards} gele kaarten (regel vanaf ${ruleCardCount})`
-            : `${player.yellowCards} gele kaarten`;
+        const remaining = player.suspendedMatches ?? 0;
+        if (remaining <= 0) continue;
 
-          if (baselineMatches > 0) {
-            const cardDate = getLastCardDate(player.playerId, 'yellow');
-            const overrideKey = `${player.playerId}:yellow`;
-            const ov = autoOverrides.get(overrideKey);
-            const effectiveMatches =
-              ov?.matches_override != null && ov.matches_override >= 1
-                ? ov.matches_override
-                : baselineMatches;
-            const effectiveReason = ov?.reason_override || baselineReason;
-            const suspendedForMatches =
-              cardDate && player.teamId
-                ? getNextMatchesAfterDate(player.teamId, cardDate, effectiveMatches)
-                : [];
-            const suspendedForMatch = suspendedForMatches[0];
+        const cardTrigger = getLastCardTrigger(
+          player,
+          player.redCards > 0 ? "red" : "yellow",
+        );
+        const suspendedForMatches = player.teamId
+          ? resolveSuspendedForMatches(player.teamId, cardTrigger, remaining)
+          : [];
+        const suspendedForMatch = suspendedForMatches[0];
+        const status = getAutomaticStatus(remaining, suspendedForMatches);
 
-            suspensions.push({
-              id: `automatic-yellow-${player.playerId}-${player.yellowCards}`,
-              playerId: player.playerId,
-              playerName: player.playerName,
-              teamName: player.teamName,
-              teamId: player.teamId,
-              source: 'automatic',
-              automaticKind: 'yellow',
-              automaticOverrideId: ov?.id,
-              baselineReason,
-              baselineMatches,
-              reason: effectiveReason,
-              matches: effectiveMatches,
-              notes: ov?.notes || undefined,
-              status: getStatusForSuspendedMatches(suspendedForMatches),
-              cardDate,
-              suspendedForMatch,
-              suspendedForMatches
-            });
-          }
-        }
-
-        // Logic voor rode kaarten - use dynamic rules
+        // Rode kaart heeft voorrang (zelfde remaining-teller in DB)
         if (player.redCards > 0) {
-          const cardDate = getLastCardDate(player.playerId, 'red');
+          const cardDate = getLastCardDate(player, 'red');
           const baselineMatches = player.redCards * rules.red_card_rules.default_suspension_matches;
           const baselineReason = `${player.redCards} rode kaart${player.redCards > 1 ? 'en' : ''}`;
           const overrideKey = `${player.playerId}:red`;
           const ov = autoOverrides.get(overrideKey);
-          const effectiveMatches =
-            ov?.matches_override != null && ov.matches_override >= 1
-              ? ov.matches_override
-              : baselineMatches;
           const effectiveReason = ov?.reason_override || baselineReason;
-          const suspendedForMatches =
-            cardDate && player.teamId
-              ? getNextMatchesAfterDate(player.teamId, cardDate, effectiveMatches)
-              : [];
-          const suspendedForMatch = suspendedForMatches[0];
 
           suspensions.push({
             id: `automatic-red-${player.playerId}-${player.redCards}`,
@@ -793,14 +863,68 @@ export const suspensionService = {
             baselineReason,
             baselineMatches,
             reason: effectiveReason,
-            matches: effectiveMatches,
+            matches: remaining,
             notes: ov?.notes || undefined,
-            status: getStatusForSuspendedMatches(suspendedForMatches),
+            status,
             cardDate,
             suspendedForMatch,
-            suspendedForMatches
+            suspendedForMatches,
           });
+          continue;
         }
+
+        // Gele kaarten-drempel
+        if (player.yellowCards >= 2) {
+          const applicableRule = suspensionRulesService.findApplicableYellowCardRule(
+            player.yellowCards,
+            rules.yellow_card_rules,
+          );
+          const baselineMatches = applicableRule?.suspension_matches || 0;
+          const baselineReason = `${player.yellowCards} gele kaarten`;
+
+          if (baselineMatches > 0) {
+            const cardDate = getLastCardDate(player, 'yellow');
+            const overrideKey = `${player.playerId}:yellow`;
+            const ov = autoOverrides.get(overrideKey);
+            const effectiveReason = ov?.reason_override || baselineReason;
+
+            suspensions.push({
+              id: `automatic-yellow-${player.playerId}-${player.yellowCards}`,
+              playerId: player.playerId,
+              playerName: player.playerName,
+              teamName: player.teamName,
+              teamId: player.teamId,
+              source: 'automatic',
+              automaticKind: 'yellow',
+              automaticOverrideId: ov?.id,
+              baselineReason,
+              baselineMatches,
+              reason: effectiveReason,
+              matches: remaining,
+              notes: ov?.notes || undefined,
+              status,
+              cardDate,
+              suspendedForMatch,
+              suspendedForMatches,
+            });
+            continue;
+          }
+        }
+
+        // Fallback: DB meldt resterende schorsing zonder kaartdrempel in totalen
+        suspensions.push({
+          id: `automatic-remaining-${player.playerId}`,
+          playerId: player.playerId,
+          playerName: player.playerName,
+          teamName: player.teamName,
+          teamId: player.teamId,
+          source: 'automatic',
+          reason: `Schorsing (${remaining} wedstrijd${remaining !== 1 ? 'en' : ''} resterend)`,
+          matches: remaining,
+          status,
+          suspendedForMatch,
+          suspendedForMatches,
+        });
       }
 
       const manualSuspensions = await suspensionService.getManualSuspensions();
@@ -836,6 +960,14 @@ export const suspensionService = {
           const endDateTime = manualSuspension.endDate ? new Date(manualSuspension.endDate).getTime() : undefined;
           const isExpired = typeof endDateTime === 'number' && endDateTime < Date.now();
           const status: Suspension['status'] = manualSuspension.isActive && !isExpired ? 'active' : 'completed';
+          const suspendedForMatches = resolveSuspendedForMatches(
+            player?.teamId,
+            manualSuspension.startDate
+              ? { matchDate: manualSuspension.startDate }
+              : undefined,
+            manualSuspension.matches,
+          );
+          const suspendedForMatch = suspendedForMatches[0];
 
           suspensions.push({
             id: `manual-${manualSuspension.id}`,
@@ -851,7 +983,9 @@ export const suspensionService = {
             cardDate: manualSuspension.startDate,
             startDate: manualSuspension.startDate,
             endDate: manualSuspension.endDate,
-            notes: manualSuspension.notes
+            notes: manualSuspension.notes,
+            suspendedForMatch,
+            suspendedForMatches,
           });
         });
       }

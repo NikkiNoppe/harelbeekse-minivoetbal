@@ -33,7 +33,7 @@ interface PlayersListProps {
 
 const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }) => {
   const { toast } = useToast();
-  const { isLocked, lockDate, canEdit } = usePlayerListLock();
+  const { isLocked, lockMessage, canEdit } = usePlayerListLock();
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPlayerFirstName, setNewPlayerFirstName] = useState("");
@@ -82,19 +82,13 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
   };
 
   const showLockWarning = () => {
-    if (isLocked && lockDate) {
-      toast({
-        title: "Spelerslijst vergrendeld",
-        description: `Wijzigingen zijn niet toegestaan vanaf ${formatDateShort(lockDate)}`,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Spelerslijst vergrendeld",
-        description: "Wijzigingen zijn momenteel niet toegestaan",
-        variant: "destructive",
-      });
-    }
+    if (!isLocked) return;
+    toast({
+      title: "Spelerslijst vergrendeld",
+      description:
+        lockMessage ?? "Wijzigingen aan de spelerslijst zijn momenteel niet toegestaan.",
+      variant: "destructive",
+    });
   };
 
   const handleAddPlayer = async () => {
@@ -210,10 +204,8 @@ const PlayersList: React.FC<PlayersListProps> = ({ teamId, teamName, teamEmail }
         </CardTitle>
         <CardDescription>
           Beheer tot 20 spelers voor uw team • Contact: {teamEmail}
-          {isLocked && lockDate && (
-            <span className="block text-red-600 mt-1">
-              Spelerslijst vergrendeld vanaf {formatDateShort(lockDate)}
-            </span>
+          {isLocked && lockMessage && (
+            <span className="block text-red-600 mt-1">{lockMessage}</span>
           )}
         </CardDescription>
       </CardHeader>

@@ -27,15 +27,13 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   PageHeader,
   PUBLIC_CARD_CLASS,
   PUBLIC_PAGE_CLASS,
+  SectionAccordionItem,
 } from '@/components/layout';
 import { ADMIN_ROUTES, PUBLIC_ROUTES, SUPERADMIN_ROUTES } from '@/config/routes';
 import { withOrgSearchParam } from '@/config/superAdminTenants';
@@ -56,6 +54,7 @@ import {
   type SuperAdminOrgFormState,
 } from '@/lib/superAdminOrgForm';
 import { parseBrandingSettings } from '@/types/branding';
+import { SuperAdminOrgTenantSettings } from '@/components/pages/superadmin/SuperAdminOrgTenantSettings';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_CARD_CLASS = cn(
@@ -165,7 +164,7 @@ function OrgQuickLinks({
             className="inline-flex items-center justify-center"
           >
             <Settings className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-            Admin-instellingen
+            Admin-instellingen (competitie)
           </Link>
         </Button>
       </div>
@@ -669,13 +668,11 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
           const isSaving = savingId === org.id;
 
           return (
-            <AccordionItem
+            <SectionAccordionItem
               key={org.id}
               value={`org-${org.id}`}
-              className={cn(PLATFORM_CARD_CLASS, 'border px-0')}
-            >
-              <AccordionTrigger className="px-4 py-4 hover:no-underline sm:px-5">
-                <div className="flex flex-1 items-center gap-3 pr-2 text-left">
+              triggerContent={
+                <div className="flex flex-1 items-center gap-3 pr-2 text-left min-w-0">
                   <OrgAvatar logoPath={logoPath} displayName={displayName} />
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <span className="block font-semibold text-brand-dark truncate">
@@ -696,8 +693,8 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
                     </div>
                   </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4 sm:px-5">
+              }
+            >
                 <div className="space-y-4">
                   <OrgQuickLinks
                     slug={org.slug}
@@ -705,6 +702,19 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
                     isActive={isActive}
                     onActivate={() => void handleActivate(form)}
                   />
+                  {isActive ? (
+                    <FormSection
+                      title="Navigatie & thema"
+                      description="Tab-zichtbaarheid en kleurenpalet voor deze tenant (platformniveau)."
+                    >
+                      <SuperAdminOrgTenantSettings />
+                    </FormSection>
+                  ) : (
+                    <p className="text-sm text-muted-foreground rounded-lg border border-dashed border-primary/20 px-4 py-3">
+                      Maak deze organisatie <strong className="font-medium">actief</strong> om tab-zichtbaarheid
+                      en kleuren te bewerken.
+                    </p>
+                  )}
                   <OrgEditorForm
                     form={form}
                     onChange={(next) =>
@@ -731,8 +741,7 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
                     </Button>
                   </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+            </SectionAccordionItem>
           );
         })}
       </Accordion>

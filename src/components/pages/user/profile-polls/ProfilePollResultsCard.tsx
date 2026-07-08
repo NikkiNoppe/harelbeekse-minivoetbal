@@ -2,8 +2,9 @@ import React, { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { SECTION_COLLAPSIBLE_NESTED_TRIGGER } from "@/components/layout";
 import {
-  ChevronDown,
+  ChevronRight,
   Users,
   UserCheck,
   UserX,
@@ -171,29 +172,18 @@ export function ProfilePollResultsCard({
         </section>
 
         <Collapsible open={participantsOpen} onOpenChange={setParticipantsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
+          <CollapsibleTrigger className={cn(SECTION_COLLAPSIBLE_NESTED_TRIGGER, "group")}>
+            <Users className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="flex-1 text-left">Wie heeft ingevuld?</span>
+            <ChevronRight
               className={cn(
-                "w-full justify-between min-h-[44px]",
-                "border-border/60 bg-background/60 text-muted-foreground",
-                "hover:text-foreground hover:border-primary/30 hover:bg-muted",
+                "h-4 w-4 shrink-0 transition-transform motion-safe:duration-200",
+                participantsOpen && "rotate-90",
               )}
-            >
-              <span className="flex items-center gap-2 text-xs sm:text-sm">
-                <Users className="h-4 w-4 shrink-0" />
-                Wie heeft ingevuld?
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-200",
-                  participantsOpen && "rotate-180",
-                )}
-              />
-            </Button>
+              aria-hidden
+            />
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-3 space-y-3 min-w-0">
+          <CollapsibleContent className="space-y-3 min-w-0 pt-2">
             {stats.responded.length > 0 && (
               <div className="rounded-lg border border-border/50 bg-background/50 p-3 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">

@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
-import { RefereeDashboard } from '@/components/pages/public/scheidsrechters';
 import { AssignmentWorkspace } from './components';
 import { useAuth } from '@/hooks/useAuth';
+import { ADMIN_ROUTES } from '@/config/routes';
 
 const ScheidsrechtersPage = () => {
   const { user, loading } = useAuth();
@@ -44,6 +45,10 @@ const ScheidsrechtersPage = () => {
     );
   }
 
+  if (userRole === 'referee') {
+    return <Navigate to={`${ADMIN_ROUTES.profile}#referee-planning`} replace />;
+  }
+
   if (userRole === 'admin') {
     return (
       <div className="scheids-page space-y-6 p-4 sm:p-6">
@@ -63,7 +68,7 @@ const ScheidsrechtersPage = () => {
     );
   }
 
-  return <RefereeDashboard />;
+  return null;
 };
 
 export default ScheidsrechtersPage;

@@ -213,7 +213,12 @@ export const usePlayersUpdatedWithQuery = () => {
     handleAddPlayer,
     handleSaveEditedPlayer,
     handleRemovePlayer
-  } = usePlayerOperations(effectiveTeamId, refreshPlayers, setEditDialogOpen);
+  } = usePlayerOperations(
+    effectiveTeamId,
+    refreshPlayers,
+    setEditDialogOpen,
+    playersQuery.data?.length ?? 0,
+  );
   
   // Memoized handlers
   const handleTeamChangeWrapper = useCallback((teamId: number | null) => {

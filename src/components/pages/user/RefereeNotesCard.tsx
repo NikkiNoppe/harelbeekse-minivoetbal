@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { FileText, ChevronRight, ChevronDown, MessageSquare } from "lucide-react";
+import { ChevronRight, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { SectionCollapsibleCard, SECTION_COLLAPSIBLE_NESTED_TRIGGER } from "@/components/layout";
 
 const STORAGE_KEY = "admin_read_referee_notes";
 
@@ -89,7 +89,9 @@ const NoteItem: React.FC<{
   </div>
 );
 
-const RefereeNotesCard: React.FC = () => {
+const RefereeNotesCard: React.FC<{ accordionValue?: string }> = ({
+  accordionValue = "referee-notes",
+}) => {
   const { user: authUser } = useAuth();
   const [readIds, setReadIds] = useState<number[]>(getReadNotes);
   const [readOpen, setReadOpen] = useState(false);
@@ -118,7 +120,6 @@ const RefereeNotesCard: React.FC = () => {
             }));
       return result
             .map((m: any) => {
-              // Remove "⚠️ BOETE: ..." lines from referee_notes
               const cleanedNotes = (m.referee_notes || "")
                 .split("\n")
                 .filter((line: string) => !line.trim().startsWith("⚠️ BOETE:"))
@@ -151,103 +152,89 @@ const RefereeNotesCard: React.FC = () => {
   }, []);
 
   const { unread, read } = useMemo(() => {
-    const unread: RefereeNote[] = [];
-    const read: RefereeNote[] = [];
+    const unreadNotes: RefereeNote[] = [];
+    const readNotesList: RefereeNote[] = [];
     for (const n of notes) {
       if (readIds.includes(n.match_id)) {
-        read.push(n);
+        readNotesList.push(n);
       } else {
-        unread.push(n);
+        unreadNotes.push(n);
       }
     }
-    return { unread, read };
+    return { unread: unreadNotes, read: readNotesList };
   }, [notes, readIds]);
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <Skeleton className="h-5 w-52" />
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+      <SectionCollapsibleCard
+        title="Scheidsrechter notities"
+        icon={MessageSquare}
+        accordionValue={accordionValue}
+        contentClassName="space-y-3"
+      >
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </SectionCollapsibleCard>
     );
   }
 
   if (notes.length === 0) return null;
 
   return (
-    <Collapsible>
-      <Card>
-        <CollapsibleTrigger className="w-full">
-          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                Scheidsrechter Notities
-              </CardTitle>
-              <div className="flex items-center gap-2 shrink-0">
-                {unread.length > 0 && (
-                  <Badge variant="default" className="text-xs">
-                    {unread.length} nieuw
-                  </Badge>
-                )}
-                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [&[data-state=open]]:rotate-180" />
-              </div>
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent className="pt-0 space-y-3">
-        {/* Unread notes */}
-        {unread.length > 0 ? (
-          <div className="space-y-2">
-            {unread.map((note) => (
+    <SectionCollapsibleCard
+      title="Scheidsrechter notities"
+      icon={MessageSquare}
+      accordionValue={accordionValue}
+      badge={
+        unread.length > 0 ? (
+          <Badge variant="default" className="text-xs">
+            {unread.length} nieuw
+          </Badge>
+        ) : undefined
+      }
+      contentClassName="space-y-3"
+    >
+      {unread.length > 0 ? (
+        <div className="space-y-2">
+          {unread.map((note) => (
+            <NoteItem
+              key={note.match_id}
+              note={note}
+              isRead={false}
+              onToggle={toggleRead}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground py-2">
+          Alle notities zijn gelezen
+        </p>
+      )}
+
+      {read.length > 0 && (
+        <Collapsible open={readOpen} onOpenChange={setReadOpen}>
+          <CollapsibleTrigger className={SECTION_COLLAPSIBLE_NESTED_TRIGGER}>
+            <ChevronRight
+              className={cn(
+                "h-4 w-4 transition-transform",
+                readOpen && "rotate-90"
+              )}
+            />
+            <span>Gelezen notities ({read.length})</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-2 pt-2">
+            {read.map((note) => (
               <NoteItem
                 key={note.match_id}
                 note={note}
-                isRead={false}
+                isRead={true}
                 onToggle={toggleRead}
               />
             ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground py-2">
-            Alle notities zijn gelezen ✓
-          </p>
-        )}
-
-        {/* Read notes (collapsible) */}
-        {read.length > 0 && (
-          <Collapsible open={readOpen} onOpenChange={setReadOpen}>
-            <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full py-2">
-              <ChevronRight
-                className={cn(
-                  "h-4 w-4 transition-transform",
-                  readOpen && "rotate-90"
-                )}
-              />
-              <span>Gelezen notities ({read.length})</span>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pt-2">
-              {read.map((note) => (
-                <NoteItem
-                  key={note.match_id}
-                  note={note}
-                  isRead={true}
-                  onToggle={toggleRead}
-                />
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
-          </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </SectionCollapsibleCard>
   );
 };
 

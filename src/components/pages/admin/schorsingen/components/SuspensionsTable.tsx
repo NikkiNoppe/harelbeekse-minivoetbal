@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit } from "lucide-react";
 import { formatDateForDisplay } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 import type { Suspension } from "@/domains/cards-suspensions";
 
 interface SuspensionsTableProps {
@@ -12,6 +13,8 @@ interface SuspensionsTableProps {
   showActions?: boolean;
   isLoading?: boolean;
   onEdit?: (suspension: Suspension) => void;
+  /** Compacte rijen voor profiel-sectie */
+  variant?: "default" | "profile";
 }
 
 const CardSkeleton = memo(() => (
@@ -31,32 +34,56 @@ const SuspensionCard = memo(({
   suspension, 
   showTeam, 
   showActions, 
-  onEdit
+  onEdit,
+  variant = "default",
 }: { 
   suspension: Suspension; 
   showTeam: boolean;
   showActions: boolean;
   onEdit?: (suspension: Suspension) => void;
+  variant?: "default" | "profile";
 }) => (
-  <div className="flex items-center justify-between gap-2 py-2 px-1 border-b border-border/50 last:border-b-0">
+  <div
+    className={cn(
+      "flex items-start justify-between gap-2",
+      variant === "default" && "border-b border-border/50 px-1 py-2.5 last:border-b-0",
+      variant === "profile" && "border-b border-border/30 px-3 py-2.5 last:border-b-0 first:pt-2.5 last:pb-2.5",
+    )}
+  >
     <div className="flex-1 min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm text-foreground leading-tight">
-          <span className="font-medium">{suspension.playerName}</span>
-          {showTeam && <span className="text-muted-foreground"> · {suspension.teamName}</span>}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <p className="text-sm font-medium text-foreground leading-tight">
+          {suspension.playerName}
+          {showTeam && (
+            <span className="font-normal text-muted-foreground"> · {suspension.teamName}</span>
+          )}
         </p>
-        <Badge variant="outline" className={suspension.source === 'manual' ? "bg-primary/10 text-primary border-primary/30" : "bg-muted text-muted-foreground"}>
-          {suspension.source === 'manual' ? 'Handmatig' : 'Automatisch'}
-        </Badge>
-        <Badge variant={suspension.status === 'active' ? 'destructive' : 'secondary'}>
+        {variant === "default" && (
+          <Badge variant="outline" className={suspension.source === 'manual' ? "bg-primary/10 text-primary border-primary/30" : "bg-muted text-muted-foreground"}>
+            {suspension.source === 'manual' ? 'Handmatig' : 'Automatisch'}
+          </Badge>
+        )}
+        <Badge
+          variant={suspension.status === 'active' ? 'destructive' : 'secondary'}
+          className={variant === "profile" ? "text-[10px] px-1.5 h-5" : undefined}
+        >
           {suspension.status === 'active' ? 'Actief' : suspension.status === 'pending' ? 'Wachtend' : 'Afgelopen'}
         </Badge>
       </div>
-      <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
-        {suspension.reason} · {suspension.matches} wedstrijd{suspension.matches !== 1 ? 'en' : ''}
+      <p className={cn(
+        "text-muted-foreground leading-snug",
+        variant === "profile" ? "mt-0.5 text-[11px]" : "mt-0.5 text-xs",
+      )}>
+        {suspension.reason}
+        {variant === "default" && (
+          <> · {suspension.matches} wedstrijd{suspension.matches !== 1 ? 'en' : ''}</>
+        )}
       </p>
       {suspension.suspendedForMatches && suspension.suspendedForMatches.length > 0 && (
-        <div className="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
+        <div className={cn(
+          "space-y-0.5 text-muted-foreground",
+          variant === "profile" ? "mt-1 text-[11px]" : "mt-0.5 text-xs",
+        )}>
           {suspension.suspendedForMatches.map((match, index) => (
             <div key={`${match.date}-${match.opponent}-${index}`} className="flex items-center gap-1.5">
               <span aria-hidden="true">-</span>
@@ -108,7 +135,8 @@ export const SuspensionsTable: React.FC<SuspensionsTableProps> = memo(({
   showTeam = true,
   showActions = false,
   isLoading = false,
-  onEdit
+  onEdit,
+  variant = "default",
 }) => {
   // Sort chronologically by the date the suspension affects.
   const sortedSuspensions = useMemo(() => {
@@ -141,6 +169,7 @@ export const SuspensionsTable: React.FC<SuspensionsTableProps> = memo(({
           showTeam={showTeam}
           showActions={showActions}
           onEdit={onEdit}
+          variant={variant}
         />
       ))}
     </div>
