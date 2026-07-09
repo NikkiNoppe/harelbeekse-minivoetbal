@@ -19,6 +19,7 @@ import { getActiveOrgSlugOverride } from '@/config/organizationHosts';
 import {
   clearSuperAdminActingOrg,
   getSuperAdminActingOrg,
+  setSuperAdminActingOrg,
 } from '@/lib/superAdminOrg';
 import { setSuperAdminActingOrganization } from '@/services/organization/superAdminOrganizationService';
 import { LoginError } from '@/lib/loginErrors';

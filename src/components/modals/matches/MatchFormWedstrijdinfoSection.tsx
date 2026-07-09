@@ -28,7 +28,7 @@ function formatDisplayValue(value: string, emptyLabel = "—"): string {
 }
 
 interface MatchInfoReadOnlyFieldProps {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
   label: string;
   value: string;
   className?: string;
@@ -202,7 +202,7 @@ function MatchFormRefereeSelect({
       {!loadingReferees && referees.length === 0 && !selectedReferee && (
         refereesError ? (
           <InlinePlayerRetry
-            onRetry={onRefetchReferees}
+            onRetry={async () => { await onRefetchReferees(); }}
             isLoading={loadingReferees}
             error={refereesError}
             itemCount={referees.length}

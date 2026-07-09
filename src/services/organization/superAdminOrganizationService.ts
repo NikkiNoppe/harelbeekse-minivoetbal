@@ -47,7 +47,7 @@ export async function upsertOrganizationForSuperAdmin(input: {
       p_organization_id: input.organizationId,
       p_name: input.name,
       p_slug: input.slug,
-      p_branding_settings: input.brandingSettings,
+      p_branding_settings: input.brandingSettings as never,
     },
   );
 

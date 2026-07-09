@@ -51,7 +51,7 @@ export function AdminSidebar({ activeTab }: AdminSidebarProps) {
   const visibleBeheerItems = filterBeheerItems(SIDEBAR_BEHEER_ITEMS, filterOpts);
   const visibleFinancieelItems = filterAdminOnlyItems(FINANCIEEL_ITEMS, filterOpts);
   const visibleSysteemItems = filterAdminOnlyItems(SIDEBAR_SYSTEEM_ITEMS, filterOpts);
-  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin);
+  const visibleSpeelformatenItems = filterSpeelformatenItems(isSuperAdmin, isTabVisible);
 
   const isActive = (key: string) => activeTab === key;
 

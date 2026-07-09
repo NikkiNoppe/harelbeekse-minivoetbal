@@ -44,6 +44,7 @@ import {
 } from "@/components/modals/matches/matchFormLayout";
 import { normalizeRole } from "@/config/navigation";
 import { fetchMatchTeamsContactForSession } from "@/services/match/matchTeamsContactSessionFetch";
+import { fetchPublicTeams } from "@/services/public/publicScheduleFetch";
 import { fetchTeamForSession } from "@/services/core/teamsSessionFetch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
@@ -505,7 +506,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [homeScore, awayScore, match.homeScore, match.awayScore, match.isCompleted, parseFormOrMatchScore]);
 
   const persistPenaltyItems = useCallback(async (
-    items: PenaltyItem[],
+    items: MatchFormPenaltyItem[],
     options?: { successTitle?: string; successDescription?: string }
   ): Promise<boolean> => {
     const validItems = items.filter((p) => p.costSettingId && p.teamId);
@@ -665,7 +666,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
 
     setIsFinancieelOpen(true);
 
-    const draft: PenaltyItem = { teamId: suggestedTeamId, costSettingId: forfaitCost.id };
+    const draft: MatchFormPenaltyItem = { teamId: suggestedTeamId, costSettingId: forfaitCost.id };
 
     if (suggestedTeamId != null) {
       const ok = await persistPenaltyItems([draft], {

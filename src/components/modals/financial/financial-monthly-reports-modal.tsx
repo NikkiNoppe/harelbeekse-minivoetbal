@@ -11,7 +11,7 @@ import {
   SECTION_COLLAPSIBLE_SURFACE,
   SECTION_COLLAPSIBLE_TRIGGER,
 } from "@/components/layout/section-collapsible-styles";
-import { Download, Euro, ChevronDown, Users, Loader2, RefreshCw, Ban } from "lucide-react";
+import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw, Ban } from "lucide-react";
 import { useFinancialSeasonReportModal } from "./useFinancialSeasonReportModal";
 
 interface FinancialMonthlyReportsModalProps {

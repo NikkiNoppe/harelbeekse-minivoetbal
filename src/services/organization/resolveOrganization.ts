@@ -7,6 +7,8 @@ import {
   type Organization,
 } from '@/services/organization/organizationService';
 
+export type { Organization };
+
 export class UnknownOrganizationHostnameError extends Error {
   readonly hostname: string;
 
