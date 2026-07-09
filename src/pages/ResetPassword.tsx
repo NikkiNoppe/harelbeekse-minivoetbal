@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBranding } from "@/hooks/useBranding";
+import { useOrganization } from "@/hooks/useOrganization";
+import { DEFAULT_ORGANIZATION_SLUG } from "@/config/organization";
+import {
+  getOrgSlugQueryParam,
+  navigateToTenantHomeAfterAuth,
+} from "@/config/organizationHosts";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, "Wachtwoord moet minimaal 6 karakters bevatten"),
@@ -26,12 +33,15 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const branding = useBranding();
+  const { organizationSlug } = useOrganization();
   const [isLoading, setIsLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
 
   const token = searchParams.get("token");
   const mode = searchParams.get("mode");
   const isSetupMode = mode === "setup";
+  const tenantSlug =
+    organizationSlug || getOrgSlugQueryParam() || DEFAULT_ORGANIZATION_SLUG;
 
   const copy = useMemo(() => ({
     title: isSetupMode ? "Wachtwoord instellen" : "Wachtwoord resetten",
@@ -41,8 +51,8 @@ const ResetPassword = () => {
     submitLabel: isSetupMode ? "Wachtwoord instellen" : "Wachtwoord resetten",
     successTitle: isSetupMode ? "Account geactiveerd" : "Wachtwoord gereset",
     successDescription: isSetupMode
-      ? "Je wachtwoord is ingesteld. Je kunt nu inloggen."
-      : "Je wachtwoord is succesvol gewijzigd. Je kunt nu inloggen.",
+      ? "Je wachtwoord is ingesteld. Je wordt doorgestuurd naar de website."
+      : "Je wachtwoord is succesvol gewijzigd. Je wordt doorgestuurd naar de website.",
     loadingLabel: isSetupMode ? "Instellen..." : "Resetten...",
   }), [isSetupMode]);
 
@@ -54,6 +64,14 @@ const ResetPassword = () => {
     }
   });
 
+  const goToTenantHome = useCallback(() => {
+    navigateToTenantHomeAfterAuth({
+      organizationSlug: tenantSlug,
+      homePath: PUBLIC_ROUTES.algemeen,
+      navigate,
+    });
+  }, [navigate, tenantSlug]);
+
   useEffect(() => {
     if (!token) {
       toast({
@@ -61,12 +79,12 @@ const ResetPassword = () => {
         description: "De link is ongeldig of verlopen.",
         variant: "destructive"
       });
-      navigate("/");
+      goToTenantHome();
       return;
     }
 
     setTokenValid(true);
-  }, [token, navigate, toast]);
+  }, [token, goToTenantHome, toast]);
 
   const onSubmit = async (data: ResetPasswordForm) => {
     if (!token) return;
@@ -92,7 +110,7 @@ const ResetPassword = () => {
           title: copy.successTitle,
           description: copy.successDescription
         });
-        navigate("/");
+        goToTenantHome();
       } else {
         toast({
           title: isSetupMode ? "Activeren mislukt" : "Reset mislukt",
@@ -183,7 +201,7 @@ const ResetPassword = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/")}
+                  onClick={goToTenantHome}
                   className="min-h-[44px] flex-1"
                 >
                   Annuleren

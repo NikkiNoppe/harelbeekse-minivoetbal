@@ -187,3 +187,64 @@ export function buildTenantNavigationPath(
   }
   return withOrganizationSearchParam(path, organizationSlug);
 }
+
+/**
+ * Home na auth-flow (wachtwoord instellen/resetten): publieke startpagina van de tenant.
+ * Op gedeeld domein → /algemeen?org=kuurne; op eigen hostname → /algemeen.
+ */
+export function resolvePostAuthTenantHomePath(
+  organizationSlug: string,
+  homePath = '/algemeen',
+  hostname: string = getCurrentHostname(),
+): string {
+  return buildTenantNavigationPath(homePath, organizationSlug, hostname);
+}
+
+/**
+ * Externe tenant-site wanneer de gebruiker op een gedeeld platform-domein zit
+ * maar de organisatie een eigen publieke hostname heeft (en die bekend is in de mapping).
+ * Gereserveerd voor wanneer dedicated tenant-domeinen live zijn.
+ */
+export function resolvePostAuthTenantExternalUrl(
+  organizationSlug: string,
+  siteUrl: string,
+  homePath = '/algemeen',
+  hostname: string = getCurrentHostname(),
+): string | null {
+  const currentHost = hostname.replace(/^www\./, '').toLowerCase();
+  const currentSlug = resolveHostnameToSlug(hostname);
+
+  if (currentSlug === organizationSlug) {
+    return null;
+  }
+
+  try {
+    const site = new URL(siteUrl);
+    const siteHost = site.hostname.replace(/^www\./, '').toLowerCase();
+    const siteSlug = HOSTNAME_TO_SLUG[siteHost];
+
+    if (siteSlug !== organizationSlug || siteHost === currentHost) {
+      return null;
+    }
+
+    const path = homePath.startsWith('/') ? homePath : `/${homePath}`;
+    return `${site.origin}${path}`;
+  } catch {
+    return null;
+  }
+}
+
+export function navigateToTenantHomeAfterAuth(options: {
+  organizationSlug: string;
+  homePath?: string;
+  navigate: (path: string, options?: { replace?: boolean }) => void;
+  hostname?: string;
+}): void {
+  const homePath = options.homePath ?? '/algemeen';
+  const hostname = options.hostname ?? getCurrentHostname();
+
+  options.navigate(
+    resolvePostAuthTenantHomePath(options.organizationSlug, homePath, hostname),
+    { replace: true },
+  );
+}
