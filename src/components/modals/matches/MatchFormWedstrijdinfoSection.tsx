@@ -28,7 +28,7 @@ function formatDisplayValue(value: string, emptyLabel = "—"): string {
 }
 
 interface MatchInfoReadOnlyFieldProps {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
   label: string;
   value: string;
   className?: string;
