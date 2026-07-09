@@ -321,30 +321,7 @@ const Header: React.FC<HeaderProps> = ({
                 ))}
               </nav>
             )}
-            {isAuthenticated && desktopShortcutSections.length > 0 && (
-              <nav
-                className="hidden xl:flex items-center gap-2 min-w-0 overflow-x-auto border-l border-white/20 pl-3"
-                aria-label="Snelle beheerlinks"
-              >
-                {desktopShortcutSections.map((section) => (
-                  <button
-                    key={section.id}
-                    type="button"
-                    onClick={() => navigateToTab(section.item.key)}
-                    aria-current={activeTab === section.item.key ? "page" : undefined}
-                    className={cn(
-                      "inline-flex min-h-[44px] items-center gap-2 rounded-md px-3 py-2 text-sm text-white/85 transition-colors hover:bg-brand-500/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-600",
-                      activeTab === section.item.key && "bg-brand-500/60 text-white",
-                    )}
-                  >
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-white/75">
-                      {section.title}
-                    </span>
-                    <span className="font-medium">{section.item.label}</span>
-                  </button>
-                ))}
-              </nav>
-            )}
+            {/* Ingelogde snelkoppelingen zijn beschikbaar via de zijbalk — niet meer duplicaat in de header op desktop. */}
           </div>
 
           <div className="absolute left-1/2 -translate-x-1/2 lg:hidden">
