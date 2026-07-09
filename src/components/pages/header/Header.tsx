@@ -28,7 +28,7 @@ interface HeaderProps {
   onLoginClick: () => void;
   activeTab: string;
   isAuthenticated?: boolean;
-  user?: { username?: string; email?: string; role?: string } | null;
+  user?: { id?: number; username?: string; email?: string; role?: string } | null;
   hasSidebar?: boolean;
 }
 

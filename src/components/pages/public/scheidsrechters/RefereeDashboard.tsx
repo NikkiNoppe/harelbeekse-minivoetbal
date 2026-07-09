@@ -15,6 +15,7 @@ export function RefereeDashboard() {
     isLoadingAssignments,
     username,
     submitAvailability,
+    submitBulkAvailability,
     refreshData,
   } = useRefereeDashboard();
 

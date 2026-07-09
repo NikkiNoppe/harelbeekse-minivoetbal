@@ -202,7 +202,7 @@ function MatchFormRefereeSelect({
       {!loadingReferees && referees.length === 0 && !selectedReferee && (
         refereesError ? (
           <InlinePlayerRetry
-            onRetry={onRefetchReferees}
+            onRetry={async () => { await onRefetchReferees(); }}
             isLoading={loadingReferees}
             error={refereesError}
             itemCount={referees.length}
