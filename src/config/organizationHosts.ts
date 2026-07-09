@@ -13,6 +13,18 @@ export const HOSTNAME_TO_SLUG: Record<string, string> = {
 
 const LOCAL_DEV_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 
+const LOVABLE_PREVIEW_HOST_SUFFIXES = [
+  '.lovableproject.com',
+  '.lovable.app',
+  '.lovable.dev',
+  '.sandbox.lovable.dev',
+];
+
+function isLovablePreviewHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return LOVABLE_PREVIEW_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
+}
+
 function getDevDefaultSlug(): string {
   const fromEnv = import.meta.env.VITE_DEFAULT_ORG_SLUG as string | undefined;
   return fromEnv?.trim().toLowerCase() || DEFAULT_ORGANIZATION_SLUG;
@@ -36,7 +48,7 @@ export function resolveHostnameToSlug(
   if (mapped) {
     return mapped;
   }
-  if (isLocalDevHostname(normalized)) {
+  if (isLocalDevHostname(normalized) || isLovablePreviewHostname(normalized)) {
     return getDevDefaultSlug();
   }
   return null;
