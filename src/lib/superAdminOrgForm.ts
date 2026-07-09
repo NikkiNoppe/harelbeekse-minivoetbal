@@ -1,5 +1,8 @@
 import type { Organization } from '@/services/organization/organizationService';
-import { resolveOrganizationPublicContent } from '@/config/organizationContent';
+import {
+  resolveOrganizationPublicContent,
+  type FooterContactPerson,
+} from '@/config/organizationContent';
 import {
   parseBrandingSettings,
   type OrganizationExternalLink,
@@ -22,6 +25,7 @@ export interface SuperAdminOrgFormState {
   algemeenSubtitle: string;
   algemeenAbout: string;
   footerTagline: string;
+  footerContacts: FooterContactPerson[];
   externalLinks: OrganizationExternalLink[];
 }
 
@@ -46,6 +50,7 @@ export function organizationToFormState(org: Organization): SuperAdminOrgFormSta
     algemeenSubtitle: content.algemeen.subtitle,
     algemeenAbout: content.algemeen.aboutParagraph,
     footerTagline: content.footerTagline,
+    footerContacts: content.footerContacts.map((contact) => ({ ...contact })),
     externalLinks: branding.links?.length ? [...branding.links] : [],
   };
 }
@@ -88,6 +93,13 @@ export function formStateToBrandingSettings(
         aboutParagraph: form.algemeenAbout.trim(),
       },
       footerTagline: form.footerTagline.trim(),
+      footerContacts: form.footerContacts
+        .map((contact) => ({
+          name: contact.name.trim(),
+          phone: contact.phone?.trim() ?? '',
+          email: contact.email?.trim() ?? '',
+        }))
+        .filter((contact) => contact.name),
     },
     links,
     themeColors: existingBranding.themeColors ?? existing.themeColors,
@@ -112,6 +124,7 @@ export function createEmptyOrgFormState(nextId: number): SuperAdminOrgFormState 
     algemeenSubtitle: '',
     algemeenAbout: '',
     footerTagline: '',
+    footerContacts: [],
     externalLinks: [],
   };
 }

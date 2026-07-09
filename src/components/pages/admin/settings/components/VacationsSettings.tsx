@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { AppModal, AppAlertModal } from '@/components/modals';
+import { AppModal, AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Edit, Plus, Trash2, Umbrella } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useOrgQueryScope } from '@/hooks/useOrganization';
+import { useSeasonDataScope } from '@/hooks/useSeasonDataScope';
 import { competitionDataService } from '@/services/competitionDataService';
-import { seasonService } from '@/services/seasonService';
 import type { VacationPeriod } from '@/services/competitionDataService';
 import SlotUnavailabilitySettings from '@/components/pages/admin/settings/components/SlotUnavailabilitySettings';
 import { PUBLIC_CARD_CLASS, PUBLIC_PAGE_CLASS } from '@/components/layout';
@@ -19,6 +20,8 @@ import { cn } from '@/lib/utils';
 
 const VacationsSettings: React.FC = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+  const { getSeasonData, saveSeasonData } = useSeasonDataScope();
   const [vacations, setVacations] = useState<VacationPeriod[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -27,13 +30,16 @@ const VacationsSettings: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<VacationPeriod | null>(null);
 
   useEffect(() => {
+    if (!orgQueryEnabled || organizationId == null) return;
     void loadVacations();
-  }, []);
+  }, [orgQueryEnabled, organizationId]);
 
   const loadVacations = async () => {
     setIsLoading(true);
     try {
-      const vacationsData = await competitionDataService.getVacationPeriods();
+      const vacationsData = await competitionDataService.getVacationPeriods(
+        organizationId ?? undefined,
+      );
       setVacations(vacationsData);
     } catch {
       toast({
@@ -75,7 +81,7 @@ const VacationsSettings: React.FC = () => {
     if (!editingItem) return;
     setIsLoading(true);
     try {
-      const currentData = await seasonService.getSeasonData();
+      const currentData = await getSeasonData();
       const updatedVacations = [...(currentData.vacation_periods || [])];
       const existingIndex = updatedVacations.findIndex((v) => v.id === editingItem.id);
 
@@ -85,7 +91,7 @@ const VacationsSettings: React.FC = () => {
         updatedVacations.push(editingItem);
       }
 
-      const result = await seasonService.saveSeasonData({
+      const result = await saveSeasonData({
         ...currentData,
         vacation_periods: updatedVacations,
       });
@@ -113,12 +119,12 @@ const VacationsSettings: React.FC = () => {
     if (!deleteItem) return;
     setIsLoading(true);
     try {
-      const currentData = await seasonService.getSeasonData();
+      const currentData = await getSeasonData();
       const updatedVacations = (currentData.vacation_periods || []).filter(
         (v) => v.id !== deleteItem.id,
       );
 
-      const result = await seasonService.saveSeasonData({
+      const result = await saveSeasonData({
         ...currentData,
         vacation_periods: updatedVacations,
       });
@@ -180,7 +186,7 @@ const VacationsSettings: React.FC = () => {
                   onClick={handleAdd}
                   className="min-h-[44px] w-full sm:w-auto"
                 >
-                  <Plus className="h-4 w-4 mr-2" aria-hidden />
+                  <Plus className="mr-2 h-4 w-4" aria-hidden />
                   Nieuwe vakantieperiode
                 </Button>
               </div>
@@ -326,7 +332,9 @@ const VacationsSettings: React.FC = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title="Vakantieperiode verwijderen?"
-        description="Deze actie kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je deze vakantieperiode wilt verwijderen?" />
+        }
         confirmAction={{
           label: isLoading ? 'Verwijderen…' : 'Verwijderen',
           onClick: () => void handleDeleteConfirm(),

@@ -23,6 +23,7 @@ import {
   type Organization,
 } from '@/services/organization/resolveOrganization';
 import { SuperAdminActingOrgSync } from '@/components/common/SuperAdminActingOrgSync';
+import { setResolvedOrganizationId } from '@/lib/organizationScope';
 
 export interface OrganizationContextValue {
   organization: Organization | undefined;
@@ -155,6 +156,10 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
       refetch,
     ],
   );
+
+  useEffect(() => {
+    setResolvedOrganizationId(isOrganizationReady ? organization?.id : null);
+  }, [isOrganizationReady, organization?.id]);
 
   return (
     <OrganizationContext.Provider value={value}>

@@ -49,7 +49,8 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   onSave,
   loading,
   hideTeamName = false,
-  hidePreferences = false
+  /** Tijdelijk verborgen — speelmoment-voorkeuren in team-modal. */
+  hidePreferences = true,
 }) => {
   // State management
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -152,10 +153,10 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     setIsLoading(loading);
   }, [loading]);
 
-  // Load season data once when modal opens
+  // Load season data once when modal opens (alleen voor speelmoment-voorkeuren)
   useEffect(() => {
     const loadSeasonData = async () => {
-      if (seasonDataLoaded || !open) return;
+      if (hidePreferences || seasonDataLoaded || !open) return;
       
       try {
         const [days, timeslots, venues] = await Promise.all([
@@ -207,11 +208,11 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     };
 
     loadSeasonData();
-  }, [open, seasonDataLoaded]);
+  }, [open, seasonDataLoaded, hidePreferences]);
 
-  // Initialize preferences and colors when editing team or when formData changes
+  // Initialize preferences when editing team (alleen zichtbaar als sectie actief is)
   useEffect(() => {
-    if (!open) return;
+    if (!open || hidePreferences) return;
 
     if (editingTeam) {
       const preferences = editingTeam.preferred_play_moments || {};
@@ -229,7 +230,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
         notes: ""
       });
     }
-  }, [editingTeam, open]);
+  }, [editingTeam, open, hidePreferences]);
 
   // Sync formData with editingTeam when modal opens to ensure all data is displayed
   useEffect(() => {
@@ -924,9 +925,13 @@ export const TeamModal: React.FC<TeamModalProps> = ({
       open={open}
       onOpenChange={onOpenChange}
       title={modalTitle}
-      subtitle={hideTeamName && hidePreferences 
-        ? "Bewerk de contactgegevens en clubkleuren van je team." 
-        : "Vul de details van het team in. Alle velden zijn verplicht."}
+      subtitle={
+        hideTeamName && hidePreferences
+          ? "Bewerk de contactgegevens en clubkleuren van je team."
+          : hidePreferences
+            ? "Vul de teamgegevens in: naam, contact en clubkleuren."
+            : "Vul de details van het team in. Alle velden zijn verplicht."
+      }
       size="lg"
       primaryAction={{
         label: saveButtonText,

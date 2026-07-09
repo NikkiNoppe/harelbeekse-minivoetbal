@@ -13,7 +13,7 @@ import {
 import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare, AlertCircle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { NotificationFormModal } from '@/components/modals';
-import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
+import { AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
 
 const NOTIFICATION_TYPES = [
   { value: 'info', label: 'Informatie' },
@@ -419,7 +419,9 @@ const NotificationPage: React.FC = () => {
         open={deleteConfirmId !== null}
         onOpenChange={(open) => !open && setDeleteConfirmId(null)}
         title="Bericht verwijderen"
-        description="Weet je zeker dat je dit bericht wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je dit bericht wilt verwijderen?" />
+        }
         confirmAction={{
           label: isDeleting ? 'Verwijderen...' : 'Verwijderen',
           onClick: () => deleteConfirmId !== null && handleDelete(deleteConfirmId),

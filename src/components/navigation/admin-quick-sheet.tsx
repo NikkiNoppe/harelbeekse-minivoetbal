@@ -39,12 +39,15 @@ const managementActions: ActionItem[] = [
   { key: "users", label: "Gebruikers", icon: <User size={16} />, path: ADMIN_ROUTES.users, adminOnly: true },
 ];
 
+const organisatieActions: ActionItem[] = [
+  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
+  { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
+];
+
 const systemActions: ActionItem[] = [
   { key: "competition", label: "Competitie Planning", icon: <Trophy size={16} />, path: ADMIN_ROUTES.competition, adminOnly: true, superAdminOnly: true },
   { key: "cup", label: "Beker Planning", icon: <Award size={16} />, path: ADMIN_ROUTES.cup, adminOnly: true, superAdminOnly: true },
   { key: "playoffs", label: "Playoff Planning", icon: <Target size={16} />, path: ADMIN_ROUTES.playoffs, adminOnly: true, superAdminOnly: true },
-  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true, superAdminOnly: true },
-  { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true, superAdminOnly: true },
   { key: "notification", label: "Berichten", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true, superAdminOnly: true },
 ];
 
@@ -75,6 +78,7 @@ const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange })
 
   const visibleMatchday = filterActions(matchdayActions);
   const visibleManagement = filterActions(managementActions);
+  const visibleOrganisatie = filterActions(organisatieActions);
   const visibleSystem = filterActions(systemActions);
 
   return (
@@ -123,6 +127,32 @@ const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange })
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {visibleManagement.map(action => (
+                  <button
+                    key={action.key}
+                    onClick={() => handleNavigate(action.path)}
+                    className={cn(
+                      "flex items-center gap-2 p-3 rounded-lg text-left",
+                      "bg-muted hover:bg-muted/80 transition-colors",
+                      "text-foreground text-sm"
+                    )}
+                  >
+                    <span className="text-muted-foreground">{action.icon}</span>
+                    <span className="truncate">{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Organisatie */}
+          {visibleOrganisatie.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <Settings size={14} />
+                <span>Organisatie</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {visibleOrganisatie.map(action => (
                   <button
                     key={action.key}
                     onClick={() => handleNavigate(action.path)}

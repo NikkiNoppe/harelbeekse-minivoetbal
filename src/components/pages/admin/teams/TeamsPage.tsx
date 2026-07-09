@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTeamsEnhanced } from "./hooks/useTeamsEnhanced";
 import TeamsList from "./components/TeamsList";
 import { TeamModal, ConfirmDeleteModal } from "@/components/modals";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 const AdminTeamPage: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  
+
   const {
     teams,
     loading,
@@ -28,52 +28,31 @@ const AdminTeamPage: React.FC = () => {
     handleFormChange,
     handleSaveTeam,
     handleDeleteTeam,
-    confirmDelete
+    confirmDelete,
   } = useTeamsEnhanced();
 
-  if (loading) {
-    return (
-      <div className="space-y-6 animate-slide-up">
-        <PageHeader 
-          title="Teams"
-          subtitle="Beheer alle teams in de competitie"
-        />
-        <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="mt-2 text-muted-foreground">Teams laden...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <PageHeader 
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
+      <PageHeader
         title="Teams"
-        subtitle={`Beheer alle teams in de competitie (${teams.length} teams)`}
-        rightAction={
+        subtitle={`Beheer alle teams in de competitie (${teams.length} team${teams.length === 1 ? "" : "s"})`}
+      />
+
+      <TeamsList
+        teams={teams}
+        onEdit={handleEditTeam}
+        onDelete={confirmDelete}
+        loading={loading}
+        addTeamButton={
           isAdmin ? (
-            <Button
-              onClick={handleAddNew}
-              className="btn btn--outline btn--block"
-            >
+            <Button onClick={handleAddNew} className="min-h-[44px] w-full sm:w-auto">
               <Plus size={16} />
-              <span>Nieuw Team</span>
+              Nieuw team
             </Button>
           ) : undefined
         }
       />
 
-      {/* Teams List */}
-      <TeamsList
-        teams={teams}
-        onEdit={handleEditTeam}
-        onDelete={confirmDelete}
-        loading={false}
-      />
-
-      {/* Team Dialog */}
       <TeamModal
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -84,7 +63,6 @@ const AdminTeamPage: React.FC = () => {
         loading={saving}
       />
 
-      {/* Confirm Delete Dialog */}
       <ConfirmDeleteModal
         open={confirmDeleteOpen}
         onOpenChange={setConfirmDeleteOpen}

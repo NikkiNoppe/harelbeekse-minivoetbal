@@ -1,11 +1,21 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, Calendar, User, Loader2, Trophy } from "lucide-react";
-import { AppAlertModal } from "@/components/modals";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Trash2, Edit, Calendar, User, Trophy } from "lucide-react";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getRosterDisplayName } from "../utils/playerUtils";
+import { PUBLIC_CARD_CLASS } from "@/components/layout";
+import { getRosterDisplayName, isTeamRosterFull, MAX_TEAM_PLAYERS } from "../utils/playerUtils";
 
 interface Player {
   player_id: number;
@@ -27,7 +37,7 @@ interface PlayersListProps {
   matchCountByPlayerId?: Map<number, number>;
 }
 
-// Loading skeleton - matches actual card layout
+// Loading skeleton - profile variant
 const PlayerCardSkeleton = ({ profile = false }: { profile?: boolean }) =>
   profile ? (
     <div className="px-3 py-2.5">
@@ -36,25 +46,7 @@ const PlayerCardSkeleton = ({ profile = false }: { profile?: boolean }) =>
         <Skeleton className="h-9 w-24" />
       </div>
     </div>
-  ) : (
-    <Card className="border border-[var(--color-200)]">
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <Skeleton className="h-4 w-32 mb-2" />
-            <div className="flex items-center gap-1">
-              <Skeleton className="h-3 w-3 rounded" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Skeleton className="h-8 w-8 rounded-md" />
-            <Skeleton className="h-8 w-8 rounded-md" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  ) : null;
 
 // Empty state
 const EmptyState = ({ profile = false }: { profile?: boolean }) =>
@@ -64,17 +56,13 @@ const EmptyState = ({ profile = false }: { profile?: boolean }) =>
       starten.
     </p>
   ) : (
-    <Card>
-      <CardContent className="py-12 px-6 sm:px-8">
-        <div className="text-center">
-          <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Geen spelers</h3>
-          <p className="text-muted-foreground">
-            Er zijn nog geen spelers toegevoegd aan deze lijst.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="text-center py-12 px-4">
+      <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+      <h3 className="text-lg font-semibold mb-2 text-foreground">Geen spelers</h3>
+      <p className="text-muted-foreground">
+        Er zijn nog geen spelers toegevoegd aan deze lijst.
+      </p>
+    </div>
   );
 
 const PlayersList: React.FC<PlayersListProps> = ({
@@ -92,8 +80,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
   const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
   const isProfile = variant === "profile";
 
-  const handleDeleteClick = (player: Player, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteClick = (player: Player) => {
     setPlayerToDelete(player);
     setDeleteDialogOpen(true);
   };
@@ -111,128 +98,277 @@ const PlayersList: React.FC<PlayersListProps> = ({
     setPlayerToDelete(null);
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-2" aria-busy="true" aria-label="Spelers laden">
-        {!isProfile && (
-          <div className="flex items-center justify-center gap-2 py-4 mb-2">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Spelers worden geladen...</span>
-          </div>
-        )}
-        {[1, 2, 3, 4].map((i) => (
-          <PlayerCardSkeleton key={i} profile={isProfile} />
-        ))}
-      </div>
-    );
-  }
-
-  if (players.length === 0) {
-    return <EmptyState profile={isProfile} />;
-  }
-
-  const editButtonClass = cn(
-    "min-h-[44px] min-w-[44px] transition-colors duration-150",
-    isProfile
-      ? "h-11 w-11 border-border bg-background hover:bg-muted/50"
-      : "h-9 border-[var(--color-300)] bg-white hover:bg-brand-50 hover:border-[var(--color-400)] text-[var(--color-700)] hover:text-[var(--color-900)]",
-  );
-
-  const deleteButtonClass = cn(
-    "min-h-[44px] min-w-[44px] rounded-md border-red-300 transition-colors duration-150",
-    "hover:bg-red-50 hover:border-red-400 text-red-600 hover:text-red-700",
-    isProfile ? "h-11 w-11" : "!h-8 !w-8 !min-h-0 !max-h-8 !max-w-8",
-  );
-
-  const playerRows = players.map((player) => {
-    const matchCount = matchCountByPlayerId?.get(player.player_id);
-    const displayName = isProfile
-      ? getRosterDisplayName(player)
-      : getFullName(player);
-
-    const rowContent = (
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold text-foreground">
-            {displayName}
-          </h3>
-          {isProfile && matchCountByPlayerId && matchCount !== undefined && (
-            <span
-              className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums"
-              title="Gespeelde wedstrijden"
-            >
-              <Trophy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-              <span>
-                {matchCount}{" "}
-                {matchCount === 1 ? "wedstrijd" : "wedstrijden"}
-              </span>
-            </span>
-          )}
+  if (isProfile) {
+    if (loading) {
+      return (
+        <div className="space-y-2" aria-busy="true" aria-label="Spelers laden">
+          {[1, 2, 3, 4].map((i) => (
+            <PlayerCardSkeleton key={i} profile />
+          ))}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" aria-hidden />
-            <span className="whitespace-nowrap">{formatDate(player.birth_date)}</span>
-          </div>
-          {editMode && (
-            <div className="flex items-center gap-1.5">
-              <Button
-                onClick={() => onEditPlayer(player.player_id)}
-                variant="outline"
-                size="icon"
-                className={editButtonClass}
-                aria-label={`Bewerk ${displayName}`}
-              >
-                <Edit2 size={16} />
-              </Button>
-              <Button
-                onClick={(e) => handleDeleteClick(player, e)}
-                variant="outline"
-                size="icon"
-                className={deleteButtonClass}
-                aria-label={`Verwijder ${displayName}`}
-              >
-                <Trash2 size={16} />
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      );
+    }
+
+    if (players.length === 0) {
+      return <EmptyState profile />;
+    }
+
+    const editButtonClass = cn(
+      "min-h-[44px] min-w-[44px] transition-colors duration-150",
+      "h-11 w-11 border-border bg-background hover:bg-muted/50",
     );
 
-    if (isProfile) {
+    const deleteButtonClass = cn(
+      "min-h-[44px] min-w-[44px] rounded-md border-red-300 transition-colors duration-150",
+      "hover:bg-red-50 hover:border-red-400 text-red-600 hover:text-red-700",
+      "h-11 w-11",
+    );
+
+    const playerRows = players.map((player) => {
+      const matchCount = matchCountByPlayerId?.get(player.player_id);
+      const displayName = getRosterDisplayName(player);
+
       return (
         <div
           key={player.player_id}
           className="px-3 py-2.5 first:pt-2.5 last:pb-2.5"
         >
-          {rowContent}
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-sm font-semibold text-foreground">
+                {displayName}
+              </h3>
+              {matchCountByPlayerId && matchCount !== undefined && (
+                <span
+                  className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground tabular-nums"
+                  title="Gespeelde wedstrijden"
+                >
+                  <Trophy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+                  <span>
+                    {matchCount}{" "}
+                    {matchCount === 1 ? "wedstrijd" : "wedstrijden"}
+                  </span>
+                </span>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" aria-hidden />
+                <span className="whitespace-nowrap">{formatDate(player.birth_date)}</span>
+              </div>
+              {editMode && (
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    onClick={() => onEditPlayer(player.player_id)}
+                    variant="outline"
+                    size="icon"
+                    className={editButtonClass}
+                    aria-label={`Bewerk ${displayName}`}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(player);
+                    }}
+                    variant="outline"
+                    size="icon"
+                    className={deleteButtonClass}
+                    aria-label={`Verwijder ${displayName}`}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       );
-    }
+    });
 
     return (
-      <Card
-        key={player.player_id}
-        className="border border-[var(--color-200)] transition-shadow duration-200 hover:shadow-md"
-      >
-        <CardContent className="!p-4 !sm:p-4">{rowContent}</CardContent>
-      </Card>
+      <>
+        <div
+          className="overflow-hidden rounded-md border border-border/50 bg-card divide-y divide-border/40"
+          role="region"
+          aria-label="Spelerslijst"
+        >
+          {playerRows}
+        </div>
+        <AppAlertModal
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Speler verwijderen"
+          description={
+            <DestructiveConfirmDescription
+              message={
+                <>
+                  Weet je zeker dat je{" "}
+                  <span className="font-semibold text-destructive">
+                    {playerToDelete?.first_name} {playerToDelete?.last_name}
+                  </span>{" "}
+                  wilt verwijderen?
+                </>
+              }
+            />
+          }
+          confirmAction={{
+            label: "Verwijderen",
+            onClick: handleConfirmDelete,
+            variant: "destructive",
+          }}
+          cancelAction={{
+            label: "Annuleren",
+            onClick: handleCancelDelete,
+            variant: "secondary",
+          }}
+        />
+      </>
     );
-  });
+  }
+
+  const rosterFull = isTeamRosterFull(players.length);
+  const spotsRemaining = Math.max(0, MAX_TEAM_PLAYERS - players.length);
 
   return (
-    <>
-      <div
-        className={cn(
-          isProfile
-            ? "overflow-hidden rounded-md border border-border/50 bg-card divide-y divide-border/40"
-            : "space-y-2",
-        )}
-        role="region"
-        aria-label="Spelerslijst"
-      >
-        {playerRows}
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Spelers
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">{players.length}</p>
+          </CardContent>
+        </Card>
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Plaatsen vrij
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">
+              {rosterFull ? "0" : spotsRemaining}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Maximum
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">{MAX_TEAM_PLAYERS}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="w-full overflow-x-auto">
+        <div className="w-full min-w-0">
+          <Table className="table w-full">
+            <TableHeader>
+              <TableRow className="table-header-row">
+                <TableHead className="min-w-[220px]">Naam</TableHead>
+                <TableHead className="hidden min-w-[140px] sm:table-cell">Geboortedatum</TableHead>
+                <TableHead className="hidden min-w-[120px] md:table-cell">Status</TableHead>
+                {editMode && <TableHead className="text-center min-w-[104px]">Acties</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    <TableCell className="table-skeleton-cell">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4 rounded-full" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="table-skeleton-cell hidden sm:table-cell">
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="table-skeleton-cell hidden md:table-cell">
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    {editMode && (
+                      <TableCell className="text-center table-skeleton-cell">
+                        <div className="flex justify-center gap-1">
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                          <Skeleton className="h-8 w-8 rounded-md" />
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              ) : players.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={editMode ? 4 : 3} className="py-12">
+                    <EmptyState />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                players.map((player) => {
+                  const displayName = getFullName(player);
+                  return (
+                    <TableRow key={player.player_id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <User className="h-4 w-4" />
+                          </span>
+                          <div className="min-w-0">
+                            <span className="block truncate max-w-[140px] sm:max-w-[220px] text-brand-dark">
+                              {displayName}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground sm:hidden">
+                              {formatDate(player.birth_date)}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          {formatDate(player.birth_date)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline" className="bg-brand-50">
+                          Actief
+                        </Badge>
+                      </TableCell>
+                      {editMode && (
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-1 justify-center">
+                            <Button
+                              type="button"
+                              onClick={() => onEditPlayer(player.player_id)}
+                              variant="ghost"
+                              size="icon"
+                              className="min-h-[44px] min-w-[44px]"
+                              aria-label={`Bewerk ${displayName}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => handleDeleteClick(player)}
+                              variant="ghost"
+                              size="icon"
+                              className="min-h-[44px] min-w-[44px] text-destructive"
+                              aria-label={`Verwijder ${displayName}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <AppAlertModal
@@ -240,11 +376,17 @@ const PlayersList: React.FC<PlayersListProps> = ({
         onOpenChange={setDeleteDialogOpen}
         title="Speler verwijderen"
         description={
-          <div className="text-center">
-            Weet je zeker dat je <strong>{playerToDelete?.first_name} {playerToDelete?.last_name}</strong> wilt verwijderen?
-            <br />
-            <span className="text-sm text-muted-foreground">Deze actie kan niet ongedaan worden gemaakt.</span>
-          </div>
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je{" "}
+                <span className="font-semibold text-destructive">
+                  {playerToDelete?.first_name} {playerToDelete?.last_name}
+                </span>{" "}
+                wilt verwijderen?
+              </>
+            }
+          />
         }
         confirmAction={{
           label: "Verwijderen",
@@ -257,7 +399,7 @@ const PlayersList: React.FC<PlayersListProps> = ({
           variant: "secondary",
         }}
       />
-    </>
+    </div>
   );
 };
 

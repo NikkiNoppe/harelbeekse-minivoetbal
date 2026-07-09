@@ -1,7 +1,6 @@
 
 import React from "react";
-import { AppAlertModal } from "@/components/modals/base/app-alert-modal";
-import { Loader2 } from "lucide-react";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 
 interface ConfirmDeleteModalProps {
   open: boolean;
@@ -28,18 +27,18 @@ const UserDeleteConfirmModal: React.FC<ConfirmDeleteModalProps> = ({
       open={open}
       onOpenChange={onOpenChange}
       title="Gebruiker permanent verwijderen"
+      size="sm"
       description={
-        <div className="space-y-3 text-center">
-          <p className="text-brand-dark font-medium">
-            Weet je zeker dat je de gebruiker <span className="font-bold">"{user?.username}"</span> permanent wilt verwijderen?
-          </p>
-          <p className="text-sm text-red-600 font-medium">
-            ⚠️ Deze actie is onomkeerbaar en kan niet ongedaan worden gemaakt.
-          </p>
-          <p className="text-xs text-gray-600">
-            Alle gebruikersgegevens, teamtoewijzingen en toegangsrechten worden permanent verwijderd.
-          </p>
-        </div>
+        <DestructiveConfirmDescription
+          message={
+            <>
+              Weet je zeker dat je{" "}
+              <span className="font-semibold text-destructive">{user?.username}</span>{" "}
+              permanent wilt verwijderen?
+            </>
+          }
+          details="Alle gebruikersgegevens, teamtoewijzingen en toegangsrechten worden permanent verwijderd."
+        />
       }
       confirmAction={{
         label: isDeleting ? "Verwijderen..." : "Permanent verwijderen",
@@ -53,8 +52,8 @@ const UserDeleteConfirmModal: React.FC<ConfirmDeleteModalProps> = ({
         onClick: () => onOpenChange(false),
         disabled: isDeleting,
       }}
-      size="md"
     />
   );
 };
 
+export default UserDeleteConfirmModal;

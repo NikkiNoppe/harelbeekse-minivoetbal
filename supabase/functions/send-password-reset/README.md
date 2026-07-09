@@ -20,7 +20,12 @@ Deze Edge Function gebruikt de volgende configuratie bestanden:
 Zorg dat de volgende environment variables zijn ingesteld in je Supabase project:
 
 ```bash
-RESEND_API_KEY=your_resend_api_key
+LOVABLE_API_KEY=your_lovable_api_key      # Lovable Resend-connector (primair)
+RESEND_API_KEY=your_resend_api_key        # Resend API key (connector + fallback)
+APP_BASE_URL=https://harelbekeminivoetbal.be
+AUTH_EMAIL_FROM_DOMAIN=harelbekeminivoetbal.be  # geverifieerd afzenderdomein
+AUTH_EMAIL_REPLY_TO=info@harelbekeminivoetbal.be
+ADMIN_EMAIL=info@harelbekeminivoetbal.be        # optioneel: notificatie zonder user-email
 SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
@@ -40,7 +45,7 @@ supabase functions deploy send-password-reset
 2. **Gebruiker Check** - Verifieert of de gebruiker een email adres heeft
 3. **Admin Notificatie** - Stuurt notificatie naar admin als gebruiker geen email heeft
 4. **Secure Token** - Genereert veilige reset tokens met 1 uur geldigheid
-5. **Email Template** - Stuurt professionele reset emails via Resend
+5. **Email Template** - Stuurt professionele reset emails via Lovable Resend-connector (fallback: directe Resend SDK)
 
 ## TypeScript Support
 

@@ -1,5 +1,11 @@
 /** Publieke paginateksten per organisatie (override via organizations.branding_settings.content). */
 
+export interface FooterContactPerson {
+  name: string;
+  phone?: string;
+  email?: string;
+}
+
 export interface AlgemeenPageCopy {
   title: string;
   subtitle: string;
@@ -17,8 +23,25 @@ export interface ProfileFinancialCopy {
 export interface OrganizationPublicContent {
   algemeen: AlgemeenPageCopy;
   footerTagline: string;
+  footerContacts: FooterContactPerson[];
   profileFinancial: ProfileFinancialCopy;
 }
+
+const HARELBEKE_FOOTER_CONTACTS: FooterContactPerson[] = [
+  {
+    name: 'Nikki Noppe',
+    phone: '+32 468 15 52 16',
+    email: 'noppe.nikki@icloud.com',
+  },
+  {
+    name: 'Wesley Dedeurwaerder',
+    phone: '+32 472 56 80 49',
+  },
+  {
+    name: 'Hans Reynaert',
+    phone: '+32 470 90 20 27',
+  },
+];
 
 export const ORGANIZATION_PUBLIC_CONTENT: Record<string, OrganizationPublicContent> = {
   harelbeke: {
@@ -29,6 +52,7 @@ export const ORGANIZATION_PUBLIC_CONTENT: Record<string, OrganizationPublicConte
         'Opgericht in 1979 is de Harelbeekse Minivoetbal Competitie uitgegroeid tot de grootste minivoetbalcompetitie van Harelbeke. Elk seizoen nemen tal van teams uit Harelbeke en omgeving deel.',
     },
     footerTagline: 'Minivoetbalcompetitie sinds 1979.',
+    footerContacts: HARELBEKE_FOOTER_CONTACTS,
     profileFinancial: {
       seasonDepositTarget: 600,
       depositDeadlineLabel: '15 augustus',
@@ -45,6 +69,7 @@ export const ORGANIZATION_PUBLIC_CONTENT: Record<string, OrganizationPublicConte
         'Welkom bij de minivoetbalcompetitie van Kuurne. Op deze site vind je het actuele speelschema, klassementen, uitslagen en alle praktische info over het lopende seizoen.',
     },
     footerTagline: 'Minivoetbalcompetitie in Kuurne.',
+    footerContacts: [],
     profileFinancial: {
       seasonDepositTarget: 600,
       depositDeadlineLabel: '15 augustus',
@@ -83,6 +108,28 @@ function mergeProfileFinancialCopy(
   };
 }
 
+function mergeFooterContacts(
+  base: FooterContactPerson[],
+  override?: FooterContactPerson[],
+): FooterContactPerson[] {
+  if (!override) {
+    return base;
+  }
+
+  return override
+    .map((contact) => ({
+      name: contact.name?.trim() ?? '',
+      phone: contact.phone?.trim() ?? '',
+      email: contact.email?.trim() ?? '',
+    }))
+    .filter((contact) => contact.name);
+}
+
+export function phoneToTelHref(phone: string): string {
+  const normalized = phone.replace(/\s/g, '');
+  return normalized ? `tel:${normalized}` : '';
+}
+
 export function resolveOrganizationPublicContent(
   slug: string,
   brandingSettings?: Record<string, unknown>,
@@ -94,6 +141,7 @@ export function resolveOrganizationPublicContent(
     | {
         algemeen?: Partial<AlgemeenPageCopy>;
         footerTagline?: string;
+        footerContacts?: FooterContactPerson[];
         profileFinancial?: Partial<ProfileFinancialCopy>;
       }
     | undefined;
@@ -105,6 +153,7 @@ export function resolveOrganizationPublicContent(
   return {
     algemeen: mergeAlgemeenCopy(base.algemeen, raw.algemeen),
     footerTagline: raw.footerTagline?.trim() || base.footerTagline,
+    footerContacts: mergeFooterContacts(base.footerContacts, raw.footerContacts),
     profileFinancial: mergeProfileFinancialCopy(
       base.profileFinancial,
       raw.profileFinancial,

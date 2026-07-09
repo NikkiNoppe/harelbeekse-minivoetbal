@@ -35,7 +35,9 @@ export const usePlayerListLockFallback = () => {
       let seasonLocked = false;
       let seasonEnd: string | null = null;
 
-      const { data: rpcLocked, error } = await supabase.rpc("is_player_list_locked");
+      const { data: rpcLocked, error } = await supabase.rpc("is_player_list_locked", {
+        p_organization_id: organizationId ?? 1,
+      });
 
       if (error) {
         console.error("❌ Error calling is_player_list_locked function:", error);

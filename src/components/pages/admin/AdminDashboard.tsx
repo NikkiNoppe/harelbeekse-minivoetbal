@@ -238,6 +238,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
                 <LazyTabContent value="settings" activeTab={activeTab}>
                   <SettingsPanel />
                 </LazyTabContent>
+
+                {isTabVisible("blog-management") && (
+                  <LazyTabContent value="blog-management" activeTab={activeTab}>
+                    <BlogPage />
+                  </LazyTabContent>
+                )}
               </>
             )}
 
@@ -257,10 +263,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ activeTab, setActiveTab
 
                 <LazyTabContent value="platform-beheer" activeTab={activeTab}>
                   <SuperAdminOrgHubPage embedded />
-                </LazyTabContent>
-
-                <LazyTabContent value="blog-management" activeTab={activeTab}>
-                  <BlogPage />
                 </LazyTabContent>
 
                 <LazyTabContent value="notification" activeTab={activeTab}>

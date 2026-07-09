@@ -3,16 +3,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals";
-import { AppAlertModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Edit, Trash2, Building, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { competitionDataService } from "@/services";
-import { seasonService } from "@/services";
+
+function nextVenueId(venues: Array<{ venue_id?: number }>): number {
+  const maxId = venues.reduce(
+    (max, venue) => Math.max(max, Number(venue.venue_id) || 0),
+    0,
+  );
+  return maxId + 1;
+}
+
+function formatSaveError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Onbekende fout";
+}
 
 const VenuesSettings: React.FC = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled, getSeasonData, saveSeasonData } = useSeasonDataScope();
   const [venues, setVenues] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -21,15 +37,14 @@ const VenuesSettings: React.FC = () => {
   const [deleteItem, setDeleteItem] = useState<any>(null);
 
   useEffect(() => {
-    loadVenues();
-  }, []);
+    if (!orgQueryEnabled || organizationId == null) return;
+    void loadVenues();
+  }, [orgQueryEnabled, organizationId]);
 
   const loadVenues = async () => {
     setIsLoading(true);
     try {
-      console.log('\uD83D\uDD04 Loading venues...');
-      const venuesData = await competitionDataService.getVenues();
-      console.log('\u2705 Venues loaded:', venuesData);
+      const venuesData = await competitionDataService.getVenues(organizationId ?? undefined);
       setVenues(venuesData);
     } catch (error) {
       console.error('\u274c Error loading venues:', error);
@@ -50,9 +65,9 @@ const VenuesSettings: React.FC = () => {
 
   const handleAdd = () => {
     const newVenue = {
-      venue_id: Date.now(), // Temporary ID
+      venue_id: nextVenueId(venues),
       name: '',
-      address: ''
+      address: '',
     };
     setEditingItem(newVenue);
     setIsEditDialogOpen(true);
@@ -64,48 +79,76 @@ const VenuesSettings: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!editingItem) {
+      return;
+    }
+
+    if (!orgQueryEnabled || organizationId == null) {
+      toast({
+        title: "Fout bij opslaan",
+        description: "Organisatie-context is nog niet geladen. Probeer het opnieuw.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const trimmedName = editingItem.name?.trim() ?? '';
+    if (!trimmedName) {
+      toast({
+        title: "Onvolledig",
+        description: "Geef de sportzaal een naam.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const venueToSave = {
+      ...editingItem,
+      name: trimmedName,
+      address: editingItem.address?.trim() ?? '',
+    };
+
     setIsLoading(true);
     try {
-      // Get current season data
-      const currentData = await seasonService.getSeasonData();
-      
-      // Update venues in season data
-      const updatedVenues = currentData.venues || [];
-      const existingIndex = updatedVenues.findIndex(v => v.venue_id === editingItem.venue_id);
-      
+      const currentData = await getSeasonData();
+      const updatedVenues = [...(currentData.venues || [])];
+      const existingIndex = updatedVenues.findIndex(
+        (venue) => venue.venue_id === venueToSave.venue_id,
+      );
+
       if (existingIndex >= 0) {
-        updatedVenues[existingIndex] = editingItem;
+        updatedVenues[existingIndex] = venueToSave;
       } else {
-        updatedVenues.push(editingItem);
+        updatedVenues.push(venueToSave);
       }
-      
-      // Save updated season data
-      const result = await seasonService.saveSeasonData({
+
+      const result = await saveSeasonData({
         ...currentData,
-        venues: updatedVenues
+        venues: updatedVenues,
       });
-      
+
       if (result.success) {
         toast({
           title: "Locatie opgeslagen",
           description: result.message,
         });
-        
+
         setIsEditDialogOpen(false);
         setEditingItem(null);
-        loadVenues(); // Reload data
+        await loadVenues();
       } else {
         toast({
           title: "Fout bij opslaan",
           description: result.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (error) {
+      console.error("Error saving venue:", error);
       toast({
         title: "Fout bij opslaan",
-        description: "Kon locatie niet opslaan",
-        variant: "destructive"
+        description: formatSaveError(error),
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -113,41 +156,44 @@ const VenuesSettings: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    if (!deleteItem || !orgQueryEnabled || organizationId == null) {
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // Get current season data
-      const currentData = await seasonService.getSeasonData();
-      
-      // Remove venue from season data
-      const updatedVenues = (currentData.venues || []).filter(v => v.venue_id !== deleteItem.venue_id);
-      
-      // Save updated season data
-      const result = await seasonService.saveSeasonData({
+      const currentData = await getSeasonData();
+      const updatedVenues = (currentData.venues || []).filter(
+        (venue) => venue.venue_id !== deleteItem.venue_id,
+      );
+
+      const result = await saveSeasonData({
         ...currentData,
-        venues: updatedVenues
+        venues: updatedVenues,
       });
-      
+
       if (result.success) {
         toast({
           title: "Locatie verwijderd",
           description: result.message,
         });
-        
+
         setIsDeleteDialogOpen(false);
         setDeleteItem(null);
-        loadVenues(); // Reload data
+        await loadVenues();
       } else {
         toast({
           title: "Fout bij verwijderen",
           description: result.message,
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     } catch (error) {
+      console.error("Error deleting venue:", error);
       toast({
         title: "Fout bij verwijderen",
-        description: "Kon locatie niet verwijderen",
-        variant: "destructive"
+        description: formatSaveError(error),
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -182,10 +228,14 @@ const VenuesSettings: React.FC = () => {
             </p>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-lg font-semibold">Sportzalen</h3>
-                <Button onClick={handleAdd} className="btn btn--primary">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button
+                  type="button"
+                  onClick={handleAdd}
+                  className="min-h-[44px] w-full sm:w-auto"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
                   Toevoegen
                 </Button>
               </div>
@@ -256,7 +306,11 @@ const VenuesSettings: React.FC = () => {
             <Input 
               id="venueName" 
               value={editingItem?.name || ''} 
-              onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setEditingItem((prev) =>
+                  prev ? { ...prev, name: e.target.value } : prev,
+                )
+              }
             />
           </div>
           <div>
@@ -264,7 +318,11 @@ const VenuesSettings: React.FC = () => {
             <Input 
               id="venueAddress" 
               value={editingItem?.address || ''} 
-              onChange={(e) => setEditingItem(prev => ({ ...prev, address: e.target.value }))}
+              onChange={(e) =>
+                setEditingItem((prev) =>
+                  prev ? { ...prev, address: e.target.value } : prev,
+                )
+              }
             />
           </div>
         </div>
@@ -275,7 +333,9 @@ const VenuesSettings: React.FC = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title="Bevestig Verwijdering"
-        description="Weet je zeker dat je deze locatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je deze locatie wilt verwijderen?" />
+        }
         confirmAction={{
           label: isLoading ? 'Verwijderen...' : 'Verwijderen',
           onClick: handleDeleteConfirm,

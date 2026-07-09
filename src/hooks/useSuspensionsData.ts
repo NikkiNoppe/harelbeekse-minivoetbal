@@ -14,11 +14,12 @@ export interface SuspensionStats {
 export const useSuspensionsData = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrgQueryScope();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   const playerCardsQuery = useQuery({
     queryKey: withOrgQueryKey(['playerCards'], organizationId),
     queryFn: suspensionService.getPlayerCards,
+    enabled: orgQueryEnabled,
     staleTime: 2 * 60 * 1000, // 2 minutes - player cards can change during matches
     gcTime: 10 * 60 * 1000, // 10 minutes cache
     retry: 2,
@@ -32,7 +33,7 @@ export const useSuspensionsData = () => {
       organizationId,
     ),
     queryFn: () => suspensionService.getActiveSuspensions(playerCardsQuery.data || []),
-    enabled: playerCardsQuery.isSuccess,
+    enabled: orgQueryEnabled && playerCardsQuery.isSuccess,
     staleTime: 2 * 60 * 1000, // 2 minutes - suspensions can be updated
     gcTime: 10 * 60 * 1000, // 10 minutes cache
     retry: 2,

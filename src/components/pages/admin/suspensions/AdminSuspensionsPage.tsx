@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/modals';
-import { AppAlertModal } from '@/components/modals';
+import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from '@/components/modals';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Edit, Trash2, Loader2, Calendar, Check, X } from 'lucide-react';
@@ -671,7 +671,9 @@ const DeleteSuspensionButton: React.FC<{
         open={open}
         onOpenChange={setOpen}
         title="Schorsing verwijderen"
-        description="Weet je zeker dat je deze schorsing wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je deze schorsing wilt verwijderen?" />
+        }
         confirmAction={{
           label: "Verwijderen",
           onClick: () => {
@@ -711,7 +713,16 @@ const LiftSuspensionButton: React.FC<{
         open={open}
         onOpenChange={setOpen}
         title="Schorsing opheffen"
-        description={`Weet je zeker dat je de schorsing van ${playerName} wilt opheffen?`}
+        description={
+          <InfoConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je de schorsing van{" "}
+                <span className="font-semibold">{playerName}</span> wilt opheffen?
+              </>
+            }
+          />
+        }
         confirmAction={{
           label: "Opheffen",
           onClick: () => {

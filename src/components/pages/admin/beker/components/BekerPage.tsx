@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
 import { AppModal } from "@/components/modals/base/app-modal";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
 import ArchiveCupModal from "@/components/modals/admin/ArchiveCupModal";
@@ -396,9 +396,16 @@ const BekerPage: React.FC = () => {
                   onOpenChange={setShowConfirm}
                   title="Beker Aanmaken"
                   description={
-                    <p className="text-xs text-muted-foreground">
-                      Weet je zeker dat je de beker wilt aanmaken met {selectedTeams.length} teams en {tournamentDates.length} speeldata? Deze actie kan niet ongedaan worden gemaakt.
-                    </p>
+                    <InfoConfirmDescription
+                      message={
+                        <>
+                          Weet je zeker dat je de beker wilt aanmaken met{" "}
+                          <span className="font-semibold">{selectedTeams.length} teams</span> en{" "}
+                          <span className="font-semibold">{tournamentDates.length} speeldata</span>?
+                        </>
+                      }
+                      note="Controleer teams en speeldata voordat je bevestigt."
+                    />
                   }
                   confirmAction={{
                     label: previewPlan ? "Bevestigen en importeren" : "Beker Aanmaken",
@@ -558,9 +565,10 @@ const BekerPage: React.FC = () => {
         onOpenChange={setShowDeleteConfirm}
         title="Beker Verwijderen?"
         description={
-          <p className="text-sm text-muted-foreground">
-            Alle bekerwedstrijden ({cupCounts.total}) worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.
-          </p>
+          <DestructiveConfirmDescription
+            message="Weet je zeker dat je de volledige beker wilt verwijderen?"
+            warning={`Alle bekerwedstrijden (${cupCounts.total}) worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt.`}
+          />
         }
         confirmAction={{
           label: "Verwijderen",

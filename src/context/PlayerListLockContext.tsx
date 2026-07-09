@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrganization } from "@/hooks/useOrganization";
+import { DEFAULT_ORGANIZATION_ID } from "@/config/organization";
 import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 import { formatDateShort } from "@/lib/dateUtils";
 import {
@@ -29,6 +31,7 @@ export const PlayerListLockContext = createContext<PlayerListLockContextType | u
 
 export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { organizationId, isOrganizationReady } = useOrganization();
   const [isSettingsLocked, setIsSettingsLocked] = useState(false);
   const [isSeasonLocked, setIsSeasonLocked] = useState(false);
   const [lockDate, setLockDate] = useState<string | null>(null);
@@ -36,13 +39,21 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
   const [loading, setLoading] = useState(true);
 
   const checkLockStatus = useCallback(async () => {
+    if (!isOrganizationReady) {
+      return;
+    }
+
+    const orgId = organizationId ?? DEFAULT_ORGANIZATION_ID;
+
     try {
       let settingsLocked = false;
       let settingsLockDate: string | null = null;
       let seasonLocked = false;
       let seasonEnd: string | null = null;
 
-      const { data: rpcLocked, error } = await supabase.rpc("is_player_list_locked");
+      const { data: rpcLocked, error } = await supabase.rpc("is_player_list_locked", {
+        p_organization_id: orgId,
+      });
 
       if (error) {
         console.error("❌ Error calling is_player_list_locked function:", error);
@@ -100,7 +111,7 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOrganizationReady, organizationId]);
 
   useEffect(() => {
     checkLockStatus();

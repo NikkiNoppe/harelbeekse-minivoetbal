@@ -188,15 +188,25 @@ const Header: React.FC<HeaderProps> = ({
     [isAuthenticated, isSuperAdmin, normalizedRole, user?.id, user?.username],
   );
 
-  const accordionDefaultValue = useMemo(() => {
-    return sheetSections
-      .filter((section) => section.collapsible && section.defaultOpen)
-      .map((section) => section.id);
+  const { workSheetSections, bottomSheetSections } = useMemo(() => {
+    const work: SheetSection[] = [];
+    const bottom: SheetSection[] = [];
+    for (const section of sheetSections) {
+      if (section.id === "platform") {
+        bottom.push(section);
+      } else {
+        work.push(section);
+      }
+    }
+    return { workSheetSections: work, bottomSheetSections: bottom };
   }, [sheetSections]);
 
-  const firstCollapsibleIndex = useMemo(
-    () => sheetSections.findIndex((section) => section.collapsible),
-    [sheetSections],
+  const workAccordionDefaultValue = useMemo(
+    () =>
+      workSheetSections
+        .filter((section) => section.collapsible && section.defaultOpen)
+        .map((section) => section.id),
+    [workSheetSections],
   );
 
   const navigateToTab = (key: string) => {
@@ -253,6 +263,43 @@ const Header: React.FC<HeaderProps> = ({
       ))}
     </motion.div>
   );
+
+  const renderAuthNavBlock = (
+    sections: SheetSection[],
+    blockKey: string,
+    defaultOpen: string[],
+  ) => {
+    if (sections.length === 0) return null;
+
+    const firstCollapsibleIndex = sections.findIndex((section) => section.collapsible);
+
+    return sections.map((section, index) => {
+      if (!section.collapsible) {
+        return (
+          <div key={section.id}>
+            {renderNavGroup(section.title, section.items)}
+          </div>
+        );
+      }
+
+      if (index !== firstCollapsibleIndex) {
+        return null;
+      }
+
+      return (
+        <Accordion
+          key={blockKey}
+          type="multiple"
+          defaultValue={defaultOpen}
+          className="space-y-2"
+        >
+          {sections
+            .filter((item) => item.collapsible)
+            .map((item) => renderSheetSection(item))}
+        </Accordion>
+      );
+    });
+  };
 
   const renderSheetSection = (section: SheetSection) => {
     const triggerClass =
@@ -388,8 +435,9 @@ const Header: React.FC<HeaderProps> = ({
               <nav
                 key={navSessionKey}
                 aria-label="Mobiel menu"
-                className="flex-1 min-h-0 overflow-y-auto overscroll-behavior-contain scrollbar-hide px-6 py-4 space-y-6"
+                className="flex flex-1 min-h-0 flex-col overflow-y-auto overscroll-behavior-contain scrollbar-hide px-6 py-4"
               >
+                <div className="space-y-6">
                 {visiblePublicItems.length > 0 && (
                   <div className="lg:hidden">
                     {isAuthenticated ? (
@@ -409,35 +457,22 @@ const Header: React.FC<HeaderProps> = ({
                   </div>
                 )}
 
-                {isAuthenticated && sheetSections.length > 0 && (
-                  <>
-                    {sheetSections.map((section, index) => {
-                      if (!section.collapsible) {
-                        return (
-                          <div key={section.id}>
-                            {renderNavGroup(section.title, section.items)}
-                          </div>
-                        );
-                      }
+                {isAuthenticated &&
+                  renderAuthNavBlock(
+                    workSheetSections,
+                    `${navSessionKey}-work`,
+                    workAccordionDefaultValue,
+                  )}
+                </div>
 
-                      if (index !== firstCollapsibleIndex) {
-                        return null;
-                      }
-
-                      return (
-                        <Accordion
-                          key={`${navSessionKey}-work`}
-                          type="multiple"
-                          defaultValue={accordionDefaultValue}
-                          className="space-y-2"
-                        >
-                          {sheetSections
-                            .filter((item) => item.collapsible)
-                            .map((item) => renderSheetSection(item))}
-                        </Accordion>
-                      );
-                    })}
-                  </>
+                {isAuthenticated && bottomSheetSections.length > 0 && (
+                  <div className="mt-auto pt-4">
+                    {renderAuthNavBlock(
+                      bottomSheetSections,
+                      `${navSessionKey}-platform`,
+                      [],
+                    )}
+                  </div>
                 )}
               </nav>
 

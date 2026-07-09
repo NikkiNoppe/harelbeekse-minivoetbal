@@ -58,8 +58,8 @@ export const HEADER_BEHEER_ITEMS: NavItem[] = [
   { key: "players", label: "Spelers", icon: Users, adminOnly: false },
   { key: "teams", label: "Teams", icon: Shield, adminOnly: true },
   { key: "scheidsrechters", label: "Scheidsrechters", icon: Shield, adminOnly: false },
-  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
   { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
+  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
 ];
 
 export const SIDEBAR_WEDSTRIJDFORMULIEREN_ITEMS: NavItem[] = [
@@ -72,9 +72,9 @@ export const SIDEBAR_BEHEER_ITEMS: NavItem[] = [
   { key: "players", label: "Spelers", icon: Users, adminOnly: false },
   { key: "ploegen", label: "Teams", icon: Users, adminOnly: false },
   { key: "scheidsrechters", label: "Scheidsrechters", icon: Calendar, adminOnly: false },
-  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
   { key: "teams", label: "Teams (Admin)", icon: Shield, adminOnly: true },
   { key: "users", label: "Gebruikers", icon: User, adminOnly: true },
+  { key: "schorsingen", label: "Schorsingen", icon: Shield, adminOnly: true },
 ];
 
 export const SPEELFORMATEN_ITEMS: NavItem[] = [
@@ -87,15 +87,15 @@ export const FINANCIEEL_ITEMS: NavItem[] = [
   { key: "financial", label: "Financieel", icon: DollarSign, adminOnly: true },
 ];
 
-/** Org-admin: seizoen, regels, tab-zichtbaarheid (niet platformbreed). */
+/** Org-admin: seizoen, regels, blog, tab-zichtbaarheid (niet platformbreed). */
 export const HEADER_ORGANISATIE_ITEMS: NavItem[] = [
   { key: "settings", label: "Competitie-instellingen", icon: Settings, adminOnly: true },
+  { key: "blog-management", label: "Blog beheer", icon: BookOpen, adminOnly: true },
 ];
 
-/** SuperAdmin: multi-tenant platform, blog, systeemberichten. */
+/** SuperAdmin: multi-tenant platform, systeemberichten. */
 export const HEADER_PLATFORM_ITEMS: NavItem[] = [
   { key: "superadmin-beheer", label: "Platform beheer", icon: Building2, superAdminOnly: true },
-  { key: "blog-management", label: "Blog beheer", icon: BookOpen, adminOnly: true, superAdminOnly: true },
   { key: "notification", label: "Systeemberichten", icon: MessageSquare, adminOnly: true, superAdminOnly: true },
 ];
 
@@ -253,21 +253,6 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
 
   appendMatchFormsSection(sections, matchForms);
 
-  const competitiebeheer: NavItem[] = [...financieel];
-  const scheidsAdmin = beheerAll.find((item) => item.key === "scheidsrechters");
-  if (scheidsAdmin) {
-    competitiebeheer.push(relabelNavItem(scheidsAdmin, "Scheidsrechter planning"));
-  }
-  if (competitiebeheer.length > 0) {
-    sections.push({
-      id: "competitiebeheer",
-      title: "Competitiebeheer",
-      items: competitiebeheer,
-      collapsible: competitiebeheer.length > 1,
-      defaultOpen: false,
-    });
-  }
-
   const allowedBeheerKeys = new Set(["players", "teams", "users", "schorsingen"]);
   const beheerItems = beheerAll.filter((item) => allowedBeheerKeys.has(item.key));
   if (beheerItems.length > 0) {
@@ -280,12 +265,27 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
     });
   }
 
+  const competitiebeheer: NavItem[] = [...financieel];
+  const scheidsAdmin = beheerAll.find((item) => item.key === "scheidsrechters");
+  if (scheidsAdmin) {
+    competitiebeheer.push(relabelNavItem(scheidsAdmin, "Scheidsrechter"));
+  }
+  if (competitiebeheer.length > 0) {
+    sections.push({
+      id: "competitiebeheer",
+      title: "Competitiebeheer",
+      items: competitiebeheer,
+      collapsible: competitiebeheer.length > 1,
+      defaultOpen: false,
+    });
+  }
+
   if (organisatie.length > 0) {
     sections.push({
       id: "organisatie",
       title: "Organisatie",
       items: organisatie,
-      collapsible: organisatie.length > 1,
+      collapsible: true,
       defaultOpen: false,
     });
   }

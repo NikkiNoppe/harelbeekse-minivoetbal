@@ -10,6 +10,7 @@ import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import { loadSlotPlanningContext } from "@/services/match/slotPlanningContext";
+import type { CompetitionFormat } from "@/services/competitionDataService";
 import {
   bulkDeleteCompetitionMatches,
   bulkDeleteMatchesByIds,
@@ -39,14 +40,7 @@ export interface CompetitionMatch {
   referee_notes?: string;
 }
 
-export interface CompetitionFormat {
-  id: number;
-  name: string;
-  description: string;
-  has_playoffs: boolean;
-  regular_rounds: number;
-  playoff_teams?: number;
-}
+export type { CompetitionFormat } from "@/services/competitionDataService";
 
 export interface CompetitionConfig {
   format: CompetitionFormat;

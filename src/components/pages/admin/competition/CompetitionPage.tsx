@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
 import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
 import { useToast } from "@/hooks/use-toast";
-import { competitionService, CompetitionConfig, CompetitionFormat } from "@/services/match/competitionService";
+import { competitionService, CompetitionConfig } from "@/services/match/competitionService";
+import type { CompetitionFormat } from "@/services/competitionDataService";
+import { normalizeCompetitionFormats } from "@/services/competitionDataService";
 import { teamService } from "@/services/core/teamService";
 import { seasonService } from "@/services/seasonService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
@@ -52,7 +54,7 @@ const AdminCompetitionPage: React.FC = () => {
 
       // Load formats
       const seasonData = await seasonService.getSeasonData();
-      setFormats(seasonData.competition_formats || []);
+      setFormats(normalizeCompetitionFormats(seasonData.competition_formats || []));
       setVenues(seasonData.venues || []);
       setTimeslots(seasonData.venue_timeslots || []);
 
@@ -325,9 +327,25 @@ const AdminCompetitionPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {selectedFormat && (
-                  <p className="text-sm text-muted-foreground">
-                    {formats.find(f => f.id.toString() === selectedFormat)?.description}
-                  </p>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>
+                      {formats.find((f) => f.id.toString() === selectedFormat)?.description}
+                    </p>
+                    {(() => {
+                      const format = formats.find((f) => f.id.toString() === selectedFormat);
+                      if (!format?.has_divisions || !format.divisions?.length) return null;
+                      return (
+                        <div className="rounded-md border border-primary/15 bg-brand-50/40 p-3">
+                          <p className="font-medium text-brand-dark mb-1">Reeksen in dit format</p>
+                          <ul className="space-y-1">
+                            {format.divisions.map((division) => (
+                              <li key={division.id}>• {division.name}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -492,9 +510,15 @@ const AdminCompetitionPage: React.FC = () => {
               onOpenChange={setShowConfirm}
               title="Competitie Aanmaken"
               description={
-                <p className="text-xs text-muted-foreground">
-                  Weet je zeker dat je de competitie wilt aanmaken met {selectedTeams.length} teams? Deze actie kan niet ongedaan worden gemaakt.
-                </p>
+                <InfoConfirmDescription
+                  message={
+                    <>
+                      Weet je zeker dat je de competitie wilt aanmaken met{" "}
+                      <span className="font-semibold">{selectedTeams.length} teams</span>?
+                    </>
+                  }
+                  note="Controleer de teamselectie en het gekozen format voordat je bevestigt."
+                />
               }
               confirmAction={{
                 label: previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken',
@@ -656,9 +680,10 @@ const AdminCompetitionPage: React.FC = () => {
         onOpenChange={setShowDeleteConfirm}
         title="Competitie Verwijderen?"
         description={
-          <p className="text-sm text-muted-foreground">
-            Alle competitiewedstrijden ({existingCompetition.length}) worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.
-          </p>
+          <DestructiveConfirmDescription
+            message="Weet je zeker dat je de volledige competitie wilt verwijderen?"
+            warning={`Alle competitiewedstrijden (${existingCompetition.length}) worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt.`}
+          />
         }
         confirmAction={{
           label: "Verwijderen",

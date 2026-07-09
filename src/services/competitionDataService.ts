@@ -1,11 +1,58 @@
 import { seasonService } from './seasonService';
 
+export interface CompetitionDivision {
+  id: number;
+  name: string;
+  sort_order: number;
+}
+
 export interface CompetitionFormat {
   id: number;
   name: string;
   description: string;
   has_playoffs: boolean;
   regular_rounds: number;
+  /** Wanneer true: teams worden per reeks (klasse) ingedeeld. */
+  has_divisions?: boolean;
+  divisions?: CompetitionDivision[];
+}
+
+export const DEFAULT_DIVISION_NAMES = [
+  'Eerste klasse',
+  'Tweede klasse',
+  'Derde klasse',
+] as const;
+
+export function createDivision(name: string, sortOrder: number): CompetitionDivision {
+  return {
+    id: Date.now() + sortOrder,
+    name,
+    sort_order: sortOrder,
+  };
+}
+
+export function createDefaultDivisions(): CompetitionDivision[] {
+  return DEFAULT_DIVISION_NAMES.map((name, index) => createDivision(name, index + 1));
+}
+
+export function normalizeCompetitionFormat(format: CompetitionFormat): CompetitionFormat {
+  const hasDivisions = Boolean(format.has_divisions);
+  const divisions = (format.divisions ?? [])
+    .filter((division) => division.name.trim().length > 0)
+    .map((division, index) => ({
+      ...division,
+      sort_order: index + 1,
+    }));
+
+  return {
+    ...format,
+    has_divisions: hasDivisions,
+    divisions: hasDivisions ? divisions : [],
+  };
+}
+
+export function normalizeCompetitionFormats(formats: CompetitionFormat[]): CompetitionFormat[] {
+  return formats.map(normalizeCompetitionFormat);
 }
 
 export interface Venue {
@@ -33,61 +80,57 @@ export interface VacationPeriod {
 export type { SlotUnavailability } from '@/types/slotUnavailability';
 
 export const competitionDataService = {
-  // Get all competition formats
-  async getCompetitionFormats(): Promise<CompetitionFormat[]> {
-    const data = await seasonService.getSeasonData();
-    return data.competition_formats || [];
+  async getCompetitionFormats(organizationId?: number): Promise<CompetitionFormat[]> {
+    const data = await seasonService.getSeasonData(organizationId);
+    return normalizeCompetitionFormats(data.competition_formats || []);
   },
 
-  // Get all venues
-  async getVenues(): Promise<Venue[]> {
-    const data = await seasonService.getSeasonData();
+  async getVenues(organizationId?: number): Promise<Venue[]> {
+    const data = await seasonService.getSeasonData(organizationId);
     return data.venues || [];
   },
 
-  // Get all venue timeslots
-  async getVenueTimeslots(): Promise<VenueTimeslot[]> {
-    const data = await seasonService.getSeasonData();
+  async getVenueTimeslots(organizationId?: number): Promise<VenueTimeslot[]> {
+    const data = await seasonService.getSeasonData(organizationId);
     return data.venue_timeslots || [];
   },
 
-  // Get all vacation periods
-  async getVacationPeriods(): Promise<VacationPeriod[]> {
-    const data = await seasonService.getSeasonData();
+  async getVacationPeriods(organizationId?: number): Promise<VacationPeriod[]> {
+    const data = await seasonService.getSeasonData(organizationId);
     return data.vacation_periods || [];
   },
 
-  async getSlotUnavailability(): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
-    const data = await seasonService.getSeasonData();
+  async getSlotUnavailability(
+    organizationId?: number,
+  ): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
+    const data = await seasonService.getSeasonData(organizationId);
     return data.slot_unavailability || [];
   },
 
-  async getActiveSlotUnavailability(): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
-    const blocks = await this.getSlotUnavailability();
+  async getActiveSlotUnavailability(
+    organizationId?: number,
+  ): Promise<import('@/types/slotUnavailability').SlotUnavailability[]> {
+    const blocks = await this.getSlotUnavailability(organizationId);
     return blocks.filter((b) => b.is_active);
   },
 
-  // Get day names
-  async getDayNames(): Promise<string[]> {
-    const data = await seasonService.getSeasonData();
+  async getDayNames(organizationId?: number): Promise<string[]> {
+    const data = await seasonService.getSeasonData(organizationId);
     return data.day_names || [];
   },
 
-  // Get venue by ID
-  async getVenueById(venueId: number): Promise<Venue | undefined> {
-    const venues = await this.getVenues();
-    return venues.find(venue => venue.venue_id === venueId);
+  async getVenueById(venueId: number, organizationId?: number): Promise<Venue | undefined> {
+    const venues = await this.getVenues(organizationId);
+    return venues.find((venue) => venue.venue_id === venueId);
   },
 
-  // Get timeslots for a specific venue
-  async getTimeslotsForVenue(venueId: number): Promise<VenueTimeslot[]> {
-    const timeslots = await this.getVenueTimeslots();
-    return timeslots.filter(timeslot => timeslot.venue_id === venueId);
+  async getTimeslotsForVenue(venueId: number, organizationId?: number): Promise<VenueTimeslot[]> {
+    const timeslots = await this.getVenueTimeslots(organizationId);
+    return timeslots.filter((timeslot) => timeslot.venue_id === venueId);
   },
 
-  // Get active vacation periods
-  async getActiveVacationPeriods(): Promise<VacationPeriod[]> {
-    const periods = await this.getVacationPeriods();
-    return periods.filter(period => period.is_active);
-  }
-}; 
+  async getActiveVacationPeriods(organizationId?: number): Promise<VacationPeriod[]> {
+    const periods = await this.getVacationPeriods(organizationId);
+    return periods.filter((period) => period.is_active);
+  },
+};

@@ -1,22 +1,23 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AppModal, AppModalFooter } from "@/components/modals";
-import { Badge } from "@/components/ui/badge";
+import { AppModal, AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { blogService, type BlogPost } from "@/services/blogService";
 import {
   ADMIN_BLOG_POSTS_QUERY_KEY,
   useAdminBlogPosts,
 } from "@/hooks/useAdminBlogPosts";
-import { Plus, Edit, Trash2, AlertCircle, Loader2, BookOpen } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useBranding } from "@/hooks/useBranding";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { PageHeader } from "@/components/layout";
+import { Plus, AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import BlogList, { type BlogStatusFilter } from "./components/BlogList";
 
 const DEFAULT_FORM_DATA = {
   title: "",
@@ -24,30 +25,16 @@ const DEFAULT_FORM_DATA = {
   published: false,
 };
 
-const BlogTableSkeleton = () => (
-  <div className="w-full overflow-x-auto">
-    <div className="min-w-[650px] space-y-3">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="flex items-center gap-4 py-2">
-          <Skeleton className="h-5 flex-1" />
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-8 w-20" />
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
 const BlogPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const branding = useBranding();
   const {
+    organizationId,
     blogPosts = [],
     isListLoading,
     isRefreshing,
     showError,
-    showEmpty,
     error,
     refetch,
   } = useAdminBlogPosts();
@@ -56,12 +43,42 @@ const BlogPage: React.FC = () => {
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BlogStatusFilter>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ADMIN_BLOG_POSTS_QUERY_KEY });
-    await queryClient.invalidateQueries({ queryKey: ["blogPosts"] });
+    await queryClient.invalidateQueries({
+      queryKey: withOrgQueryKey(ADMIN_BLOG_POSTS_QUERY_KEY, organizationId),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: withOrgQueryKey(["blogPosts"], organizationId),
+    });
     await refetch();
-  }, [queryClient, refetch]);
+  }, [queryClient, organizationId, refetch]);
+
+  const publishedCount = useMemo(
+    () => blogPosts.filter((post) => post.setting_value.published).length,
+    [blogPosts],
+  );
+  const draftCount = blogPosts.length - publishedCount;
+
+  const filteredPosts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return blogPosts.filter((post) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        post.setting_value.title.toLowerCase().includes(normalizedSearch) ||
+        post.setting_value.content.toLowerCase().includes(normalizedSearch);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "published" && post.setting_value.published) ||
+        (statusFilter === "draft" && !post.setting_value.published);
+      return matchesSearch && matchesStatus;
+    });
+  }, [blogPosts, searchTerm, statusFilter]);
 
   const resetForm = useCallback(() => {
     setFormData(DEFAULT_FORM_DATA);
@@ -100,14 +117,14 @@ const BlogPage: React.FC = () => {
           await blogService.updateBlogPost(editingPost.id, {
             setting_value: settingValue,
           });
-          toast({ title: "Success", description: "Blog post bijgewerkt" });
+          toast({ title: "Opgeslagen", description: "Blogbericht bijgewerkt" });
         } else {
           await blogService.createBlogPost({
             setting_category: "blog_posts",
             setting_name: `blog_post_${Date.now()}`,
             setting_value: settingValue,
           });
-          toast({ title: "Success", description: "Blog post aangemaakt" });
+          toast({ title: "Aangemaakt", description: "Blogbericht toegevoegd" });
         }
         setIsDialogOpen(false);
         resetForm();
@@ -117,7 +134,7 @@ const BlogPage: React.FC = () => {
         toast({
           title: "Fout",
           description:
-            err instanceof Error ? err.message : "Kon blog post niet opslaan",
+            err instanceof Error ? err.message : "Kon blogbericht niet opslaan",
           variant: "destructive",
         });
       } finally {
@@ -137,25 +154,32 @@ const BlogPage: React.FC = () => {
     setIsDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback(
-    async (id: number) => {
-      if (!confirm("Weet je zeker dat je deze blog post wilt verwijderen?")) return;
-      try {
-        await blogService.deleteBlogPost(id);
-        toast({ title: "Success", description: "Blog post verwijderd" });
-        await refreshData();
-      } catch (err) {
-        console.error("Error deleting blog post:", err);
-        toast({
-          title: "Fout",
-          description:
-            err instanceof Error ? err.message : "Kon blog post niet verwijderen",
-          variant: "destructive",
-        });
-      }
-    },
-    [toast, refreshData],
-  );
+  const handleDeleteClick = useCallback((post: BlogPost) => {
+    setPostToDelete(post);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!postToDelete) return;
+    setIsDeleting(true);
+    try {
+      await blogService.deleteBlogPost(postToDelete.id);
+      toast({ title: "Verwijderd", description: "Blogbericht verwijderd" });
+      setDeleteDialogOpen(false);
+      setPostToDelete(null);
+      await refreshData();
+    } catch (err) {
+      console.error("Error deleting blog post:", err);
+      toast({
+        title: "Fout",
+        description:
+          err instanceof Error ? err.message : "Kon blogbericht niet verwijderen",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [postToDelete, toast, refreshData]);
 
   const togglePublished = useCallback(
     async (post: BlogPost, published: boolean) => {
@@ -163,10 +187,10 @@ const BlogPage: React.FC = () => {
       try {
         await blogService.togglePublishedStatus(post.id, published);
         toast({
-          title: "Success",
+          title: "Bijgewerkt",
           description: published
-            ? "Blog post gepubliceerd"
-            : "Blog post gedepubliceerd",
+            ? "Blogbericht gepubliceerd"
+            : "Blogbericht naar concept gezet",
         });
         await refreshData();
       } catch (err) {
@@ -184,78 +208,111 @@ const BlogPage: React.FC = () => {
     [toast, refreshData],
   );
 
+  const addButton = (
+    <Button
+      type="button"
+      onClick={handleOpenNew}
+      className="min-h-[44px] w-full sm:w-auto"
+      aria-label="Nieuw blogbericht aanmaken"
+    >
+      <Plus className="h-4 w-4" />
+      Nieuw bericht
+    </Button>
+  );
+
   return (
-    <div className="space-y-6 w-full motion-safe:animate-slide-up">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-            <BookOpen className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
-            Blogs
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Beheer nieuwsberichten op de publieke site
-          </p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {isRefreshing && !isListLoading && (
+    <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
+      <PageHeader
+        title="Blog beheer"
+        subtitle={`Beheer nieuwsberichten voor ${branding.displayName} (${blogPosts.length} bericht${blogPosts.length === 1 ? "" : "en"})`}
+        rightAction={
+          isRefreshing && !isListLoading ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
               Vernieuwen…
             </span>
-          )}
-          <Button className="btn btn--primary w-full sm:w-auto min-h-[44px]" onClick={handleOpenNew}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nieuwe Blog
-          </Button>
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
+
+      {showError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {error instanceof Error
+                ? error.message
+                : "Kon blogberichten niet laden."}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Opnieuw proberen
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!showError && (
+        <BlogList
+          posts={filteredPosts}
+          loading={isListLoading}
+          isRefreshing={isRefreshing}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onTogglePublished={(post, published) => void togglePublished(post, published)}
+          addButton={addButton}
+          totalCount={blogPosts.length}
+          publishedCount={publishedCount}
+          draftCount={draftCount}
+        />
+      )}
 
       <AppModal
         open={isDialogOpen}
         onOpenChange={handleDialogOpenChange}
-        title={editingPost ? "Blog Post Bewerken" : "Nieuwe Blog Post"}
-        subtitle={
-          editingPost
-            ? "Bewerk de blog post details"
-            : "Maak een nieuwe blog post aan"
-        }
+        title={editingPost ? "Blogbericht bewerken" : "Nieuw blogbericht"}
         size="lg"
-        className="max-w-4xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">
-              Titel
-            </Label>
+            <Label htmlFor="blog-title">Titel</Label>
             <Input
-              id="title"
+              id="blog-title"
               value={formData.title}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, title: e.target.value }))
               }
               required
-              className="w-full"
+              className="min-h-[44px]"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="content" className="text-sm font-medium">
-              Inhoud
-            </Label>
+            <Label htmlFor="blog-content">Inhoud</Label>
             <Textarea
-              id="content"
+              id="blog-content"
               value={formData.content}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, content: e.target.value }))
               }
               rows={10}
               required
-              placeholder="Volledige inhoud van de blog post..."
-              className="w-full"
+              placeholder="Volledige inhoud van het blogbericht…"
+              className="min-h-[200px]"
             />
           </div>
 
-          <div className="flex items-center space-x-3 p-3 border border-border rounded-lg bg-muted">
+          <div className="flex min-h-[44px] items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
             <Switch
               id="blog-published"
               checked={formData.published}
@@ -263,149 +320,71 @@ const BlogPage: React.FC = () => {
                 setFormData((prev) => ({ ...prev, published: checked }))
               }
             />
-            <Label
-              htmlFor="blog-published"
-              className="text-sm font-medium text-card-foreground cursor-pointer"
-            >
-              Gepubliceerd
+            <Label htmlFor="blog-published" className="cursor-pointer font-medium">
+              Direct publiceren op de website
             </Label>
           </div>
 
-          <AppModalFooter>
-            <button
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            <Button
               type="button"
+              variant="outline"
               onClick={() => setIsDialogOpen(false)}
-              className="btn btn--secondary w-full sm:w-auto min-h-[44px]"
+              className="min-h-[44px]"
+              disabled={isSaving}
             >
               Annuleren
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="btn btn--primary w-full sm:w-auto min-h-[44px]"
-            >
-              {isSaving
-                ? "Opslaan…"
-                : editingPost
-                  ? "Bijwerken"
-                  : "Aanmaken"}
-            </button>
-          </AppModalFooter>
+            </Button>
+            <Button type="submit" className="min-h-[44px]" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Opslaan…
+                </>
+              ) : editingPost ? (
+                "Wijzigingen opslaan"
+              ) : (
+                "Bericht aanmaken"
+              )}
+            </Button>
+          </div>
         </form>
       </AppModal>
 
-      <Card>
-        <CardHeader className="pb-2" />
-        <CardContent>
-          {isListLoading ? (
-            <BlogTableSkeleton />
-          ) : showError ? (
-            <div className="py-8 text-center" role="alert">
-              <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" aria-hidden />
-              <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-              <p className="text-muted-foreground mb-4 text-sm">
-                {error instanceof Error
-                  ? error.message
-                  : "Kon blog posts niet laden."}
-              </p>
-              <Button
-                type="button"
-                onClick={() => void refetch()}
-                className="min-h-[44px]"
-              >
-                Opnieuw proberen
-              </Button>
-            </div>
-          ) : showEmpty ? (
-            <p className="text-center text-muted-foreground py-8 text-sm">
-              Nog geen blog posts aangemaakt.
-            </p>
-          ) : (
-            <div
-              className={`w-full overflow-x-auto transition-opacity ${isRefreshing ? "opacity-80" : ""}`}
-            >
-              <div className="min-w-[650px]">
-                <Table className="table w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[250px]">Titel</TableHead>
-                      <TableHead className="min-w-[100px]">Status</TableHead>
-                      <TableHead className="min-w-[100px]">Gemaakt</TableHead>
-                      <TableHead className="text-center min-w-[120px]">
-                        Acties
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {blogPosts.map((post) => (
-                      <TableRow key={post.id}>
-                        <TableCell className="font-medium">
-                          {post.setting_value.title}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Switch
-                              checked={post.setting_value.published}
-                              onCheckedChange={(checked) =>
-                                void togglePublished(post, checked)
-                              }
-                              className="min-h-[44px] min-w-[44px] scale-90"
-                              aria-label={
-                                post.setting_value.published
-                                  ? `${post.setting_value.title} depubliceren`
-                                  : `${post.setting_value.title} publiceren`
-                              }
-                            />
-                            <Badge
-                              variant={
-                                post.setting_value.published
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className="text-xs"
-                            >
-                              {post.setting_value.published
-                                ? "Gepubliceerd"
-                                : "Concept"}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {post.setting_value.published_at
-                            ? new Date(
-                                post.setting_value.published_at,
-                              ).toLocaleDateString("nl-NL")
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              className="btn btn--icon btn--edit min-h-[44px] min-w-[44px]"
-                              onClick={() => handleEdit(post)}
-                              size="sm"
-                              aria-label={`Bewerk ${post.setting_value.title}`}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              className="btn btn--icon btn--danger min-h-[44px] min-w-[44px]"
-                              onClick={() => void handleDelete(post.id)}
-                              size="sm"
-                              aria-label={`Verwijder ${post.setting_value.title}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AppAlertModal
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Blogbericht verwijderen"
+        size="sm"
+        description={
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je{" "}
+                <span className="font-semibold text-destructive">
+                  {postToDelete?.setting_value.title}
+                </span>{" "}
+                wilt verwijderen?
+              </>
+            }
+          />
+        }
+        confirmAction={{
+          label: isDeleting ? "Verwijderen…" : "Verwijderen",
+          onClick: () => void handleConfirmDelete(),
+          variant: "destructive",
+          disabled: isDeleting,
+          loading: isDeleting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => {
+            setDeleteDialogOpen(false);
+            setPostToDelete(null);
+          },
+          disabled: isDeleting,
+        }}
+      />
     </div>
   );
 };

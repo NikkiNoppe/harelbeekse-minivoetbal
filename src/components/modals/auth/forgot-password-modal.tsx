@@ -16,6 +16,7 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganization";
 import { ZodError } from "zod";
 import { X } from 'lucide-react';
 
@@ -31,6 +32,7 @@ interface ForgotPasswordModalProps {
 
 export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
+  const { organizationId } = useOrganization();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -40,7 +42,12 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ open, 
   const onSubmit = async (data: FormValues) => {
     setIsLoading(true);
     try {
-      const { data: response, error } = await supabase.functions.invoke('send-password-reset', { body: { email: data.email } });
+      const { data: response, error } = await supabase.functions.invoke('send-password-reset', {
+        body: {
+          email: data.email,
+          organizationId,
+        },
+      });
       if (error) {
         toast({ title: "Er is een fout opgetreden", description: "Probeer het later opnieuw", variant: "destructive" });
       } else {

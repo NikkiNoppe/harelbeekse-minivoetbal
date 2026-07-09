@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SectionCollapsibleCard } from "@/components/layout";
-import { AppAlertModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive } from "lucide-react";
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
@@ -1042,9 +1042,16 @@ const AdminPlayoffPage: React.FC = () => {
         }}
         title={confirmAction ? confirmDialogContent[confirmAction].title : ''}
         description={
-          <div className="text-center text-sm text-muted-foreground">
-            {confirmAction && confirmDialogContent[confirmAction].description}
-          </div>
+          confirmAction === "delete" ? (
+            <DestructiveConfirmDescription
+              message="Weet je zeker dat je alle playoff-wedstrijden wilt verwijderen?"
+              warning="Alle playoff wedstrijden worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt."
+            />
+          ) : confirmAction ? (
+            <InfoConfirmDescription
+              message={confirmDialogContent[confirmAction].description}
+            />
+          ) : null
         }
         confirmAction={{
           label: confirmAction ? confirmDialogContent[confirmAction].actionLabel : '',

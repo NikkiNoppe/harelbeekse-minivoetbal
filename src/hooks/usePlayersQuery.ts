@@ -162,7 +162,6 @@ export const usePlayersQuery = (teamId: number | null = null) => {
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
     refetchInterval: false,
-    placeholderData: (previousData) => previousData, // Show previous data while loading
     networkMode: 'offlineFirst',
   });
 };

@@ -1,23 +1,28 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
-import { Resend } from "https://esm.sh/resend@2.0.0";
-// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireSession } from "../_shared/auth.ts";
+import {
+  AUTH_INVITE_LINK_TTL_MS,
+  buildAuthEmailHtml,
+  formatAuthLinkValidityNl,
+  loadAuthEmailBranding,
+  resolveAuthBaseUrl,
+  resolveAuthReplyTo,
+} from "../_shared/auth-email-branding.ts";
+import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
-// Declare Deno namespace for TypeScript
 declare const Deno: {
   env: {
     get(key: string): string | undefined;
   };
 };
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-token",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-session-token",
 };
 
 interface WelcomeEmailRequest {
@@ -62,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: userRow, error: userLookupError } = await supabase
       .from("users")
-      .select("user_id, email")
+      .select("user_id, email, username, organization_id")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -80,27 +85,22 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const appBaseUrl = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
-    if (!appBaseUrl) {
-      return new Response(JSON.stringify({ error: "APP_BASE_URL not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    const branding = await loadAuthEmailBranding(supabase, userRow.organization_id);
+    const appBaseUrl = resolveAuthBaseUrl(branding);
 
     const resetToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + AUTH_INVITE_LINK_TTL_MS);
+    const validityLabel = formatAuthLinkValidityNl(AUTH_INVITE_LINK_TTL_MS);
 
-    // Insert password reset token
     const { error: tokenError } = await supabase
-      .from('password_reset_tokens')
+      .from("password_reset_tokens")
       .insert({
         user_id: userId,
         token: resetToken,
         requested_email: email,
-        expires_at: expiresAt.toISOString()
+        expires_at: expiresAt.toISOString(),
       });
-    
+
     if (tokenError) {
       console.error("Error creating reset token:", tokenError);
       return new Response(JSON.stringify({ error: "Failed to create password reset token" }), {
@@ -108,47 +108,68 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-    
-    // Generate secure password setup URL
-    const setupPasswordUrl = `${appBaseUrl}/reset-password?token=${resetToken}`;
 
-    const emailResponse = await resend.emails.send({
-      from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
+    const setupPasswordUrl =
+      `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}&mode=setup`;
+    const displayUsername = username || userRow.username || "gebruiker";
+
+    const html = buildAuthEmailHtml({
+      branding,
+      previewText: `Je account bij ${branding.displayName} is aangemaakt.`,
+      heading: "Welkom — stel je wachtwoord in",
+      greeting: `Hallo ${displayUsername},`,
+      paragraphs: [
+        `Er werd een account voor je aangemaakt bij <strong>${branding.displayName}</strong>.`,
+        `<strong>Gebruikersnaam:</strong> ${displayUsername}`,
+        "Klik op de knop hieronder om een persoonlijk wachtwoord in te stellen en je account te activeren.",
+      ],
+      ctaLabel: "Wachtwoord instellen",
+      ctaUrl: setupPasswordUrl,
+      note: `Deze link is ${validityLabel} geldig. Heb je deze uitnodiging niet verwacht? Dan mag je deze e-mail negeren.`,
+      securityTip:
+        `Deze link kan maar één keer gebruikt worden en verloopt automatisch na ${validityLabel}.`,
+    });
+
+    const sendResult = await sendTransactionalEmail({
+      from: branding.fromAddress,
+      replyTo: resolveAuthReplyTo(branding),
       to: [email],
-      subject: "Welkom bij Harelbeekse Minivoetbal - Activeer je account",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #7c3aed; margin: 0 0 8px;">Welkom bij Harelbeekse Minivoetbal</h2>
-          <p style="color: #111827;">Hallo ${username || 'gebruiker'},</p>
-          <p style="color: #374151;">Je account voor <strong>Harelbeekse Minivoetbal</strong> werd succesvol aangemaakt.</p>
-          <p style="color: #374151;">
-            <strong>Gebruikersnaam:</strong> ${username || 'Team123'}
-          </p>
-          <p style="color: #374151;">Klik op onderstaande knop om je wachtwoord in te stellen en je account te activeren:</p>
-          <a href="${setupPasswordUrl}"
-             style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0; font-weight: 600;">
-             Wachtwoord instellen
-          </a>
-          <p style="color: #6b7280; font-size: 14px;">Deze link is 1 uur geldig.</p>
-          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
-            <p style="color: #374151; margin: 0;">
-              Na het instellen van je wachtwoord kan je inloggen en je spelers beheren.<br>
-              We voorzien tegen het einde van deze week dat het speelschema online komt.
-            </p>
-          </div>
-          <p style="color: #9ca3af; font-size: 12px; margin-top: 24px;">
-            Als je deze email niet hebt aangevraagd, kan je deze veilig negeren.
-          </p>
-        </div>
-      `,
+      subject: `Welkom bij ${branding.shortName} — stel je wachtwoord in`,
+      html,
     });
 
-    console.log("Welcome email sent:", emailResponse);
+    if (!sendResult.success) {
+      console.error("Welcome email send failed:", sendResult);
+      return new Response(
+        JSON.stringify({
+          error: sendResult.error || "Failed to send welcome email",
+          provider: sendResult.provider,
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+    console.log("Welcome email sent:", {
+      recipient: email,
+      userId,
+      provider: sendResult.provider,
+      messageId: sendResult.messageId,
     });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        messageId: sendResult.messageId,
+        provider: sendResult.provider,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   } catch (error: unknown) {
     console.error("Error in send-welcome-email function:", error);
     return new Response(JSON.stringify({ error: "Failed to send welcome email" }), {
@@ -159,5 +180,3 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
-
-

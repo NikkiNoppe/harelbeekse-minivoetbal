@@ -3,11 +3,11 @@ import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Shield, Trophy, Users, RefreshCw, Plus, ChevronDown } from "lucide-react";
+import { AlertCircle, Shield, Trophy, Users, Plus } from "lucide-react";
 import { useSuspensionsData } from "@/domains/cards-suspensions";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/routes";
-import { PageHeader } from "@/components/layout";
+import { PageHeader, PUBLIC_CARD_CLASS } from "@/components/layout";
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 import type { Suspension } from "@/domains/cards-suspensions";
 import { SectionCollapsibleCard } from "@/components/layout";
@@ -77,6 +77,22 @@ const AdminView: React.FC = memo(() => {
     refetchSuspensions();
   };
 
+  const activeCount = filteredSuspensions.filter((s) => s.status === "active").length;
+  const manualCount = filteredSuspensions.filter((s) => s.source === "manual").length;
+  const automaticCount = filteredSuspensions.filter((s) => s.source === "automatic").length;
+
+  const addSuspensionButton = (
+    <Button
+      type="button"
+      onClick={() => setShowAddModal(true)}
+      aria-label="Handmatige schorsing toevoegen"
+      className="min-h-[44px] w-full sm:w-auto"
+    >
+      <Plus className="h-4 w-4" />
+      Schorsing toevoegen
+    </Button>
+  );
+
   if (playerCardsError || suspensionsError) {
     return (
       <Alert variant="destructive">
@@ -92,60 +108,64 @@ const AdminView: React.FC = memo(() => {
   }
 
   return (
-    <>
-      <PageHeader 
+    <div className="space-y-4 sm:space-y-6">
+      <PageHeader
         title="Schorsingen Beheer"
-        subtitle="Beheer actieve schorsingen en gebruik kaarten als context"
+        subtitle={`Beheer actieve schorsingen en gebruik kaarten als context (${filteredSuspensions.length} resultaat${filteredSuspensions.length === 1 ? "" : "en"})`}
       />
 
       <SuspensionRulesSettings />
 
-      {/* Filters */}
-      <div className="mb-6">
-        <SuspensionFilters
-          selectedTeam={teamFilter}
-          onTeamChange={setTeamFilter}
-          selectedStatus={statusFilter}
-          onStatusChange={setStatusFilter}
-          selectedSource={sourceFilter}
-          onSourceChange={setSourceFilter}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-        />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Actief
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">{activeCount}</p>
+          </CardContent>
+        </Card>
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Handmatig
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">{manualCount}</p>
+          </CardContent>
+        </Card>
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Automatisch
+            </p>
+            <p className="mt-2 text-2xl font-semibold text-brand-dark">{automaticCount}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Schorsingen */}
-      <section role="region" aria-labelledby="suspensions-heading" className="mb-6">
-        <Card className="border border-border">
+      <SuspensionFilters
+        selectedTeam={teamFilter}
+        onTeamChange={setTeamFilter}
+        selectedStatus={statusFilter}
+        onStatusChange={setStatusFilter}
+        selectedSource={sourceFilter}
+        onSourceChange={setSourceFilter}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        addButton={addSuspensionButton}
+      />
+
+      <section role="region" aria-labelledby="suspensions-heading">
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
           <CardHeader className="space-y-0 p-4 sm:p-5 pb-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div className="min-w-0 space-y-1.5">
-                <CardTitle id="suspensions-heading" className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
-                  Actieve schorsingen
-                </CardTitle>
-                <CardDescription>
-                  Eén overzicht van handmatige schorsingen en automatische kaartschorsingen
-                </CardDescription>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="default"
-                onClick={() => setShowAddModal(true)}
-                aria-label="Handmatige schorsing toevoegen"
-                className={cn(
-                  "gap-2 self-stretch sm:self-auto sm:shrink-0",
-                  "shadow-sm shadow-primary/10 ring-1 ring-primary/20",
-                  "transition-[box-shadow,transform,background-color] duration-150 ease-out",
-                  "hover:shadow-md hover:shadow-primary/15 hover:ring-primary/25",
-                  "active:scale-[0.98]"
-                )}
-              >
-                <Plus className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="hidden sm:inline">Schorsing toevoegen</span>
-                <span className="sm:hidden">Toevoegen</span>
-              </Button>
+            <div className="min-w-0 space-y-1.5">
+              <CardTitle id="suspensions-heading" className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
+                Actieve schorsingen
+              </CardTitle>
+              <CardDescription>
+                Eén overzicht van handmatige schorsingen en automatische kaartschorsingen
+              </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5 bg-transparent">
@@ -210,12 +230,12 @@ const AdminView: React.FC = memo(() => {
       </section>
 
       <AddSuspensionModal open={showAddModal} onOpenChange={setShowAddModal} />
-      <EditSuspensionModal 
-        open={!!editSuspension} 
-        onOpenChange={(open) => !open && setEditSuspension(null)} 
-        suspension={editSuspension} 
+      <EditSuspensionModal
+        open={!!editSuspension}
+        onOpenChange={(open) => !open && setEditSuspension(null)}
+        suspension={editSuspension}
       />
-    </>
+    </div>
   );
 });
 
@@ -232,7 +252,7 @@ const SchorsingenPage: React.FC = memo(() => {
   }
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
       {isAdmin ? (
         <AdminView />
       ) : (

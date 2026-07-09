@@ -1,18 +1,22 @@
-
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
-import { Resend } from "https://esm.sh/resend@2.0.0";
-// @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.4';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import {
+  AUTH_PASSWORD_RESET_TTL_MS,
+  buildAuthEmailHtml,
+  formatAuthLinkValidityNl,
+  loadAuthEmailBranding,
+  resolveAuthBaseUrl,
+  resolveAuthReplyTo,
+} from "../_shared/auth-email-branding.ts";
+import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
 declare const Deno: {
   env: {
     get(key: string): string | undefined;
   };
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,21 +25,52 @@ const corsHeaders = {
 };
 
 const GENERIC_SUCCESS_MESSAGE =
-  "Als dit email adres bestaat, zal je een reset link ontvangen.";
+  "Als dit e-mailadres bij ons bekend is, ontvang je binnen enkele minuten een link om je wachtwoord te wijzigen.";
 
 interface PasswordResetRequest {
   email: string;
+  organizationId?: number;
 }
 
-interface User {
+interface UserRow {
   user_id: number;
   username: string;
   email: string | null;
+  organization_id: number | null;
 }
 
-function getAppBaseUrl(): string | null {
-  const base = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
-  return base || null;
+async function findUserByEmail(
+  supabase: ReturnType<typeof createClient>,
+  normalizedEmail: string,
+  organizationId?: number,
+): Promise<UserRow | null> {
+  let query = supabase
+    .from("users")
+    .select("user_id, username, email, organization_id")
+    .eq("email", normalizedEmail);
+
+  if (organizationId != null) {
+    query = query.eq("organization_id", organizationId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("User lookup failed:", error);
+    return null;
+  }
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  if (data.length > 1 && organizationId == null) {
+    console.warn(
+      `Multiple users found for email ${normalizedEmail} without organization scope; using first match.`,
+    );
+  }
+
+  return data[0] as UserRow;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -44,92 +79,78 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const appBaseUrl = getAppBaseUrl();
-    if (!appBaseUrl) {
-      console.error("APP_BASE_URL is not configured");
-      return new Response(
-        JSON.stringify({ error: "Service configuration error" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
-    }
-
-    const { email }: PasswordResetRequest = await req.json();
+    const { email, organizationId }: PasswordResetRequest = await req.json();
 
     if (!email?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
+      return new Response(JSON.stringify({ error: "Email is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    const parsedOrganizationId =
+      typeof organizationId === "number" && Number.isFinite(organizationId)
+        ? organizationId
+        : undefined;
 
     const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc(
-      'check_email_rate_limit',
-      { p_email: normalizedEmail, p_action: 'password_reset', p_max_attempts: 3, p_window_minutes: 60 },
+      "check_email_rate_limit",
+      {
+        p_email: normalizedEmail,
+        p_action: "password_reset",
+        p_max_attempts: 3,
+        p_window_minutes: 60,
+      },
     );
 
     if (rateLimitError) {
       console.error("Rate limit check failed:", rateLimitError);
     } else if (rateLimitOk === false) {
-      return new Response(
-        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
+      return new Response(JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('user_id, username, email')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    const user = await findUserByEmail(supabase, normalizedEmail, parsedOrganizationId);
 
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
+    if (!user) {
+      return new Response(JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    if (!user.email || user.email.trim() === '') {
+    if (!user.email || user.email.trim() === "") {
       await sendAdminNotification(supabase, user, normalizedEmail);
-      return new Response(
-        JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
+      return new Response(JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
+
+    const branding = await loadAuthEmailBranding(
+      supabase,
+      parsedOrganizationId ?? user.organization_id,
+    );
+    const appBaseUrl = resolveAuthBaseUrl(branding);
 
     const resetToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + AUTH_PASSWORD_RESET_TTL_MS);
+    const validityLabel = formatAuthLinkValidityNl(AUTH_PASSWORD_RESET_TTL_MS);
 
-    const { error: tokenError } = await supabase
-      .from('password_reset_tokens')
-      .insert({
-        user_id: user.user_id,
-        token: resetToken,
-        expires_at: expiresAt.toISOString(),
-        requested_email: normalizedEmail,
-      });
+    const { error: tokenError } = await supabase.from("password_reset_tokens").insert({
+      user_id: user.user_id,
+      token: resetToken,
+      expires_at: expiresAt.toISOString(),
+      requested_email: normalizedEmail,
+    });
 
     if (tokenError) {
       console.error("Error storing reset token:", tokenError);
@@ -142,48 +163,52 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const resetUrl = `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+    const resetUrl =
+      `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}&mode=reset`;
 
-    await resend.emails.send({
-      from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
-      to: [user.email],
-      subject: "Wachtwoord Reset",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #7c3aed; margin: 0 0 8px;">Wachtwoord Reset</h2>
-          <p style="color: #111827;">Hallo ${user.username || 'gebruiker'},</p>
-          <p style="color: #374151;">Je hebt een wachtwoord reset aangevraagd voor je Harelbeekse Minivoetbal account.</p>
-          <p style="color: #374151;">Klik op de onderstaande knop om je wachtwoord te resetten:</p>
-          <a href="${resetUrl}" style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 16px 0; font-weight: 600;">
-            Wachtwoord resetten
-          </a>
-          <p style="color: #6b7280; font-size: 14px;">
-            Deze link is 1 uur geldig. Als je dit niet hebt aangevraagd, kun je deze e-mail negeren.
-          </p>
-          <p style="color: #6b7280; font-size: 14px;">
-            Werkt de knop niet? Kopieer en plak deze link in je browser:<br>
-            <span style="word-break: break-all; color: #6b21a8;">${resetUrl}</span>
-          </p>
-          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 8px; margin-top: 16px;">
-            <p style="color: #581c87; font-size: 12px; margin: 0;">
-              <strong>Veiligheidstip:</strong> Deze link kan maar één keer gebruikt worden en wordt automatisch ongeldig na 1 uur.
-            </p>
-          </div>
-        </div>
-      `,
+    const html = buildAuthEmailHtml({
+      branding,
+      previewText: `Wachtwoord resetten voor ${branding.displayName}.`,
+      heading: "Wachtwoord resetten",
+      greeting: `Hallo ${user.username || "gebruiker"},`,
+      paragraphs: [
+        `Je hebt een verzoek ingediend om je wachtwoord te wijzigen voor <strong>${branding.displayName}</strong>.`,
+        "Klik op de knop hieronder om een nieuw wachtwoord in te stellen.",
+      ],
+      ctaLabel: "Nieuw wachtwoord instellen",
+      ctaUrl: resetUrl,
+      note: `Deze link is ${validityLabel} geldig. Heb je dit niet aangevraagd? Dan mag je deze e-mail negeren.`,
+      securityTip:
+        `Deze link kan maar één keer gebruikt worden en verloopt automatisch na ${validityLabel}.`,
     });
 
-    return new Response(
-      JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
+    const sendResult = await sendTransactionalEmail({
+      from: branding.fromAddress,
+      replyTo: resolveAuthReplyTo(branding),
+      to: [user.email],
+      subject: `${branding.shortName} — wachtwoord resetten`,
+      html,
+    });
+
+    if (!sendResult.success) {
+      console.error("Password reset email send failed:", sendResult);
+      return new Response(
+        JSON.stringify({ error: "Er is een fout opgetreden bij het versturen van de e-mail" }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    return new Response(JSON.stringify({ message: GENERIC_SUCCESS_MESSAGE }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: unknown) {
     console.error("Error in send-password-reset function:", error);
     return new Response(
-      JSON.stringify({ error: "Er is een fout opgetreden bij het versturen van de email" }),
+      JSON.stringify({ error: "Er is een fout opgetreden bij het versturen van de e-mail" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -194,7 +219,7 @@ const handler = async (req: Request): Promise<Response> => {
 
 async function sendAdminNotification(
   supabase: ReturnType<typeof createClient>,
-  user: User,
+  user: UserRow,
   requestedEmail: string,
 ): Promise<void> {
   const adminEmail = Deno.env.get("ADMIN_EMAIL")?.trim();
@@ -203,30 +228,33 @@ async function sendAdminNotification(
     return;
   }
 
-  try {
-    const timestamp = new Date().toLocaleString('nl-NL');
+  const branding = await loadAuthEmailBranding(supabase, user.organization_id);
+  const timestamp = new Date().toLocaleString("nl-NL");
 
-    await resend.emails.send({
-      from: "Harelbeekse Minivoetbal <noreply@resend.dev>",
+  try {
+    const sendResult = await sendTransactionalEmail({
+      from: branding.fromAddress,
+      replyTo: resolveAuthReplyTo(branding),
       to: [adminEmail],
-      subject: "Wachtwoord Reset Verzoek - Gebruiker zonder Email",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #7c3aed; margin: 0 0 8px;">Wachtwoord Reset Verzoek</h2>
-          <p style="color: #4b5563;"><strong>Belangrijk:</strong> Een gebruiker heeft een wachtwoord reset aangevraagd maar heeft geen e-mailadres gekoppeld aan zijn account.</p>
-          <div style="background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <h3 style="color: #6d28d9; margin-top: 0;">Gebruiker details</h3>
-            <ul style="margin: 8px 0; padding-left: 20px; color: #374151;">
-              <li><strong>Gebruikersnaam:</strong> ${user.username}</li>
-              <li><strong>User ID:</strong> ${user.user_id}</li>
-              <li><strong>Email in account:</strong> ${user.email || 'Geen email'}</li>
-              <li><strong>Aangevraagde email:</strong> ${requestedEmail}</li>
-              <li><strong>Tijdstip:</strong> ${timestamp}</li>
-            </ul>
-          </div>
-        </div>
-      `,
+      subject: `${branding.shortName} — wachtwoordreset zonder e-mailadres`,
+      html: buildAuthEmailHtml({
+        branding,
+        previewText: "Wachtwoordreset aangevraagd zonder gekoppeld e-mailadres.",
+        heading: "Wachtwoordreset zonder e-mail",
+        greeting: "Beste beheerder,",
+        paragraphs: [
+          "Een gebruiker heeft een wachtwoordreset aangevraagd, maar er is geen e-mailadres gekoppeld aan het account.",
+          `<strong>Gebruikersnaam:</strong> ${user.username}<br /><strong>User ID:</strong> ${user.user_id}<br /><strong>Aangevraagde e-mail:</strong> ${requestedEmail}<br /><strong>Tijdstip:</strong> ${timestamp}`,
+        ],
+        ctaLabel: "Naar beheer",
+        ctaUrl: branding.siteUrl,
+        note: "Neem contact op met de gebruiker om het wachtwoord handmatig te resetten.",
+      }),
     });
+
+    if (!sendResult.success) {
+      console.error("Admin notification email failed:", sendResult);
+    }
   } catch (error) {
     console.error("Error sending admin notification:", error);
   }

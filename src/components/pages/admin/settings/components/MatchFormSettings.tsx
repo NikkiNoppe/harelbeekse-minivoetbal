@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { FileText, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import {
   insertApplicationSettingForSession,
   listApplicationSettingsForSession,
@@ -35,10 +36,12 @@ const MatchFormSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { orgQueryEnabled } = useOrgQueryScope();
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (!orgQueryEnabled) return;
+    void fetchSettings();
+  }, [orgQueryEnabled]);
 
   const fetchSettings = async () => {
     try {

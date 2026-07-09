@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Lock, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { formatDateShort } from "@/lib/dateUtils";
 import {
   insertApplicationSettingForSession,
@@ -26,10 +27,12 @@ const PlayerListLockSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { orgQueryEnabled } = useOrgQueryScope();
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (!orgQueryEnabled) return;
+    void fetchSettings();
+  }, [orgQueryEnabled]);
 
   const fetchSettings = async () => {
     try {

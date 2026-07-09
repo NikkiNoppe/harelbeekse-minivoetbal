@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AppAlertModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -128,7 +128,9 @@ const TableActions = memo(<T extends { id?: number | string }>({
         open={showDeleteConfirm}
         onOpenChange={setShowDeleteConfirm}
         title="Bevestig Verwijderen"
-        description="Weet je zeker dat je dit item wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je dit item wilt verwijderen?" />
+        }
         confirmAction={{
           label: isDeleting ? "Verwijderen..." : "Verwijderen",
           onClick: () => {

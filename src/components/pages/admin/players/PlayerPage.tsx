@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, Loader2, AlertCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { PUBLIC_CARD_CLASS } from "@/components/layout";
 import PlayersList from "./components/PlayersList";
 import { PlayerModal } from "@/components/modals";
 import PlayerRegulations from "./components/PlayerRegulations";
@@ -105,77 +106,107 @@ const PlayerPage: React.FC = () => {
     ))
   ], [teams]);
 
+  const addPlayerButton = showAddButton ? (
+    <Button
+      onClick={handleOpenAddDialog}
+      className="min-h-[44px] w-full sm:w-auto"
+    >
+      <Plus size={16} />
+      Speler toevoegen
+    </Button>
+  ) : null;
+
+  const subtitle = showLockMessage
+    ? lockMessage ?? undefined
+    : `${players.length} speler${players.length === 1 ? "" : "s"}${currentTeamName ? ` · ${currentTeamName}` : ""}`;
+
   return (
-    <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <PageHeader 
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
+      <PageHeader
         title="Spelerslijst"
-        subtitle={showLockMessage ? lockMessage ?? undefined : currentTeamName || undefined}
+        subtitle={subtitle}
       />
 
-      {/* Team Selector and Add Button for Admin */}
       {isAdmin ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 sm:flex-[0.5] min-w-0">
-              <Select 
-                value={selectedTeam?.toString() || "all"} 
-                onValueChange={handleTeamSelectChange}
-                disabled={loading}
-              >
-                <SelectTrigger className={cn(
-                  "w-full min-h-[44px]",
-                  loading && "opacity-70 cursor-not-allowed"
-                )}>
-                  <SelectValue placeholder="Alle teams" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teamOptions}
-                </SelectContent>
-              </Select>
-              {loading && (
-                <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                </div>
-              )}
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="space-y-4 p-4 sm:p-5">
+            <div className="block md:hidden space-y-3">
+              <div className="relative min-w-0">
+                <Select
+                  value={selectedTeam?.toString() || "all"}
+                  onValueChange={handleTeamSelectChange}
+                  disabled={loading}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "w-full min-h-[44px]",
+                      loading && "opacity-70 cursor-not-allowed",
+                    )}
+                  >
+                    <SelectValue placeholder="Alle teams" />
+                  </SelectTrigger>
+                  <SelectContent>{teamOptions}</SelectContent>
+                </Select>
+                {loading && (
+                  <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+              {addPlayerButton && <div className="pt-2">{addPlayerButton}</div>}
             </div>
-            {showAddButton && (
-              <Button
-                onClick={handleOpenAddDialog}
-                className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4 flex-1 sm:flex-[0.5]"
-              >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Speler toevoegen</span>
-                <span className="sm:hidden">Toevoegen</span>
-              </Button>
-            )}
-          </div>
-          {loading && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Spelers worden geladen...
-            </p>
-          )}
-          {!hasTeams && !loading && (
-            <span className="text-sm text-red-500 text-center">
-              Geen teams gevonden
-            </span>
-          )}
-        </div>
+
+            <div className="hidden md:flex md:items-end md:gap-4">
+              <div className="flex-1 max-w-sm">
+                <div className="relative min-w-0">
+                  <Select
+                    value={selectedTeam?.toString() || "all"}
+                    onValueChange={handleTeamSelectChange}
+                    disabled={loading}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "w-full min-h-[44px]",
+                        loading && "opacity-70 cursor-not-allowed",
+                      )}
+                    >
+                      <SelectValue placeholder="Alle teams" />
+                    </SelectTrigger>
+                    <SelectContent>{teamOptions}</SelectContent>
+                  </Select>
+                  {loading && (
+                    <div className="absolute right-10 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              {addPlayerButton && <div className="flex-shrink-0">{addPlayerButton}</div>}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        /* Add Button for non-admin users */
-        showAddButton && (
-          <div className="flex justify-end">
-            <Button
-              onClick={handleOpenAddDialog}
-              className="btn btn--outline flex items-center justify-center gap-2 whitespace-nowrap min-h-[44px] px-4"
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">Speler toevoegen</span>
-              <span className="sm:hidden">Toevoegen</span>
-            </Button>
-          </div>
+        addPlayerButton && (
+          <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+                {addPlayerButton}
+              </div>
+            </CardContent>
+          </Card>
         )
+      )}
+
+      {isAdmin && !hasTeams && !loading && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Geen teams in deze organisatie</AlertTitle>
+          <AlertDescription>
+            Spelers horen bij teams van de actieve competitie. Maak eerst teams aan
+            voordat je spelers kunt inschrijven. Dezelfde persoon kan in een andere
+            organisatie opnieuw als speler worden toegevoegd.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Error Message */}
@@ -224,17 +255,8 @@ const PlayerPage: React.FC = () => {
         />
       )}
 
-      {/* Players Count */}
-      {!loading && !error && players.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <Badge variant="outline" className="text-sm font-semibold">
-            {players.length} {players.length === 1 ? 'speler' : 'spelers'}
-          </Badge>
-        </div>
-      )}
-
       {/* Players List */}
+      {(hasTeams || !isAdmin) && (
       <PlayersList 
         players={players}
         loading={loading}
@@ -244,6 +266,7 @@ const PlayerPage: React.FC = () => {
         formatDate={formatDate}
         getFullName={getFullName}
       />
+      )}
 
       {/* Player Regulations */}
       <div className="mt-6">

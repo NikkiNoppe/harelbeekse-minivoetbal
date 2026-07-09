@@ -62,11 +62,18 @@ const TAB_GROUPS = [
     tabs: ['format-competition', 'format-cup', 'format-playoffs'],
   },
   {
+    id: 'organisatie',
+    title: 'Organisatie',
+    description: 'Competitie-instellingen en nieuwsberichten per vereniging',
+    icon: Settings,
+    tabs: ['settings', 'blog-management'],
+  },
+  {
     id: 'platform',
     title: 'Platform',
-    description: 'Platforminstellingen en contentbeheer',
+    description: 'Platformbrede systeemberichten (SuperAdmin)',
     icon: Cog,
-    tabs: ['settings', 'blog-management', 'notification'],
+    tabs: ['notification'],
   },
 ];
 
@@ -259,7 +266,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
       </CardHeader>
 
       <CardContent className="px-2 sm:px-6">
-        <Accordion type="multiple" defaultValue={TAB_GROUPS.map(g => g.id)} className="space-y-3">
+        <Accordion type="multiple" defaultValue={[]} className="space-y-3">
           {TAB_GROUPS.map(group => (
             <SectionAccordionItem
               key={group.id}

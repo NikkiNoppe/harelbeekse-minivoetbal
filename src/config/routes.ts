@@ -190,7 +190,6 @@ export const SUPERADMIN_ONLY_ROUTES = [
   ADMIN_ROUTES.cup,
   ADMIN_ROUTES.playoffs,
   ADMIN_ROUTES['platform-beheer'],
-  ADMIN_ROUTES['blog-management'],
   ADMIN_ROUTES.notification,
 ] as const;
 

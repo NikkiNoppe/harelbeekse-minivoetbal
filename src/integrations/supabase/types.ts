@@ -1238,7 +1238,10 @@ export type Database = {
       }
       is_admin_user: { Args: never; Returns: boolean }
       is_current_user_admin: { Args: never; Returns: boolean }
-      is_player_list_locked: { Args: never; Returns: boolean }
+      is_player_list_locked: {
+        Args: { p_organization_id?: number }
+        Returns: boolean
+      }
       is_player_suspended: {
         Args: {
           match_date_param: string

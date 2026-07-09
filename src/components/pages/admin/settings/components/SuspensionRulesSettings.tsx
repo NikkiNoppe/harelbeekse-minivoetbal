@@ -10,6 +10,7 @@ import { Trash2, Plus, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { 
   suspensionRulesService, 
   type SuspensionRules, 
@@ -27,14 +28,16 @@ function fingerprintSuspensionRules(r: SuspensionRules): string {
 export const SuspensionRulesSettings: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { orgQueryEnabled } = useOrgQueryScope();
   const [rules, setRules] = useState<SuspensionRules | null>(null);
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    loadRules();
-  }, []);
+    if (!orgQueryEnabled) return;
+    void loadRules();
+  }, [orgQueryEnabled]);
 
   const loadRules = async () => {
     try {

@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { pollService } from '@/services/scheidsrechter/pollService';
 import type { MonthlyPoll } from '@/services/scheidsrechter/types';
 import CreatePollModal from './CreatePollModal';
-import { AppAlertModal } from '@/components/modals/base/app-alert-modal';
+import { AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
 import PollsTable from './PollsTable';
 import PollDetailModal from './PollDetailModal';
 import AutoGeneratePreviewModal from './AutoGeneratePreviewModal';
@@ -174,7 +174,12 @@ const PollManagement: React.FC = () => {
         open={pollToDelete !== null}
         onOpenChange={(open) => !open && setPollToDelete(null)}
         title="Poll Verwijderen"
-        description="Weet je zeker dat je deze poll wilt verwijderen? Alle bijhorende beschikbaarheid wordt mee verwijderd. Dit kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription
+            message="Weet je zeker dat je deze poll wilt verwijderen?"
+            warning="Alle bijhorende beschikbaarheid wordt mee verwijderd. Deze actie kan niet ongedaan worden gemaakt."
+          />
+        }
         confirmAction={{
           label: 'Verwijderen',
           onClick: handleDeletePoll,

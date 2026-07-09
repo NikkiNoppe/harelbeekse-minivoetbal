@@ -6,11 +6,13 @@ import {
   ArrowLeft,
   Building2,
   CheckCircle2,
+  ChevronDown,
   ExternalLink,
   Globe,
   Info,
   Link2,
   Loader2,
+  Phone,
   Plus,
   Save,
   Settings,
@@ -25,6 +27,11 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Accordion,
 } from '@/components/ui/accordion';
@@ -125,50 +132,63 @@ function OrgQuickLinks({
   isActive: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-primary/15 bg-brand-50/40 p-3 sm:p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
-        Snelle acties
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Button
-          type="button"
-          variant={isActive ? 'secondary' : 'default'}
-          size="sm"
-          className="min-h-[44px] w-full sm:w-auto"
-          disabled={isActivating || isActive}
-          onClick={onActivate}
-        >
-          {isActivating ? (
-            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
-          ) : isActive ? (
-            <CheckCircle2 className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-          ) : (
-            <ExternalLink className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-          )}
-          {isActivating ? 'Activeren…' : isActive ? 'Actieve tenant' : 'Actief maken'}
-        </Button>
-        <Button type="button" variant="outline" size="sm" className="min-h-[44px] w-full sm:w-auto" asChild>
-          <a
-            href={withOrgSearchParam(PUBLIC_ROUTES.algemeen, slug)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center"
+    <Collapsible
+      defaultOpen={false}
+      className="rounded-lg border border-primary/15 bg-brand-50/40 overflow-hidden"
+    >
+      <CollapsibleTrigger
+        className="flex w-full items-center justify-between gap-3 p-3 sm:p-4 min-h-[44px] text-left hover:bg-brand-50/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 [&[data-state=open]>svg]:rotate-180"
+      >
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Snelle acties
+        </span>
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"
+          aria-hidden
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="border-t border-primary/10 px-3 pb-3 sm:px-4 sm:pb-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap pt-3">
+          <Button
+            type="button"
+            variant={isActive ? 'secondary' : 'default'}
+            size="sm"
+            className="min-h-[44px] w-full sm:w-auto"
+            disabled={isActivating || isActive}
+            onClick={onActivate}
           >
-            <Globe className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-            Publieke site
-          </a>
-        </Button>
-        <Button type="button" variant="outline" size="sm" className="min-h-[44px] w-full sm:w-auto" asChild>
-          <Link
-            to={withOrgSearchParam(ADMIN_ROUTES.settings, slug)}
-            className="inline-flex items-center justify-center"
-          >
-            <Settings className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-            Admin-instellingen (competitie)
-          </Link>
-        </Button>
-      </div>
-    </div>
+            {isActivating ? (
+              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+            ) : isActive ? (
+              <CheckCircle2 className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+            ) : (
+              <ExternalLink className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+            )}
+            {isActivating ? 'Activeren…' : isActive ? 'Actieve tenant' : 'Actief maken'}
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="min-h-[44px] w-full sm:w-auto" asChild>
+            <a
+              href={withOrgSearchParam(PUBLIC_ROUTES.algemeen, slug)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center"
+            >
+              <Globe className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Publieke site
+            </a>
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="min-h-[44px] w-full sm:w-auto" asChild>
+            <Link
+              to={withOrgSearchParam(ADMIN_ROUTES.settings, slug)}
+              className="inline-flex items-center justify-center"
+            >
+              <Settings className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+              Admin-instellingen (competitie)
+            </Link>
+          </Button>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -200,6 +220,30 @@ function OrgEditorForm({
     update(
       'externalLinks',
       form.externalLinks.filter((_, i) => i !== index),
+    );
+  };
+
+  const updateContact = (
+    index: number,
+    field: 'name' | 'phone' | 'email',
+    value: string,
+  ) => {
+    const contacts = [...form.footerContacts];
+    contacts[index] = { ...contacts[index], [field]: value };
+    update('footerContacts', contacts);
+  };
+
+  const addContact = () => {
+    update('footerContacts', [
+      ...form.footerContacts,
+      { name: '', phone: '', email: '' },
+    ]);
+  };
+
+  const removeContact = (index: number) => {
+    update(
+      'footerContacts',
+      form.footerContacts.filter((_, i) => i !== index),
     );
   };
 
@@ -338,7 +382,7 @@ function OrgEditorForm({
 
       <FormSection
         title="Publieke content"
-        description="Teksten op de pagina Algemeen en in de footer."
+        description="Teksten op de pagina Algemeen en contactgegevens in de footer."
       >
         <div className="space-y-4">
           <div className="space-y-2">
@@ -373,6 +417,91 @@ function OrgEditorForm({
               value={form.footerTagline}
               onChange={(e) => update('footerTagline', e.target.value)}
             />
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-primary/10 bg-background/60 p-3 sm:p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-brand-dark flex items-center gap-2">
+                  <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  Footer contactpersonen
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Zichtbaar in de footer onder &quot;Contact&quot;. Naam is verplicht; telefoon en e-mail optioneel.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-[44px] w-full sm:w-auto shrink-0"
+                onClick={addContact}
+              >
+                <Plus className="mr-1 h-4 w-4" aria-hidden />
+                Contact toevoegen
+              </Button>
+            </div>
+
+            {form.footerContacts.length === 0 ? (
+              <p className="text-sm text-muted-foreground rounded-md border border-dashed border-primary/20 px-4 py-6 text-center">
+                Nog geen contactpersonen — voeg namen en telefoonnummers toe voor de footer.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {form.footerContacts.map((contact, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col gap-3 rounded-lg border border-primary/10 bg-background p-3"
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor={`contact-name-${form.organizationId}-${index}`}>Naam</Label>
+                        <Input
+                          id={`contact-name-${form.organizationId}-${index}`}
+                          className="min-h-[44px]"
+                          value={contact.name}
+                          onChange={(e) => updateContact(index, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`contact-phone-${form.organizationId}-${index}`}>Telefoon</Label>
+                        <Input
+                          id={`contact-phone-${form.organizationId}-${index}`}
+                          className="min-h-[44px]"
+                          type="tel"
+                          placeholder="+32 470 00 00 00"
+                          value={contact.phone ?? ''}
+                          onChange={(e) => updateContact(index, 'phone', e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`contact-email-${form.organizationId}-${index}`}>E-mail</Label>
+                        <Input
+                          id={`contact-email-${form.organizationId}-${index}`}
+                          className="min-h-[44px]"
+                          type="email"
+                          placeholder="naam@voorbeeld.be"
+                          value={contact.email ?? ''}
+                          onChange={(e) => updateContact(index, 'email', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-[44px] text-destructive hover:text-destructive"
+                        onClick={() => removeContact(index)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+                        Verwijderen
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </FormSection>

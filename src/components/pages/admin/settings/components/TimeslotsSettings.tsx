@@ -2,18 +2,20 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals";
-import { AppAlertModal } from "@/components/modals";
+import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter, AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Settings, Edit, Trash2, Clock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { competitionDataService } from "@/services";
-import { seasonService } from "@/services";
 
 const TimeslotsSettings: React.FC = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+  const { getSeasonData, saveSeasonData } = useSeasonDataScope();
   const [timeslots, setTimeslots] = useState<any[]>([]);
   const [venues, setVenues] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,19 +35,18 @@ const TimeslotsSettings: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!orgQueryEnabled || organizationId == null) return;
+    void loadData();
+  }, [orgQueryEnabled, organizationId]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      console.log('\uD83D\uDD04 Loading timeslots and venues...');
+      const orgId = organizationId ?? undefined;
       const [timeslotsData, venuesData] = await Promise.all([
-        competitionDataService.getVenueTimeslots(),
-        competitionDataService.getVenues()
+        competitionDataService.getVenueTimeslots(orgId),
+        competitionDataService.getVenues(orgId),
       ]);
-      console.log('\u2705 Timeslots loaded:', timeslotsData);
-      console.log('\u2705 Venues loaded:', venuesData);
       setTimeslots(timeslotsData);
       setVenues(venuesData);
     } catch (error) {
@@ -94,7 +95,7 @@ const TimeslotsSettings: React.FC = () => {
     setIsLoading(true);
     try {
       // Get current season data
-      const currentData = await seasonService.getSeasonData();
+      const currentData = await getSeasonData();
       
       // Update timeslots in season data
       const updatedTimeslots = currentData.venue_timeslots || [];
@@ -114,7 +115,7 @@ const TimeslotsSettings: React.FC = () => {
       }
       
       // Save updated season data
-      const result = await seasonService.saveSeasonData({
+      const result = await saveSeasonData({
         ...currentData,
         venue_timeslots: updatedTimeslots
       });
@@ -150,13 +151,13 @@ const TimeslotsSettings: React.FC = () => {
     setIsLoading(true);
     try {
       // Get current season data
-      const currentData = await seasonService.getSeasonData();
+      const currentData = await getSeasonData();
       
       // Remove timeslot from season data
       const updatedTimeslots = (currentData.venue_timeslots || []).filter(t => t.timeslot_id !== deleteItem.timeslot_id);
       
       // Save updated season data
-      const result = await seasonService.saveSeasonData({
+      const result = await saveSeasonData({
         ...currentData,
         venue_timeslots: updatedTimeslots
       });
@@ -220,10 +221,14 @@ const TimeslotsSettings: React.FC = () => {
               <strong>Let op:</strong> Wijzigingen vereisen een herstart van de applicatie.
             </p>
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-lg font-semibold">Tijdslots</h3>
-              <Button onClick={handleAdd} className="btn-dark">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button
+                type="button"
+                onClick={handleAdd}
+                className="min-h-[44px] w-full sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
                 Nieuwe Tijdslot
               </Button>
             </div>
@@ -370,7 +375,9 @@ const TimeslotsSettings: React.FC = () => {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title="Bevestig Verwijdering"
-        description="Weet je zeker dat je deze tijdslot wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+        description={
+          <DestructiveConfirmDescription message="Weet je zeker dat je dit tijdslot wilt verwijderen?" />
+        }
         confirmAction={{
           label: isLoading ? 'Verwijderen...' : 'Verwijderen',
           onClick: handleDeleteConfirm,

@@ -1,12 +1,15 @@
 import {
   insertApplicationSettingForSession,
-  listApplicationSettingsForSession,
-  updateApplicationSettingForSession,
 } from '@/services/core/applicationSettingsSessionFetch';
 import {
   fetchPublicApplicationSettings,
   findPublicSetting,
 } from '@/services/public/publicApplicationSettingsFetch';
+import {
+  requireOrganizationId,
+  resolveOrganizationIdForRead,
+  seasonDataStorageKey,
+} from '@/lib/organizationScope';
 
 export interface SeasonData {
   season_start_date: string;
@@ -19,48 +22,70 @@ export interface SeasonData {
   day_names?: string[];
 }
 
+export function createDefaultSeasonData(): SeasonData {
+  return {
+    season_start_date: '',
+    season_end_date: '',
+    competition_formats: [],
+    venues: [],
+    venue_timeslots: [],
+    vacation_periods: [],
+    slot_unavailability: [],
+    day_names: [
+      'maandag',
+      'dinsdag',
+      'woensdag',
+      'donderdag',
+      'vrijdag',
+      'zaterdag',
+      'zondag',
+    ],
+  };
+}
+
 export const seasonService = {
-  // Read season data from database with fallback to JSON file
   async getSeasonData(organizationId?: number): Promise<SeasonData> {
+    const orgId = resolveOrganizationIdForRead(organizationId);
+
     try {
-      console.log('🔄 Loading season data...');
-      const rows = await fetchPublicApplicationSettings(['season_data'], organizationId);
+      const rows = await fetchPublicApplicationSettings(['season_data'], orgId);
       const row = findPublicSetting(rows, 'season_data', 'main_config');
 
       if (!row?.setting_value) {
-        throw new Error('Kon seizoensdata niet laden uit de database.');
+        const defaults = createDefaultSeasonData();
+        localStorage.setItem(seasonDataStorageKey(orgId), JSON.stringify(defaults));
+        return defaults;
       }
 
-      console.log('✅ Season data loaded from database:', row.setting_value);
-      localStorage.setItem('seasonData', JSON.stringify(row.setting_value));
-      return row.setting_value as unknown as SeasonData;
+      const seasonData = row.setting_value as unknown as SeasonData;
+      localStorage.setItem(seasonDataStorageKey(orgId), JSON.stringify(seasonData));
+      return seasonData;
     } catch (error) {
       console.error('❌ Error in getSeasonData:', error);
       throw error;
     }
   },
 
-  // Get available days for team preferences
-  async getAvailableDays(): Promise<string[]> {
-    const seasonData = await this.getSeasonData();
+  async getAvailableDays(organizationId?: number): Promise<string[]> {
+    const seasonData = await this.getSeasonData(organizationId);
     return seasonData.day_names || [];
   },
 
-  // Get available timeslots for team preferences
-  async getAvailableTimeslots(): Promise<Array<{ id: string; label: string }>> {
-    const seasonData = await this.getSeasonData();
+  async getAvailableTimeslots(
+    organizationId?: number,
+  ): Promise<Array<{ id: string; label: string }>> {
+    const seasonData = await this.getSeasonData(organizationId);
     const timeslots = seasonData.venue_timeslots || [];
-    // Map naar string en id
     const slotObjects = timeslots.map((ts: any) => {
-      const label = ts.start_time && ts.end_time
-        ? `${ts.start_time} - ${ts.end_time}`
-        : ts.timeslot_id || ts.start_time || 'Onbekend';
+      const label =
+        ts.start_time && ts.end_time
+          ? `${ts.start_time} - ${ts.end_time}`
+          : ts.timeslot_id || ts.start_time || 'Onbekend';
       const id = ts.timeslot_id ? String(ts.timeslot_id) : label;
       return { id, label };
     });
-    // Uniek maken op basis van id
-    const uniqueMap = new Map();
-    slotObjects.forEach(obj => {
+    const uniqueMap = new Map<string, { id: string; label: string }>();
+    slotObjects.forEach((obj) => {
       if (!uniqueMap.has(obj.id)) {
         uniqueMap.set(obj.id, obj);
       }
@@ -68,85 +93,81 @@ export const seasonService = {
     return Array.from(uniqueMap.values());
   },
 
-  // Get available venues for team preferences
-  async getAvailableVenues(): Promise<Array<{venue_id: number; name: string; address: string}>> {
-    const seasonData = await this.getSeasonData();
+  async getAvailableVenues(
+    organizationId?: number,
+  ): Promise<Array<{ venue_id: number; name: string; address: string }>> {
+    const seasonData = await this.getSeasonData(organizationId);
     const venues = seasonData.venues || [];
-    
-    // Ensure venues have the correct structure
+
     return venues.map((venue: any) => ({
       venue_id: venue.venue_id || venue.id || 0,
       name: venue.name || venue.venue_name || 'Onbekende locatie',
-      address: venue.address || venue.venue_address || ''
+      address: venue.address || venue.venue_address || '',
     }));
   },
 
-  // Clear cached season data
-  clearSeasonDataCache(): void {
-    localStorage.removeItem('seasonData');
-    console.log('🗑️ Season data cache cleared');
+  clearSeasonDataCache(organizationId?: number): void {
+    if (organizationId != null) {
+      localStorage.removeItem(seasonDataStorageKey(organizationId));
+      return;
+    }
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('seasonData:'))
+      .forEach((key) => localStorage.removeItem(key));
   },
 
-  // Save season data to database and localStorage
-  async saveSeasonData(data: SeasonData): Promise<{ success: boolean; message: string }> {
+  async saveSeasonData(
+    data: SeasonData,
+    organizationId?: number,
+  ): Promise<{ success: boolean; message: string }> {
+    const orgId = requireOrganizationId(organizationId);
+
     try {
-      console.log('💾 Saving season data:', data);
-      // Store in localStorage for immediate persistence
-      localStorage.setItem('seasonData', JSON.stringify(data));
+      localStorage.setItem(seasonDataStorageKey(orgId), JSON.stringify(data));
 
-      const rows = await listApplicationSettingsForSession('season_data');
-      const existing = rows.find((row) => row.setting_name === 'main_config');
+      // Upsert via session-RPC (ON CONFLICT op organization_id + category + name).
+      await insertApplicationSettingForSession({
+        setting_category: 'season_data',
+        setting_name: 'main_config',
+        setting_value: data,
+      });
 
-      if (existing?.id) {
-        await updateApplicationSettingForSession(existing.id, {
-          setting_value: data,
-          setting_category: 'season_data',
-        });
-      } else {
-        await insertApplicationSettingForSession({
-          setting_category: 'season_data',
-          setting_name: 'main_config',
-          setting_value: data,
-        });
-      }
-      console.log('✅ Season data saved to database successfully');
       return {
         success: true,
-        message: "Seizoensdata succesvol opgeslagen (lokaal en database)"
+        message: 'Seizoensdata succesvol opgeslagen',
       };
     } catch (error) {
       console.error('❌ Error saving season data:', error);
       return {
         success: false,
-        message: `Fout bij opslaan: ${error instanceof Error ? error.message : 'Onbekende fout'}`
+        message: `Fout bij opslaan: ${error instanceof Error ? error.message : 'Onbekende fout'}`,
       };
     }
   },
 
-  // Validate season data
   validateSeasonData(data: SeasonData): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     if (!data.season_start_date) {
-      errors.push("Seizoen startdatum is verplicht");
+      errors.push('Seizoen startdatum is verplicht');
     }
-    
+
     if (!data.season_end_date) {
-      errors.push("Seizoen einddatum is verplicht");
+      errors.push('Seizoen einddatum is verplicht');
     }
-    
+
     if (data.season_start_date && data.season_end_date) {
       const start = new Date(data.season_start_date);
       const end = new Date(data.season_end_date);
-      
+
       if (start >= end) {
-        errors.push("Seizoen startdatum moet voor einddatum liggen");
+        errors.push('Seizoen startdatum moet voor einddatum liggen');
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
-  }
-}; 
+  },
+};

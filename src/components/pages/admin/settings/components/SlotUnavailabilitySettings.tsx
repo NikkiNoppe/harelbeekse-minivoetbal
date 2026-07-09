@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { AppModal, AppAlertModal } from '@/components/modals';
+import { AppModal, AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -16,8 +16,9 @@ import {
 } from '@/components/ui/select';
 import { CalendarOff, Edit, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useOrgQueryScope } from '@/hooks/useOrganization';
+import { useSeasonDataScope } from '@/hooks/useSeasonDataScope';
 import { competitionDataService } from '@/services/competitionDataService';
-import { seasonService } from '@/services/seasonService';
 import type { SlotUnavailability } from '@/types/slotUnavailability';
 import type { Venue, VenueTimeslot } from '@/services/competitionDataService';
 import { PUBLIC_CARD_CLASS } from '@/components/layout';
@@ -50,6 +51,8 @@ function formatTimeslot(ts: VenueTimeslot | undefined) {
 
 const SlotUnavailabilitySettings: React.FC = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+  const { getSeasonData, saveSeasonData } = useSeasonDataScope();
   const [blocks, setBlocks] = useState<SlotUnavailability[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [timeslots, setTimeslots] = useState<VenueTimeslot[]>([]);
@@ -62,10 +65,11 @@ const SlotUnavailabilitySettings: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
+      const orgId = organizationId ?? undefined;
       const [blocksData, venuesData, timeslotsData] = await Promise.all([
-        competitionDataService.getSlotUnavailability(),
-        competitionDataService.getVenues(),
-        competitionDataService.getVenueTimeslots(),
+        competitionDataService.getSlotUnavailability(orgId),
+        competitionDataService.getVenues(orgId),
+        competitionDataService.getVenueTimeslots(orgId),
       ]);
       setBlocks(blocksData);
       setVenues(venuesData);
@@ -82,8 +86,9 @@ const SlotUnavailabilitySettings: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!orgQueryEnabled || organizationId == null) return;
     void loadData();
-  }, []);
+  }, [orgQueryEnabled, organizationId]);
 
   const timeslotsForVenue = useMemo(() => {
     if (!editingItem?.venue_id) return [];
@@ -97,8 +102,8 @@ const SlotUnavailabilitySettings: React.FC = () => {
     formatTimeslot(timeslots.find((ts) => ts.timeslot_id === timeslotId));
 
   const persistBlocks = async (nextBlocks: SlotUnavailability[]) => {
-    const currentData = await seasonService.getSeasonData();
-    return seasonService.saveSeasonData({
+    const currentData = await getSeasonData();
+    return saveSeasonData({
       ...currentData,
       slot_unavailability: nextBlocks,
     });
@@ -148,7 +153,7 @@ const SlotUnavailabilitySettings: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const currentData = await seasonService.getSeasonData();
+      const currentData = await getSeasonData();
       const list = [...(currentData.slot_unavailability || [])];
       const idx = list.findIndex((b) => b.id === editingItem.id);
       if (idx >= 0) {
@@ -156,7 +161,7 @@ const SlotUnavailabilitySettings: React.FC = () => {
       } else {
         list.push(editingItem);
       }
-      const result = await seasonService.saveSeasonData({
+      const result = await saveSeasonData({
         ...currentData,
         slot_unavailability: list,
       });
@@ -237,8 +242,7 @@ const SlotUnavailabilitySettings: React.FC = () => {
           {blocks.length === 0 ? (
             <div className="rounded-lg border border-dashed border-primary/20 bg-brand-50/30 px-4 py-8 text-center text-sm text-muted-foreground">
               <CalendarOff className="mx-auto mb-2 h-8 w-8 opacity-50" aria-hidden />
-              Nog geen veldblokkades — alle {timeslots.length || 7} tijdslots per week zijn
-              beschikbaar.
+              Nog geen veldblokades
             </div>
           ) : (
             <div className="overflow-x-auto -mx-1 px-1">
@@ -413,7 +417,12 @@ const SlotUnavailabilitySettings: React.FC = () => {
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
         title="Blokkade verwijderen?"
-        description="Deze speelweek krijgt dan weer het volledige aantal beschikbare slots."
+        description={
+          <DestructiveConfirmDescription
+            message="Weet je zeker dat je deze veldblokade wilt verwijderen?"
+            warning="Deze speelweek krijgt dan weer het volledige aantal beschikbare slots."
+          />
+        }
         confirmAction={{
           label: isLoading ? 'Verwijderen…' : 'Verwijderen',
           onClick: () => void handleDeleteConfirm(),

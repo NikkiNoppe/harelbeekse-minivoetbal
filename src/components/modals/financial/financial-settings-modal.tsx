@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
-import { AppAlertModal } from "@/components/modals/base/app-alert-modal";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -536,10 +536,15 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
         }}
         title="Tarief Verwijderen"
         description={
-          <>
-            Weet je zeker dat je "{deletingItem?.name}" wilt verwijderen?
-            Deze actie kan niet ongedaan gemaakt worden.
-          </>
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je{" "}
+                <span className="font-semibold text-destructive">{deletingItem?.name}</span>{" "}
+                wilt verwijderen?
+              </>
+            }
+          />
         }
         confirmAction={{
           label: isSubmitting ? 'Verwijderen...' : 'Verwijderen',

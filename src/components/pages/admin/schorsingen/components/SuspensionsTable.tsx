@@ -113,7 +113,7 @@ const SuspensionCard = memo(({
       <Button
         variant="ghost"
         size="icon"
-        className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground"
+        className="min-h-[44px] min-w-[44px] flex-shrink-0 text-muted-foreground hover:text-foreground"
         onClick={() => onEdit(suspension)}
         aria-label={
           suspension.source === 'manual'

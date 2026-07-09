@@ -17,7 +17,7 @@ export function SuperAdminOrgTenantSettings() {
         Navigatie en visueel thema voor de actieve tenant. Wijzigingen gelden voor deze
         organisatie op het platform.
       </p>
-      <Accordion type="single" collapsible className="space-y-3">
+      <Accordion type="multiple" defaultValue={[]} className="space-y-3">
         <SectionAccordionItem
           value="tab-visibility"
           triggerContent={

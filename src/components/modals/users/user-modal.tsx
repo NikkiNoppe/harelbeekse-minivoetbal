@@ -6,7 +6,7 @@ import {
 } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Eye, EyeOff } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, Mail } from "lucide-react";
 
 interface TeamOption {
   id: number;
@@ -28,8 +28,6 @@ interface UserModalProps {
   onSave: (formData: any) => Promise<boolean>;
   teams: TeamOption[];
   isLoading?: boolean;
-  passwordEmailNote?: string;
-  onPasswordEmailNoteChange?: (value: string) => void;
 }
 
 interface FormData {
@@ -47,8 +45,6 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSave,
   teams,
   isLoading = false,
-  passwordEmailNote,
-  onPasswordEmailNoteChange
 }) => {
   const [formData, setFormData] = useState<FormData>({
     username: "",
@@ -171,17 +167,27 @@ export const UserModal: React.FC<UserModalProps> = ({
     [isLoading, editingUser]
   );
 
-  const passwordLabel = useMemo(() => 
-    editingUser ? "Nieuw wachtwoord (leeg laten om niet te wijzigen)" : "Wachtwoord *",
-    [editingUser]
+  const hasInviteEmail = useMemo(
+    () => !editingUser && formData.email.trim().includes("@"),
+    [editingUser, formData.email],
   );
 
-  const passwordPlaceholder = useMemo(() => 
-    editingUser ? "Nieuw wachtwoord (optioneel)" : "Voer wachtwoord in",
-    [editingUser]
-  );
+  const passwordLabel = useMemo(() => {
+    if (editingUser) return "Nieuw wachtwoord (leeg laten om niet te wijzigen)";
+    if (hasInviteEmail) return "Tijdelijk wachtwoord (optioneel)";
+    return "Wachtwoord *";
+  }, [editingUser, hasInviteEmail]);
 
-  const isPasswordRequired = useMemo(() => !editingUser, [editingUser]);
+  const passwordPlaceholder = useMemo(() => {
+    if (editingUser) return "Nieuw wachtwoord (optioneel)";
+    if (hasInviteEmail) return "Laat leeg voor uitnodiging per e-mail";
+    return "Voer wachtwoord in";
+  }, [editingUser, hasInviteEmail]);
+
+  const isPasswordRequired = useMemo(
+    () => !editingUser && !hasInviteEmail,
+    [editingUser, hasInviteEmail],
+  );
 
   // Memoized team options
   const teamOptions = useMemo(() => 
@@ -276,9 +282,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           {/* Password */}
           <div className="space-y-2">
-            <label className="text-brand-dark font-medium">
-              {passwordLabel}
-            </label>
+            <label className="text-brand-dark font-medium">{passwordLabel}</label>
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
@@ -306,6 +310,15 @@ export const UserModal: React.FC<UserModalProps> = ({
                 )}
               </button>
             </div>
+            {hasInviteEmail && (
+              <Alert className="border-primary/20 bg-brand-50/60">
+                <Mail className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  De gebruiker ontvangt een e-mail met een link om een persoonlijk wachtwoord in te stellen.
+                  Laat het wachtwoord leeg om alleen via die link te activeren.
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
           
           {/* Role */}
@@ -340,19 +353,6 @@ export const UserModal: React.FC<UserModalProps> = ({
             </select>
           </div>
 
-          {/* Password email note (appears in welcome email) */}
-          {!editingUser && (
-            <div className="space-y-2">
-              <label className="text-brand-dark font-medium">Wachtwoord: </label>
-              <Input
-                placeholder="standaardwachtwoord"
-                className="modal__input"
-                value={passwordEmailNote ?? ''}
-                onChange={(e) => onPasswordEmailNoteChange?.(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          )}
         </form>
       </AppModalBody>
     </AppModal>

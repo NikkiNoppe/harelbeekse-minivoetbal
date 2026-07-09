@@ -4,6 +4,10 @@ import { getEdgeFunctionHeaders, getRpcSessionArgs } from "@/lib/authSession";
 import { Team } from "../userTypes";
 import { useToast } from "@/hooks/use-toast";
 
+function createTemporaryPassword(): string {
+  const randomPart = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  return `Tmp-${randomPart}!9`;
+}
 
 export const useUserOperations = (teams: Team[], refreshData: () => Promise<void>) => {
   const { toast } = useToast();
@@ -37,12 +41,26 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
     }
     
     try {
+      const hasInviteEmail = Boolean(newUser.email && newUser.email.includes("@"));
+      const passwordToUse =
+        newUser.password?.trim() ||
+        (hasInviteEmail ? createTemporaryPassword() : "");
+
+      if (!passwordToUse) {
+        toast({
+          title: "Fout",
+          description: "Wachtwoord is verplicht wanneer geen e-mailadres is opgegeven",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       // Create user via RPC which hashes password server-side (bcrypt)
       const { data, error } = await supabase.rpc('create_user_for_session', {
         ...getRpcSessionArgs(),
         username_param: newUser.username,
         email_param: newUser.email || null,
-        password_param: newUser.password,
+        password_param: passwordToUse,
         role_param: newUser.role
       });
       
@@ -55,18 +73,43 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
       }
       
       // Send welcome email with password setup link (no plaintext password)
-      if (newUser.email && newUser.email.includes('@') && data?.user_id) {
+      if (hasInviteEmail && data?.user_id) {
         try {
-          await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              email: newUser.email,
-              username: newUser.username,
-              userId: data.user_id
+          const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
+            "send-welcome-email",
+            {
+              body: {
+                email: newUser.email,
+                username: newUser.username,
+                userId: data.user_id,
+              },
+              headers: getEdgeFunctionHeaders(),
             },
-            headers: getEdgeFunctionHeaders(),
-          });
+          );
+
+          if (
+            emailError ||
+            emailResponse?.error ||
+            emailResponse?.success === false
+          ) {
+            throw new Error(
+              emailError?.message ||
+                emailResponse?.error ||
+                "Welkomstmail mislukt",
+            );
+          }
         } catch (e) {
-          console.warn('Kon welkomstmail niet verzenden:', e);
+          console.warn("Kon welkomstmail niet verzenden:", e);
+          toast({
+            title: "Gebruiker aangemaakt",
+            description:
+              "De gebruiker is aangemaakt, maar de uitnodigingsmail kon niet worden verzonden. Probeer later opnieuw of reset het wachtwoord handmatig.",
+            variant: "destructive",
+            duration: 15000,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          await refreshData();
+          return true;
         }
       }
 
@@ -100,20 +143,20 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
           
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.username} is toegevoegd als teamverantwoordelijke voor ${teamNames}.`,
+            description: `${newUser.username} is toegevoegd als teamverantwoordelijke voor ${teamNames}.${hasInviteEmail ? " Een uitnodigingsmail is verzonden." : ""}`,
             duration: 15000
           });
         } else {
           toast({
             title: "Gebruiker toegevoegd",
-            description: `${newUser.username} is toegevoegd zonder teamkoppeling.`,
+            description: `${newUser.username} is toegevoegd zonder teamkoppeling.${hasInviteEmail ? " Een uitnodigingsmail is verzonden." : ""}`,
             duration: 15000
           });
         }
       } else {
         toast({
           title: "Gebruiker toegevoegd",
-          description: `${newUser.username} is toegevoegd als ${newUser.role}.`,
+          description: `${newUser.username} is toegevoegd als ${newUser.role}.${hasInviteEmail ? " Een uitnodigingsmail is verzonden." : ""}`,
           duration: 15000
         });
       }

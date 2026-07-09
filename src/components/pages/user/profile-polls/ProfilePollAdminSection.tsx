@@ -9,7 +9,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { profilePollService } from "@/services/profilePoll/profilePollService";
 import { CreateProfilePollModal } from "./CreateProfilePollModal";
 import { ProfilePollResultsCard } from "./ProfilePollResultsCard";
-import { AppAlertModal } from "@/components/modals/base/app-alert-modal";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 
 export interface ProfilePollAdminSectionHandle {
   openCreateModal: () => void;
@@ -211,7 +211,9 @@ export const ProfilePollAdminSection = forwardRef<ProfilePollAdminSectionHandle>
           open={deleteId != null}
           onOpenChange={(open) => !open && setDeleteId(null)}
           title="Poll verwijderen?"
-          description="De poll en alle antwoorden worden permanent verwijderd."
+          description={
+            <DestructiveConfirmDescription message="De poll en alle antwoorden worden permanent verwijderd." />
+          }
           confirmAction={{
           label: deleting ? "Verwijderen…" : "Verwijderen",
           onClick: () => void handleDeleteConfirm(),

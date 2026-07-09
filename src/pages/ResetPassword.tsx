@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranding } from "@/hooks/useBranding";
 
 const resetPasswordSchema = z.object({
   password: z.string().min(6, "Wachtwoord moet minimaal 6 karakters bevatten"),
@@ -24,11 +25,27 @@ const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const branding = useBranding();
   const [isLoading, setIsLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState<boolean | null>(null);
-  
+
   const token = searchParams.get("token");
-  
+  const mode = searchParams.get("mode");
+  const isSetupMode = mode === "setup";
+
+  const copy = useMemo(() => ({
+    title: isSetupMode ? "Wachtwoord instellen" : "Wachtwoord resetten",
+    description: isSetupMode
+      ? "Stel een persoonlijk wachtwoord in om je account te activeren."
+      : "Voer je nieuwe wachtwoord in om je account te beveiligen.",
+    submitLabel: isSetupMode ? "Wachtwoord instellen" : "Wachtwoord resetten",
+    successTitle: isSetupMode ? "Account geactiveerd" : "Wachtwoord gereset",
+    successDescription: isSetupMode
+      ? "Je wachtwoord is ingesteld. Je kunt nu inloggen."
+      : "Je wachtwoord is succesvol gewijzigd. Je kunt nu inloggen.",
+    loadingLabel: isSetupMode ? "Instellen..." : "Resetten...",
+  }), [isSetupMode]);
+
   const form = useForm<ResetPasswordForm>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
@@ -41,20 +58,19 @@ const ResetPassword = () => {
     if (!token) {
       toast({
         title: "Ongeldige link",
-        description: "De reset link is ongeldig of verlopen.",
+        description: "De link is ongeldig of verlopen.",
         variant: "destructive"
       });
       navigate("/");
       return;
     }
-    
-    // Token validation will be handled when submitting
+
     setTokenValid(true);
   }, [token, navigate, toast]);
 
   const onSubmit = async (data: ResetPasswordForm) => {
     if (!token) return;
-    
+
     setIsLoading(true);
     try {
       const { data: result, error } = await supabase.rpc('reset_password_with_token', {
@@ -71,20 +87,20 @@ const ResetPassword = () => {
         return;
       }
 
-      if ((result as any)?.success) {
+      if ((result as { success?: boolean })?.success) {
         toast({
-          title: "Wachtwoord gereset",
-          description: "Je wachtwoord is succesvol gewijzigd. Je kunt nu inloggen."
+          title: copy.successTitle,
+          description: copy.successDescription
         });
         navigate("/");
       } else {
         toast({
-          title: "Reset mislukt",
-          description: (result as any)?.error || "Er is een fout opgetreden bij het resetten van je wachtwoord.",
+          title: isSetupMode ? "Activeren mislukt" : "Reset mislukt",
+          description: (result as { error?: string })?.error || "Er is een fout opgetreden bij het wijzigen van je wachtwoord.",
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Onverwachte fout",
         description: "Er is een onverwachte fout opgetreden.",
@@ -97,22 +113,23 @@ const ResetPassword = () => {
 
   if (tokenValid === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
-        <div>Laden...</div>
+      <div className="min-h-screen flex items-center justify-center bg-brand-100 p-4">
+        <div className="text-muted-foreground">Laden…</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Wachtwoord resetten</CardTitle>
-          <CardDescription>
-            Voer je nieuwe wachtwoord in om je account te beveiligen.
-          </CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-brand-100 p-4">
+      <Card className="w-full max-w-md border-primary/20 shadow-lg">
+        <CardHeader className="space-y-2 border-b border-primary/10 bg-card">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            {branding.shortName}
+          </p>
+          <CardTitle className="text-brand-dark">{copy.title}</CardTitle>
+          <CardDescription>{copy.description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -120,19 +137,21 @@ const ResetPassword = () => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nieuw wachtwoord</FormLabel>
+                    <FormLabel>{isSetupMode ? "Wachtwoord" : "Nieuw wachtwoord"}</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Voer je nieuwe wachtwoord in"
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder={isSetupMode ? "Kies een wachtwoord" : "Voer je nieuwe wachtwoord in"}
+                        className="min-h-[44px]"
+                        autoComplete="new-password"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="confirmPassword"
@@ -140,29 +159,32 @@ const ResetPassword = () => {
                   <FormItem>
                     <FormLabel>Bevestig wachtwoord</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Bevestig je nieuwe wachtwoord"
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Bevestig je wachtwoord"
+                        className="min-h-[44px]"
+                        autoComplete="new-password"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <div className="flex gap-3 pt-4">
-                <Button 
-                  type="submit" 
+
+              <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                <Button
+                  type="submit"
                   disabled={isLoading}
-                  className="flex-1 btn btn--primary"
+                  className="min-h-[44px] flex-1"
                 >
-                  {isLoading ? "Resetten..." : "Wachtwoord resetten"}
+                  {isLoading ? copy.loadingLabel : copy.submitLabel}
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
                   onClick={() => navigate("/")}
-                  className="flex-1 btn btn--secondary"
+                  className="min-h-[44px] flex-1"
                 >
                   Annuleren
                 </Button>

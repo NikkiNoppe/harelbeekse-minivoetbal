@@ -6,6 +6,7 @@ import { useUserManagement } from "./hooks/useUserManagement";
 import { UserModal } from "@/components/modals";
 import UserListTable from "./components/UserListTable";
 import { Plus, AlertCircle, RefreshCw } from "lucide-react";
+import { PageHeader } from "@/components/layout";
 
 const AdminUserPage: React.FC = () => {
   const {
@@ -35,7 +36,6 @@ const AdminUserPage: React.FC = () => {
   
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [passwordEmailNote, setPasswordEmailNote] = useState("");
 
   // Memoize team options to avoid re-creating arrays each render (prevents modal resets)
   const teamOptions = useMemo(
@@ -58,7 +58,6 @@ const AdminUserPage: React.FC = () => {
       role: formData.role,
       teamId: formData.teamId || null,
       teamIds: formData.teamIds || [],
-      passwordNote: passwordEmailNote || undefined
     });
     
     if (success) {
@@ -79,12 +78,11 @@ const AdminUserPage: React.FC = () => {
   };
   
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">Gebruikers Beheer</h1>
-        <p className="text-muted-foreground">Beheer alle gebruikers in het systeem</p>
-      </div>
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
+      <PageHeader
+        title="Gebruikersbeheer"
+        subtitle={`Beheer accounts, rollen en teamkoppelingen binnen deze organisatie (${users.length} gebruiker${users.length === 1 ? "" : "s"})`}
+      />
 
       {/* Error Alert */}
       {error && (
@@ -125,7 +123,7 @@ const AdminUserPage: React.FC = () => {
           <Button
             onClick={handleOpenAddDialog}
             disabled={addingUser}
-            className="btn btn--outline flex items-center gap-2"
+            className="min-h-[44px] w-full sm:w-auto"
           >
             <Plus size={16} />
             Gebruiker toevoegen
@@ -161,8 +159,6 @@ const AdminUserPage: React.FC = () => {
         onSave={handleSaveNewUser}
         teams={teamOptions}
         isLoading={addingUser}
-        passwordEmailNote={passwordEmailNote}
-        onPasswordEmailNoteChange={setPasswordEmailNote}
       />
     </div>
   );
