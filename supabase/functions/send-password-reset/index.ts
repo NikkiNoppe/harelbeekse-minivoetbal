@@ -5,9 +5,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import {
   AUTH_PASSWORD_RESET_TTL_MS,
   buildAuthEmailHtml,
+  buildAuthResetPasswordUrl,
   formatAuthLinkValidityNl,
   loadAuthEmailBranding,
-  resolveAuthBaseUrl,
   resolveAuthReplyTo,
 } from "../_shared/auth-email-branding.ts";
 import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
@@ -139,7 +139,6 @@ const handler = async (req: Request): Promise<Response> => {
       supabase,
       parsedOrganizationId ?? user.organization_id,
     );
-    const appBaseUrl = resolveAuthBaseUrl(branding);
 
     const resetToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + AUTH_PASSWORD_RESET_TTL_MS);
@@ -163,8 +162,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const resetUrl =
-      `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}&mode=reset`;
+    const resetUrl = buildAuthResetPasswordUrl(branding, {
+      token: resetToken,
+      email: user.email,
+      mode: "reset",
+    });
 
     const html = buildAuthEmailHtml({
       branding,

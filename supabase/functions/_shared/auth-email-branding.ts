@@ -3,10 +3,12 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.4
 
 export interface AuthEmailBranding {
   organizationId: number;
+  organizationSlug: string;
+  hostnames: string[];
   displayName: string;
   shortName: string;
   siteUrl: string;
-  /** Basis-URL voor auth-links (uitnodiging, wachtwoord reset). Valt terug op siteUrl. */
+  /** Expliciete basis-URL voor auth-links; leeg = APP_BASE_URL of siteUrl. */
   authBaseUrl: string;
   primaryColor: string;
   primaryLight: string;
@@ -25,6 +27,8 @@ export const AUTH_PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 const DEFAULT_BRANDING: AuthEmailBranding = {
   organizationId: 1,
+  organizationSlug: "harelbeke",
+  hostnames: ["harelbekeminivoetbal.be", "www.harelbekeminivoetbal.be", "harelbekeminivoetbal.nikkinoppe.be"],
   displayName: "Harelbeekse Minivoetbal Competitie",
   shortName: "Minivoetbal",
   siteUrl: "https://harelbekeminivoetbal.be",
@@ -98,10 +102,11 @@ export function formatAuthLinkValidityNl(durationMs: number): string {
 
 export function parseAuthEmailBranding(
   organizationId: number,
+  organizationSlug: string,
   raw: Record<string, unknown> | null | undefined,
 ): AuthEmailBranding {
   if (!raw || Object.keys(raw).length === 0) {
-    return { ...DEFAULT_BRANDING, organizationId };
+    return { ...DEFAULT_BRANDING, organizationId, organizationSlug };
   }
 
   const themeColors = (raw.themeColors ?? {}) as Record<string, unknown>;
@@ -110,8 +115,11 @@ export function parseAuthEmailBranding(
   const shortName = readString(raw.shortName, DEFAULT_BRANDING.shortName);
   const siteUrl = normalizeUrl(readString(raw.siteUrl, DEFAULT_BRANDING.siteUrl));
   const authBaseUrl = normalizeUrl(
-    readString(raw.authBaseUrl, "") || readString(raw.appBaseUrl, "") || siteUrl,
+    readString(raw.authBaseUrl, "") || readString(raw.appBaseUrl, ""),
   );
+  const hostnames = Array.isArray(raw.hostnames)
+    ? raw.hostnames.filter((hostname): hostname is string => typeof hostname === "string")
+    : [];
   const primaryColor = readString(themeColors.primaryBase, DEFAULT_BRANDING.primaryColor);
   const primaryLight = readString(themeColors.primaryLight, DEFAULT_BRANDING.primaryLight);
   const surfaceColor = readColor(scale, "100", DEFAULT_BRANDING.surfaceColor);
@@ -126,6 +134,8 @@ export function parseAuthEmailBranding(
 
   return {
     organizationId,
+    organizationSlug,
+    hostnames,
     displayName,
     shortName,
     siteUrl,
@@ -148,7 +158,7 @@ export async function loadAuthEmailBranding(
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, branding_settings")
+    .select("id, slug, branding_settings")
     .eq("id", orgId)
     .maybeSingle();
 
@@ -159,6 +169,7 @@ export async function loadAuthEmailBranding(
 
   return parseAuthEmailBranding(
     data.id as number,
+    typeof data.slug === "string" ? data.slug : DEFAULT_BRANDING.organizationSlug,
     data.branding_settings as Record<string, unknown>,
   );
 }
@@ -264,10 +275,48 @@ export function resolveAuthReplyTo(branding: AuthEmailBranding): string {
   }
 }
 
+function readHostname(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export function resolveAuthBaseUrl(branding: AuthEmailBranding): string {
-  const fromBranding = branding.authBaseUrl || branding.siteUrl;
-  if (fromBranding) return fromBranding;
+  const explicit = branding.authBaseUrl?.trim();
+  if (explicit) return normalizeUrl(explicit);
 
   const envBase = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
-  return envBase || DEFAULT_BRANDING.authBaseUrl;
+  if (envBase) return envBase;
+
+  if (branding.siteUrl?.trim()) return normalizeUrl(branding.siteUrl);
+
+  return DEFAULT_BRANDING.authBaseUrl;
+}
+
+export function buildAuthResetPasswordUrl(
+  branding: AuthEmailBranding,
+  params: { token: string; email: string; mode: "setup" | "reset" },
+): string {
+  const base = resolveAuthBaseUrl(branding);
+  const url = new URL("/reset-password", `${base}/`);
+
+  url.searchParams.set("token", params.token);
+  url.searchParams.set("email", params.email);
+  url.searchParams.set("mode", params.mode);
+
+  const baseHost = readHostname(base);
+  const siteHost = branding.siteUrl ? readHostname(branding.siteUrl) : null;
+
+  if (
+    branding.organizationSlug &&
+    siteHost &&
+    baseHost &&
+    siteHost !== baseHost
+  ) {
+    url.searchParams.set("org", branding.organizationSlug);
+  }
+
+  return url.toString();
 }

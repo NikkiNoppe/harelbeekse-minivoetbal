@@ -84,6 +84,13 @@ export function getSuperAdminPathSlug(): string | null {
   return slug;
 }
 
+/** Pad waar ?org= in productie mag (auth-links op gedeeld domein). */
+const PUBLIC_TENANT_QUERY_PATH = /^\/(reset-password|unsubscribe)(\/|$)/;
+
+export function isPublicTenantQueryPath(pathname: string): boolean {
+  return PUBLIC_TENANT_QUERY_PATH.test(pathname);
+}
+
 /**
  * Actieve org-slug override: superadmin-pad, daarna ?org= (dev of SuperAdmin).
  */
@@ -101,6 +108,10 @@ export function getActiveOrgSlugOverride(options: {
   }
 
   if (import.meta.env.DEV || options.isSuperAdmin) {
+    return querySlug;
+  }
+
+  if (isPublicTenantQueryPath(window.location.pathname)) {
     return querySlug;
   }
 

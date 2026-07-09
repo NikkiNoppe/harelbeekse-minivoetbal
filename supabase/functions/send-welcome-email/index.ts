@@ -6,9 +6,9 @@ import { requireSession } from "../_shared/auth.ts";
 import {
   AUTH_INVITE_LINK_TTL_MS,
   buildAuthEmailHtml,
+  buildAuthResetPasswordUrl,
   formatAuthLinkValidityNl,
   loadAuthEmailBranding,
-  resolveAuthBaseUrl,
   resolveAuthReplyTo,
 } from "../_shared/auth-email-branding.ts";
 import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
@@ -86,7 +86,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const branding = await loadAuthEmailBranding(supabase, userRow.organization_id);
-    const appBaseUrl = resolveAuthBaseUrl(branding);
 
     const resetToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + AUTH_INVITE_LINK_TTL_MS);
@@ -109,8 +108,11 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const setupPasswordUrl =
-      `${appBaseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}&mode=setup`;
+    const setupPasswordUrl = buildAuthResetPasswordUrl(branding, {
+      token: resetToken,
+      email,
+      mode: "setup",
+    });
     const displayUsername = username || userRow.username || "gebruiker";
 
     const html = buildAuthEmailHtml({
