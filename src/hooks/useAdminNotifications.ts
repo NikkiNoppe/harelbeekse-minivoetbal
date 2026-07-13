@@ -1,14 +1,19 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { notificationService } from "@/services";
 import { useMinLoadingGate } from "@/hooks/useMinLoadingGate";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 export const ADMIN_NOTIFICATIONS_QUERY_KEY = ["adminNotifications"] as const;
 export const NOTIFICATION_USERS_QUERY_KEY = ["notificationUsers"] as const;
 
 export const useAdminNotifications = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   const notificationsQuery = useQuery({
-    queryKey: ADMIN_NOTIFICATIONS_QUERY_KEY,
+    queryKey: withOrgQueryKey(ADMIN_NOTIFICATIONS_QUERY_KEY, organizationId),
     queryFn: () => notificationService.getAllNotifications(),
+    enabled: orgQueryEnabled,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
@@ -20,8 +25,9 @@ export const useAdminNotifications = () => {
   });
 
   const usersQuery = useQuery({
-    queryKey: NOTIFICATION_USERS_QUERY_KEY,
+    queryKey: withOrgQueryKey(NOTIFICATION_USERS_QUERY_KEY, organizationId),
     queryFn: () => notificationService.getAllUsers(),
+    enabled: orgQueryEnabled && notificationsQuery.isSuccess,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
@@ -73,6 +79,7 @@ export const useAdminNotifications = () => {
   };
 
   return {
+    organizationId,
     notifications: notificationsQuery.data,
     users: usersQuery.data,
     isListLoading,

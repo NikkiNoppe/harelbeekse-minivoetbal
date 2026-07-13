@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AppModal } from '@/components/modals/base/app-modal';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,12 +14,8 @@ import {
   Calendar, 
   Search, 
   X, 
-  ChevronDown,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Info,
-  Eye
+  Eye,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +27,7 @@ interface User {
   user_id: number;
   username: string;
   role: string;
+  email?: string | null;
 }
 
 interface Team {
@@ -47,6 +43,7 @@ interface FormData {
   target_users: number[];
   start_date: string;
   end_date: string;
+  send_email: boolean;
   [key: string]: any;
 }
 
@@ -61,13 +58,6 @@ interface NotificationFormModalProps {
   teams: Team[];
 }
 
-const NOTIFICATION_TYPES = [
-  { value: 'info', label: 'Info', icon: Info, color: 'bg-[var(--color-500)]' },
-  { value: 'warning', label: 'Waarsch.', icon: AlertTriangle, color: 'bg-[var(--color-700)]' },
-  { value: 'success', label: 'Succes', icon: CheckCircle2, color: 'bg-[var(--color-success)]' },
-  { value: 'error', label: 'Fout', icon: XCircle, color: 'bg-[var(--color-destructive)]' }
-] as const;
-
 const ROLE_OPTIONS = [
   { value: 'referee', label: 'Scheidsrechter' },
   { value: 'player_manager', label: 'Teamverantwoordelijke' }
@@ -81,6 +71,7 @@ const DEFAULT_FORM_DATA: FormData = {
   target_users: [],
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
+  send_email: false,
 };
 
 export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
@@ -126,9 +117,42 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     [users, formData.target_users]
   );
 
+  const hasTargetSelection = useMemo(() => {
+    if (targetMode === 'roles') {
+      return formData.target_roles.length > 0;
+    }
+    return formData.target_users.length > 0;
+  }, [targetMode, formData.target_roles, formData.target_users]);
+
+  const emailRecipientCount = useMemo(() => {
+    if (!hasTargetSelection) return 0;
+
+    const candidates =
+      targetMode === 'users'
+        ? selectedUsers
+        : users.filter((user) => formData.target_roles.includes(user.role));
+
+    const uniqueEmails = new Set(
+      candidates
+        .map((user) => user.email?.trim().toLowerCase())
+        .filter((email): email is string => Boolean(email)),
+    );
+
+    return uniqueEmails.size;
+  }, [hasTargetSelection, targetMode, selectedUsers, users, formData.target_roles]);
+
   // Handlers
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!hasTargetSelection) {
+      return;
+    }
+
+    if (formData.send_email && emailRecipientCount === 0) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await onSubmit(formData, targetMode);
@@ -181,8 +205,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     }
   }, [targetMode, formData]);
 
-  const notificationTypeConfig = NOTIFICATION_TYPES.find(t => t.value === formData.type);
-
   return (
     <AppModal
       open={isOpen}
@@ -222,36 +244,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 placeholder="Voer het bericht in..."
                 className="resize-none min-h-[80px]"
               />
-
-              {/* Type Selection - Visual Buttons */}
-              <div className="space-y-2">
-                <Label className="text-xs text-[var(--color-600)]">Type bericht</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {NOTIFICATION_TYPES.map(type => {
-                    const Icon = type.icon;
-                    const isSelected = formData.type === type.value;
-                    return (
-                      <button
-                        key={type.value}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, type: type.value }))}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all min-w-0",
-                          "hover:bg-[var(--color-100)] active:scale-95",
-                          isSelected 
-                            ? "border-[var(--color-500)] bg-[var(--color-100)]" 
-                            : "border-[var(--color-300)] bg-[var(--color-white)]"
-                        )}
-                      >
-                        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", type.color)}>
-                          <Icon className="w-4 h-4 text-[var(--color-white)]" />
-                        </div>
-                        <span className="text-xs font-medium text-[var(--color-600)] truncate max-w-full">{type.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
 
             </div>
 
@@ -405,6 +397,36 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                   </ScrollArea>
                 </div>
               )}
+
+              {hasTargetSelection && (
+                <div className="space-y-3 rounded-lg border border-primary/15 bg-card p-3">
+                  <label
+                    htmlFor="send-email"
+                    className="flex min-h-[44px] cursor-pointer items-start gap-3"
+                  >
+                    <Checkbox
+                      id="send-email"
+                      className="mt-1 shrink-0"
+                      checked={formData.send_email}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, send_email: checked === true }))
+                      }
+                      disabled={emailRecipientCount === 0}
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <span className="flex items-center gap-2 text-sm font-medium text-brand-dark">
+                        <Mail className="h-4 w-4 text-primary" aria-hidden />
+                        Ook per e-mail versturen
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        {emailRecipientCount > 0
+                          ? `Verstuurt dit bericht naar ${emailRecipientCount} e-mailadres${emailRecipientCount === 1 ? "" : "sen"} in de geselecteerde doelgroep.`
+                          : "Geen geselecteerde ontvangers met een e-mailadres."}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Section 3: Planning */}
@@ -444,25 +466,17 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 Preview
               </div>
               
-              <div className={cn(
-                "p-4 rounded-lg border-2 shadow-sm",
-                formData.type === 'info' && "bg-[var(--color-500)] border-[var(--color-600)]",
-                formData.type === 'warning' && "bg-[var(--color-700)] border-[var(--color-800)]",
-                formData.type === 'success' && "bg-[hsl(var(--success))] border-[hsl(var(--success))]",
-                formData.type === 'error' && "bg-[hsl(var(--destructive))] border-[hsl(var(--destructive))]"
-              )}>
+              <div className="rounded-lg border-2 border-primary/20 bg-primary/5 p-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  {notificationTypeConfig && (
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-white/20">
-                      <notificationTypeConfig.icon className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <MessageSquare className="h-4 w-4 text-primary" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     {formData.title && (
-                      <p className="text-sm font-semibold text-white mb-1">{formData.title}</p>
+                      <p className="mb-1 text-sm font-semibold text-brand-dark">{formData.title}</p>
                     )}
-                    <p className="text-sm text-white">
-                      {formData.message || <span className="text-white/60 italic">Voer een bericht in...</span>}
+                    <p className="text-sm text-foreground">
+                      {formData.message || <span className="italic text-muted-foreground">Voer een bericht in…</span>}
                     </p>
                   </div>
                 </div>
@@ -470,6 +484,9 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               
               <p className="text-xs text-[var(--color-500)]">
                 Zichtbaar voor: {getTargetSummary()}
+                {formData.send_email && emailRecipientCount > 0
+                  ? ` · E-mail naar ${emailRecipientCount} ontvanger${emailRecipientCount === 1 ? "" : "s"}`
+                  : ""}
               </p>
             </div>
           </div>
@@ -478,7 +495,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
           <div className="modal__actions sticky bottom-0">
             <button 
               type="submit" 
-              disabled={isSubmitting || !formData.message}
+              disabled={isSubmitting || !formData.message || !hasTargetSelection || (formData.send_email && emailRecipientCount === 0)}
               className="btn btn--primary"
             >
               {isSubmitting ? 'Opslaan...' : (isEditing ? 'Bijwerken' : 'Aanmaken')}

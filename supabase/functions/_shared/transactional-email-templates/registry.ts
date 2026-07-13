@@ -10,7 +10,9 @@ export interface TemplateEntry {
 }
 
 import { template as forfaitNotification } from './forfait-notification.tsx'
+import { adminMessageTemplate } from './admin-message.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'forfait-notification': forfaitNotification,
+  'admin-message': adminMessageTemplate,
 }

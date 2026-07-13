@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Accordion } from "@/components/ui/accordion";
 import { SectionAccordionItem } from "@/components/layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Users, Shield, UserCog, Globe, ClipboardList, Settings, DollarSign, Cog, Trophy } from "lucide-react";
+import { Eye, Users, Shield, UserCog, Globe, ClipboardList, Settings, DollarSign, Trophy } from "lucide-react";
 
 // Role configuration
 interface RoleInfo {
@@ -64,16 +64,9 @@ const TAB_GROUPS = [
   {
     id: 'organisatie',
     title: 'Organisatie',
-    description: 'Competitie-instellingen en nieuwsberichten per vereniging',
+    description: 'Competitie-instellingen, nieuwsberichten en berichten per vereniging',
     icon: Settings,
-    tabs: ['settings', 'blog-management'],
-  },
-  {
-    id: 'platform',
-    title: 'Platform',
-    description: 'Platformbrede systeemberichten (SuperAdmin)',
-    icon: Cog,
-    tabs: ['notification'],
+    tabs: ['settings', 'blog-management', 'notification'],
   },
 ];
 

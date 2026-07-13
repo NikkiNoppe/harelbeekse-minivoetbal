@@ -320,3 +320,113 @@ export function buildAuthResetPasswordUrl(
 
   return url.toString();
 }
+
+export interface AdminMessageEmailContent {
+  branding: AuthEmailBranding;
+  title?: string;
+  message: string;
+  recipientName?: string;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatMessageHtml(message: string): string {
+  return escapeHtml(message).replace(/\n/g, "<br />");
+}
+
+/** Uniforme transactionele layout voor admin-berichten (zelfde huisstijl als auth-mails). */
+export function buildAdminMessageEmailHtml(content: AdminMessageEmailContent): string {
+  const { branding } = content;
+  const headerColors = resolveEmailHeaderColors(branding);
+  const buttonColors = resolveEmailButtonColors(branding);
+  const heading = content.title?.trim() || "Bericht van de competitie";
+  const greeting = content.recipientName
+    ? `Beste ${escapeHtml(content.recipientName)},`
+    : "Beste,";
+  const previewText = content.message.slice(0, 140);
+
+  return `<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${escapeHtml(heading)}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f8fafc;font-family:Arial,Helvetica,sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(previewText)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f8fafc;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid ${branding.borderColor};border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="background-color:${headerColors.bg};padding:24px 28px;border-bottom:3px solid ${branding.primaryLight};">
+                <p style="margin:0;color:${headerColors.text};font-size:13px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;opacity:0.92;">${escapeHtml(branding.shortName)}</p>
+                <h1 style="margin:8px 0 0;color:${headerColors.text};font-size:24px;line-height:1.25;font-weight:700;">${escapeHtml(heading)}</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                <p style="color:${branding.textColor};font-size:16px;line-height:1.5;margin:0 0 16px;">${greeting}</p>
+                <div style="background-color:${branding.surfaceColor};border:1px solid ${branding.borderColor};padding:18px 20px;border-radius:12px;margin:0 0 20px;">
+                  <p style="color:${branding.textColor};font-size:15px;line-height:1.6;margin:0;">${formatMessageHtml(content.message)}</p>
+                </div>
+                <table role="presentation" cellspacing="0" cellpadding="0" style="margin:8px 0 0;">
+                  <tr>
+                    <td style="border-radius:10px;background-color:${buttonColors.bg};">
+                      <a href="${branding.siteUrl}" style="display:inline-block;padding:14px 24px;color:${buttonColors.text};font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">
+                        Naar ${escapeHtml(branding.shortName)}
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="color:${branding.mutedColor};font-size:13px;line-height:1.5;margin:18px 0 0;">
+                  Dit bericht werd verstuurd door ${escapeHtml(branding.displayName)}.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 24px;">
+                <p style="margin:0;color:${branding.mutedColor};font-size:12px;line-height:1.5;">
+                  ${escapeHtml(branding.displayName)}<br />
+                  <a href="${branding.siteUrl}" style="color:${branding.primaryColor};text-decoration:none;">${branding.siteUrl}</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+export function buildAdminMessageEmailText(content: AdminMessageEmailContent): string {
+  const heading = content.title?.trim() || "Bericht van de competitie";
+  const greeting = content.recipientName ? `Beste ${content.recipientName},` : "Beste,";
+  return [
+    heading,
+    "",
+    greeting,
+    "",
+    content.message,
+    "",
+    `Naar de website: ${content.branding.siteUrl}`,
+    "",
+    content.branding.displayName,
+  ].join("\n");
+}
+
+export function resolveAdminMessageSubject(
+  branding: AuthEmailBranding,
+  title?: string,
+): string {
+  const subject = title?.trim();
+  if (subject) return subject;
+  return `Bericht van ${branding.shortName}`;
+}

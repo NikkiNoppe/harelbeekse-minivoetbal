@@ -1,76 +1,60 @@
-import React, { useState, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { notificationService, type Notification } from '@/services/notificationService';
+import React, { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { notificationService, type Notification } from "@/services/notificationService";
 import {
   ADMIN_NOTIFICATIONS_QUERY_KEY,
+  NOTIFICATION_USERS_QUERY_KEY,
   useAdminNotifications,
-} from '@/hooks/useAdminNotifications';
-import { Plus, Edit, Trash2, Users, UserCheck, Loader2, MessageSquare, AlertCircle } from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { NotificationFormModal } from '@/components/modals';
-import { AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
+} from "@/hooks/useAdminNotifications";
+import { useBranding } from "@/hooks/useBranding";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { PageHeader } from "@/components/layout";
+import { Plus, AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { NotificationFormModal } from "@/components/modals";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
+import NotificationList, {
+  isNotificationActive,
+  type NotificationTypeFilter,
+} from "./components/NotificationList";
 
-const NOTIFICATION_TYPES = [
-  { value: 'info', label: 'Informatie' },
-  { value: 'warning', label: 'Waarschuwing' },
-  { value: 'success', label: 'Succes' },
-  { value: 'error', label: 'Fout' }
-];
-
-const ROLE_OPTIONS = [
-  { value: 'referee', label: 'Scheidsrechter' },
-  { value: 'player_manager', label: 'Teamverantwoordelijke' }
-];
-
-type TargetMode = 'roles' | 'users';
+type TargetMode = "roles" | "users";
 
 interface FormData {
   title: string;
   message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
+  type: "info" | "warning" | "success" | "error";
   target_roles: string[];
   target_users: number[];
   start_date: string;
   end_date: string;
+  send_email: boolean;
 }
 
 const DEFAULT_FORM_DATA: FormData = {
-  title: '',
-  message: '',
-  type: 'info',
+  title: "",
+  message: "",
+  type: "info",
   target_roles: [],
   target_users: [],
-  start_date: new Date().toISOString().split('T')[0],
-  end_date: '',
+  start_date: new Date().toISOString().split("T")[0],
+  end_date: "",
+  send_email: false,
 };
-
-const NotificationListSkeleton = () => (
-  <div className="space-y-3">
-    {[...Array(3)].map((_, i) => (
-      <div key={i} className="p-4 border border-border rounded-lg space-y-3">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-1/2" />
-      </div>
-    ))}
-  </div>
-);
 
 const NotificationPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const branding = useBranding();
   const {
+    organizationId,
     notifications = [],
     users = [],
     isListLoading,
     isRefreshing,
     showError,
-    showEmpty,
     error,
     refetch,
   } = useAdminNotifications();
@@ -78,168 +62,267 @@ const NotificationPage: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNotification, setEditingNotification] = useState<Notification | null>(null);
   const [initialFormData, setInitialFormData] = useState<FormData>(DEFAULT_FORM_DATA);
-  const [initialTargetMode, setInitialTargetMode] = useState<TargetMode>('roles');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [initialTargetMode, setInitialTargetMode] = useState<TargetMode>("roles");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<NotificationTypeFilter>("all");
+  const [deleteTarget, setDeleteTarget] = useState<Notification | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ADMIN_NOTIFICATIONS_QUERY_KEY });
+    await queryClient.invalidateQueries({
+      queryKey: withOrgQueryKey(ADMIN_NOTIFICATIONS_QUERY_KEY, organizationId),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: withOrgQueryKey(NOTIFICATION_USERS_QUERY_KEY, organizationId),
+    });
     await refetch();
-  }, [queryClient, refetch]);
+  }, [queryClient, organizationId, refetch]);
 
-  const handleOpenNew = useCallback(() => {
+  const activeCount = useMemo(
+    () => notifications.filter((notification) => isNotificationActive(notification)).length,
+    [notifications],
+  );
+
+  const roleTargetCount = useMemo(
+    () =>
+      notifications.filter(
+        (notification) =>
+          (notification.setting_value.target_roles?.length ?? 0) > 0 &&
+          (notification.setting_value.target_users?.length ?? 0) === 0,
+      ).length,
+    [notifications],
+  );
+
+  const filteredNotifications = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return notifications.filter((notification) => {
+      const sv = notification.setting_value;
+      const matchesSearch =
+        !normalizedSearch ||
+        (sv.title?.toLowerCase().includes(normalizedSearch) ?? false) ||
+        sv.message.toLowerCase().includes(normalizedSearch);
+      const matchesType = typeFilter === "all" || sv.type === typeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [notifications, searchTerm, typeFilter]);
+
+  const resetForm = useCallback(() => {
     setEditingNotification(null);
     setInitialFormData(DEFAULT_FORM_DATA);
-    setInitialTargetMode('roles');
-    setIsDialogOpen(true);
+    setInitialTargetMode("roles");
   }, []);
 
-  const handleSubmit = useCallback(async (formData: FormData, targetMode: TargetMode) => {
-    try {
-      const notificationData = {
-        setting_category: 'admin_messages',
-        setting_name: editingNotification ? editingNotification.setting_name : `message_${Date.now()}`,
-        setting_value: {
-          title: formData.title || undefined,
-          message: formData.message,
-          type: formData.type,
-          target_roles: targetMode === 'roles' ? formData.target_roles : [],
-          target_users: targetMode === 'users' ? formData.target_users : [],
-          start_date: formData.start_date || null,
-          end_date: formData.end_date || null,
-        },
-      };
+  const handleOpenNew = useCallback(() => {
+    resetForm();
+    setIsDialogOpen(true);
+  }, [resetForm]);
 
-      if (editingNotification) {
-        await notificationService.updateNotification(editingNotification.id, notificationData);
-        toast({ title: 'Succes', description: 'Bericht bijgewerkt' });
-      } else {
-        await notificationService.createNotification(notificationData);
-        toast({ title: 'Succes', description: 'Bericht aangemaakt' });
+  const handleDialogClose = useCallback(() => {
+    setIsDialogOpen(false);
+    resetForm();
+  }, [resetForm]);
+
+  const handleSubmit = useCallback(
+    async (formData: FormData, targetMode: TargetMode) => {
+      try {
+        let emailSentCount = editingNotification?.setting_value.email_sent_count ?? 0;
+        let emailSentAt = editingNotification?.setting_value.email_sent_at;
+
+        if (formData.send_email) {
+          const emailResult = await notificationService.sendAdminMessageEmails({
+            title: formData.title || undefined,
+            message: formData.message,
+            target_roles: targetMode === "roles" ? formData.target_roles : [],
+            target_user_ids: targetMode === "users" ? formData.target_users : [],
+          });
+
+          if (emailResult.queued === 0) {
+            throw new Error(
+              emailResult.totalRecipients === 0
+                ? "Geen ontvangers met een e-mailadres gevonden."
+                : "Geen e-mails verstuurd (onderdrukt of mislukt).",
+            );
+          }
+
+          emailSentCount = emailResult.queued;
+          emailSentAt = new Date().toISOString();
+        }
+
+        const notificationData = {
+          setting_category: "admin_messages",
+          setting_name: editingNotification
+            ? editingNotification.setting_name
+            : `message_${Date.now()}`,
+          setting_value: {
+            title: formData.title || undefined,
+            message: formData.message,
+            type: formData.type,
+            target_roles: targetMode === "roles" ? formData.target_roles : [],
+            target_users: targetMode === "users" ? formData.target_users : [],
+            start_date: formData.start_date || null,
+            end_date: formData.end_date || null,
+            send_email: formData.send_email,
+            email_sent_at:
+              formData.send_email && emailSentAt
+                ? emailSentAt
+                : editingNotification?.setting_value.email_sent_at ?? null,
+            email_sent_count:
+              formData.send_email && emailSentAt
+                ? emailSentCount
+                : editingNotification?.setting_value.email_sent_count ?? 0,
+          },
+        };
+
+        if (editingNotification) {
+          await notificationService.updateNotification(editingNotification.id, notificationData);
+          toast({
+            title: "Opgeslagen",
+            description: formData.send_email
+              ? `Bericht bijgewerkt · ${emailSentCount} e-mail${emailSentCount === 1 ? "" : "s"} verstuurd`
+              : "Bericht bijgewerkt",
+          });
+        } else {
+          await notificationService.createNotification(notificationData);
+          toast({
+            title: "Aangemaakt",
+            description: formData.send_email
+              ? `Bericht aangemaakt · ${emailSentCount} e-mail${emailSentCount === 1 ? "" : "s"} verstuurd`
+              : "Bericht aangemaakt",
+          });
+        }
+
+        await refreshData();
+        handleDialogClose();
+      } catch (err) {
+        console.error("Error saving notification:", err);
+        toast({
+          title: "Fout",
+          description: err instanceof Error ? err.message : "Kon bericht niet opslaan",
+          variant: "destructive",
+        });
+        throw err;
       }
-
-      await refreshData();
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving notification:', error);
-      toast({
-        title: 'Error',
-        description: 'Kon bericht niet opslaan',
-        variant: 'destructive'
-      });
-      throw error;
-    }
-  }, [editingNotification, toast, refreshData]);
+    },
+    [editingNotification, toast, refreshData, handleDialogClose],
+  );
 
   const handleEdit = useCallback((notification: Notification) => {
     setEditingNotification(notification);
     const sv = notification.setting_value;
-    
-    // Determine target mode
-    let detectedTargetMode: TargetMode = 'roles';
+
+    let detectedTargetMode: TargetMode = "roles";
     if (sv.target_users && sv.target_users.length > 0) {
-      detectedTargetMode = 'users';
+      detectedTargetMode = "users";
     }
-    
+
     setInitialTargetMode(detectedTargetMode);
     setInitialFormData({
-      title: sv.title || '',
+      title: sv.title || "",
       message: sv.message,
-      type: sv.type as 'info' | 'warning' | 'success' | 'error',
+      type: sv.type as FormData["type"],
       target_roles: sv.target_roles || [],
       target_users: sv.target_users || [],
-      start_date: sv.start_date || '',
-      end_date: sv.end_date || '',
+      start_date: sv.start_date || "",
+      end_date: sv.end_date || "",
+      send_email: sv.send_email === true,
     });
     setIsDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback(async (id: number) => {
+  const handleDeleteClick = useCallback((notification: Notification) => {
+    setDeleteTarget(notification);
+  }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
     setIsDeleting(true);
     try {
-      await notificationService.deleteNotification(id);
-      toast({ title: 'Succes', description: 'Bericht verwijderd' });
+      await notificationService.deleteNotification(deleteTarget.id);
+      toast({ title: "Verwijderd", description: "Bericht verwijderd" });
       await refreshData();
-    } catch (error) {
-      console.error('Error deleting notification:', error);
+    } catch (err) {
+      console.error("Error deleting notification:", err);
       toast({
-        title: 'Error',
-        description: 'Kon bericht niet verwijderen',
-        variant: 'destructive'
+        title: "Fout",
+        description: "Kon bericht niet verwijderen",
+        variant: "destructive",
       });
     } finally {
       setIsDeleting(false);
-      setDeleteConfirmId(null);
+      setDeleteTarget(null);
     }
-  }, [toast, refreshData]);
+  }, [deleteTarget, toast, refreshData]);
 
-  const getTypeBadgeClass = useCallback((type: string) => {
-    switch (type) {
-      case 'success': return 'bg-[var(--color-success)] text-[var(--color-white)]';
-      case 'warning': return 'bg-[var(--color-700)] text-[var(--color-white)]';
-      case 'error': return 'bg-[var(--color-destructive)] text-[var(--color-white)]';
-      default: return 'bg-[var(--color-500)] text-[var(--color-white)]';
-    }
-  }, []);
-
-  const getTargetDescription = (notification: Notification) => {
-    const sv = notification.setting_value;
-    if (sv.target_users && sv.target_users.length > 0) {
-      const userNames = sv.target_users.map(uid => 
-        users.find(u => u.user_id === uid)?.username || `User ${uid}`
-      );
-      return { type: 'users', items: userNames };
-    }
-    if (sv.target_roles && sv.target_roles.length > 0) {
-      const items = sv.target_roles.map(r => 
-        ROLE_OPTIONS.find(ro => ro.value === r)?.label || r
-      );
-      return { type: 'roles', items };
-    }
-    return { type: 'none', items: [] };
-  };
-
-  const formatDateRange = (notification: Notification) => {
-    const sv = notification.setting_value;
-    if (sv.start_date && sv.end_date) {
-      return `${new Date(sv.start_date).toLocaleDateString('nl-BE')} - ${new Date(sv.end_date).toLocaleDateString('nl-BE')}`;
-    }
-    if (sv.start_date) {
-      return `Vanaf ${new Date(sv.start_date).toLocaleDateString('nl-BE')}`;
-    }
-    if (sv.end_date) {
-      return `Tot ${new Date(sv.end_date).toLocaleDateString('nl-BE')}`;
-    }
-    return 'Altijd';
-  };
+  const addButton = (
+    <Button
+      type="button"
+      onClick={handleOpenNew}
+      className="min-h-[44px] w-full sm:w-auto"
+      aria-label="Nieuw bericht aanmaken"
+    >
+      <Plus className="h-4 w-4" />
+      Nieuw bericht
+    </Button>
+  );
 
   return (
-    <div className="space-y-6 w-full motion-safe:animate-slide-up">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
-            Berichten
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">Beheer berichten voor gebruikers en teams</p>
-        </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {isRefreshing && !isListLoading && (
+    <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
+      <PageHeader
+        title="Berichten"
+        subtitle={`Beheer berichten voor ${branding.displayName} (${notifications.length} bericht${notifications.length === 1 ? "" : "en"})`}
+        rightAction={
+          isRefreshing && !isListLoading ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
               Vernieuwen…
             </span>
-          )}
-          <Button onClick={handleOpenNew} className="btn--primary w-full sm:w-auto min-h-[44px]">
-            <Plus className="w-4 h-4 mr-2" />
-            Nieuw Bericht
-          </Button>
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
+
+      {showError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {error instanceof Error ? error.message : "Kon berichten niet laden."}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Opnieuw proberen
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!showError && (
+        <NotificationList
+          notifications={filteredNotifications}
+          users={users}
+          loading={isListLoading}
+          isRefreshing={isRefreshing}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          typeFilter={typeFilter}
+          onTypeFilterChange={setTypeFilter}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          addButton={addButton}
+          totalCount={notifications.length}
+          activeCount={activeCount}
+          roleTargetCount={roleTargetCount}
+        />
+      )}
 
       <NotificationFormModal
         isOpen={isDialogOpen}
-        onClose={() => setIsDialogOpen(false)}
+        onClose={handleDialogClose}
         onSubmit={handleSubmit}
         initialData={initialFormData}
         initialTargetMode={initialTargetMode}
@@ -248,188 +331,21 @@ const NotificationPage: React.FC = () => {
         teams={[]}
       />
 
-      {/* Messages List */}
-      <Card className="border-[var(--color-300)] bg-[var(--color-white)]">
-        <CardHeader>
-          <CardTitle className="text-lg text-[var(--color-600)]">Alle Berichten</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isListLoading ? (
-            <NotificationListSkeleton />
-          ) : showError ? (
-            <div className="py-8 text-center" role="alert">
-              <AlertCircle className="h-8 w-8 mx-auto mb-4 text-destructive" aria-hidden />
-              <h3 className="text-lg font-semibold mb-2">Fout bij laden</h3>
-              <p className="text-muted-foreground mb-4 text-sm">
-                {error instanceof Error ? error.message : 'Kon gegevens niet laden.'}
-              </p>
-              <Button type="button" onClick={() => void refetch()} className="min-h-[44px]">
-                Opnieuw proberen
-              </Button>
-            </div>
-          ) : showEmpty ? (
-            <p className="text-center text-[var(--color-500)] py-8 text-sm">
-              Nog geen berichten aangemaakt.
-            </p>
-          ) : (
-            <div className={isRefreshing ? 'opacity-80 transition-opacity' : ''}>
-              {/* Mobile Cards */}
-              <div className="space-y-3 md:hidden">
-                {notifications.map((notification) => {
-                  const target = getTargetDescription(notification);
-                  return (
-                    <Card key={notification.id} className="p-4 border-[var(--color-300)] bg-[var(--color-50)]">
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            {notification.setting_value.title && (
-                              <p className="text-sm font-semibold text-[var(--color-700)] mb-1">
-                                {notification.setting_value.title}
-                              </p>
-                            )}
-                            <p className="text-sm text-[var(--color-600)] line-clamp-2">
-                              {notification.setting_value.message}
-                            </p>
-                          </div>
-                          <Badge className={`shrink-0 ${getTypeBadgeClass(notification.setting_value.type)}`}>
-                            {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-1">
-                          {target.type === 'users' && <UserCheck className="w-3 h-3 text-[var(--color-500)]" />}
-                          {target.type === 'roles' && <Users className="w-3 h-3 text-[var(--color-500)]" />}
-                          {target.items.slice(0, 2).map((item, i) => (
-                            <Badge key={i} variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
-                              {item}
-                            </Badge>
-                          ))}
-                          {target.items.length > 2 && (
-                            <Badge variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
-                              +{target.items.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-
-                        <p className="text-xs text-[var(--color-500)]">{formatDateRange(notification)}</p>
-
-                        <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(notification)}
-                              className="h-10 w-10 p-0 hover:bg-[var(--color-100)]"
-                            >
-                              <Edit className="h-4 w-4 text-[var(--color-600)]" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteConfirmId(notification.id)}
-                              className="text-destructive h-10 w-10 p-0 hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[200px]">Bericht</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Doelgroep</TableHead>
-                      <TableHead>Periode</TableHead>
-                      <TableHead className="text-center">Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {notifications.map((notification) => {
-                      const target = getTargetDescription(notification);
-                      return (
-                        <TableRow key={notification.id}>
-                          <TableCell className="font-medium text-[var(--color-600)] max-w-[200px]">
-                            {notification.setting_value.title && (
-                              <span className="font-semibold text-[var(--color-700)] block">{notification.setting_value.title}</span>
-                            )}
-                            <span className="truncate block">{notification.setting_value.message}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getTypeBadgeClass(notification.setting_value.type)}>
-                              {NOTIFICATION_TYPES.find(t => t.value === notification.setting_value.type)?.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {target.type === 'users' && <UserCheck className="w-4 h-4 text-[var(--color-500)]" />}
-                              {target.type === 'roles' && <Users className="w-4 h-4 text-[var(--color-500)]" />}
-                              {target.items.slice(0, 3).map((item, i) => (
-                                <Badge key={i} variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
-                                  {item}
-                                </Badge>
-                              ))}
-                              {target.items.length > 3 && (
-                                <Badge variant="outline" className="text-xs border-[var(--color-300)] text-[var(--color-600)]">
-                                  +{target.items.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-[var(--color-500)]">{formatDateRange(notification)}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(notification)}
-                                className="h-8 w-8 p-0 hover:bg-[var(--color-100)]"
-                              >
-                                <Edit className="h-4 w-4 text-[var(--color-600)]" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setDeleteConfirmId(notification.id)}
-                                className="text-destructive h-8 w-8 p-0 hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       <AppAlertModal
-        open={deleteConfirmId !== null}
-        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Bericht verwijderen"
         description={
           <DestructiveConfirmDescription message="Weet je zeker dat je dit bericht wilt verwijderen?" />
         }
         confirmAction={{
-          label: isDeleting ? 'Verwijderen...' : 'Verwijderen',
-          onClick: () => deleteConfirmId !== null && handleDelete(deleteConfirmId),
-          variant: 'destructive'
+          label: isDeleting ? "Verwijderen…" : "Verwijderen",
+          onClick: () => void handleDelete(),
+          variant: "destructive",
         }}
         cancelAction={{
-          label: 'Annuleren',
-          onClick: () => setDeleteConfirmId(null)
+          label: "Annuleren",
+          onClick: () => setDeleteTarget(null),
         }}
       />
     </div>

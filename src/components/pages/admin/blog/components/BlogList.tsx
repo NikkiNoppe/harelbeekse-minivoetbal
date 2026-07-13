@@ -24,8 +24,14 @@ import { Edit, Trash2, BookOpen, Calendar, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PUBLIC_CARD_CLASS } from "@/components/layout";
 import type { BlogPost } from "@/services/blogService";
+import {
+  BLOG_STATUS_LABELS,
+  formatBlogVisibilityRange,
+  getBlogScheduleStatus,
+  type BlogScheduleStatus,
+} from "@/lib/blogVisibility";
 
-export type BlogStatusFilter = "all" | "published" | "draft";
+export type BlogStatusFilter = "all" | "live" | "scheduled" | "draft" | "expired";
 
 interface BlogListProps {
   posts: BlogPost[];
@@ -40,31 +46,26 @@ interface BlogListProps {
   onTogglePublished: (post: BlogPost, published: boolean) => void;
   addButton?: React.ReactNode;
   totalCount: number;
-  publishedCount: number;
+  liveCount: number;
+  scheduledCount: number;
   draftCount: number;
-}
-
-function formatBlogDate(value?: string): string {
-  if (!value) return "—";
-  try {
-    return new Date(value).toLocaleDateString("nl-BE", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return "—";
-  }
 }
 
 function getPostMeta(post: BlogPost) {
   const title = post.setting_value.title;
-  const published = post.setting_value.published;
-  const dateLabel = published
-    ? formatBlogDate(post.setting_value.published_at)
-    : "Concept";
+  const status = getBlogScheduleStatus(post.setting_value);
+  const dateLabel =
+    status === "draft"
+      ? "Concept"
+      : formatBlogVisibilityRange(post.setting_value);
 
-  return { title, published, dateLabel };
+  return { title, status, dateLabel };
+}
+
+function getStatusBadgeVariant(status: BlogScheduleStatus): "default" | "secondary" | "outline" {
+  if (status === "live") return "default";
+  if (status === "scheduled") return "outline";
+  return "secondary";
 }
 
 const EmptyState = ({ filtered }: { filtered: boolean }) => (
@@ -119,7 +120,8 @@ function BlogPostCard({
   onDelete,
   onTogglePublished,
 }: BlogPostCardProps) {
-  const { title, published, dateLabel } = getPostMeta(post);
+  const { title, status, dateLabel } = getPostMeta(post);
+  const published = post.setting_value.published;
 
   return (
     <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm border-primary/15")}>
@@ -137,11 +139,8 @@ function BlogPostCard({
               {dateLabel}
             </p>
           </div>
-          <Badge
-            variant={published ? "default" : "secondary"}
-            className="shrink-0"
-          >
-            {published ? "Live" : "Concept"}
+          <Badge variant={getStatusBadgeVariant(status)} className="shrink-0">
+            {BLOG_STATUS_LABELS[status]}
           </Badge>
         </div>
 
@@ -199,14 +198,15 @@ const BlogList: React.FC<BlogListProps> = ({
   onTogglePublished,
   addButton,
   totalCount,
-  publishedCount,
+  liveCount,
+  scheduledCount,
   draftCount,
 }) => {
   const isFiltered = searchTerm.trim().length > 0 || statusFilter !== "all";
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
           <CardContent className="p-3 sm:p-4">
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
@@ -223,7 +223,17 @@ const BlogList: React.FC<BlogListProps> = ({
               Live
             </p>
             <p className="mt-1 text-xl font-semibold text-brand-dark sm:mt-2 sm:text-2xl">
-              {publishedCount}
+              {liveCount}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+          <CardContent className="p-3 sm:p-4">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
+              Gepland
+            </p>
+            <p className="mt-1 text-xl font-semibold text-brand-dark sm:mt-2 sm:text-2xl">
+              {scheduledCount}
             </p>
           </CardContent>
         </Card>
@@ -257,8 +267,10 @@ const BlogList: React.FC<BlogListProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle statussen</SelectItem>
-                <SelectItem value="published">Gepubliceerd</SelectItem>
+                <SelectItem value="live">Live</SelectItem>
+                <SelectItem value="scheduled">Gepland</SelectItem>
                 <SelectItem value="draft">Concept</SelectItem>
+                <SelectItem value="expired">Verlopen</SelectItem>
               </SelectContent>
             </Select>
             {addButton ? <div className="pt-1">{addButton}</div> : null}
@@ -307,7 +319,7 @@ const BlogList: React.FC<BlogListProps> = ({
                     <TableRow className="table-header-row">
                       <TableHead className="min-w-[220px]">Titel</TableHead>
                       <TableHead className="min-w-[140px]">Status</TableHead>
-                      <TableHead className="min-w-[120px]">Datum</TableHead>
+                      <TableHead className="min-w-[180px]">Periode</TableHead>
                       <TableHead className="min-w-[104px] text-center">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -360,13 +372,14 @@ const BlogList: React.FC<BlogListProps> = ({
                     <TableRow className="table-header-row">
                       <TableHead className="min-w-[220px]">Titel</TableHead>
                       <TableHead className="min-w-[140px]">Status</TableHead>
-                      <TableHead className="min-w-[120px]">Datum</TableHead>
+                      <TableHead className="min-w-[180px]">Periode</TableHead>
                       <TableHead className="min-w-[104px] text-center">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {posts.map((post) => {
-                      const { title, published, dateLabel } = getPostMeta(post);
+                      const { title, status, dateLabel } = getPostMeta(post);
+                      const published = post.setting_value.published;
 
                       return (
                         <TableRow key={post.id}>
@@ -393,8 +406,8 @@ const BlogList: React.FC<BlogListProps> = ({
                                     : `${title} publiceren`
                                 }
                               />
-                              <Badge variant={published ? "default" : "secondary"}>
-                                {published ? "Gepubliceerd" : "Concept"}
+                              <Badge variant={getStatusBadgeVariant(status)}>
+                                {BLOG_STATUS_LABELS[status]}
                               </Badge>
                             </div>
                           </TableCell>

@@ -16,13 +16,19 @@ import {
 import { useBranding } from "@/hooks/useBranding";
 import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { PageHeader } from "@/components/layout";
-import { Plus, AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { Plus, AlertCircle, Loader2, RefreshCw, Calendar } from "lucide-react";
 import BlogList, { type BlogStatusFilter } from "./components/BlogList";
+import {
+  getBlogScheduleStatus,
+  validateBlogVisibilityRange,
+} from "@/lib/blogVisibility";
 
 const DEFAULT_FORM_DATA = {
   title: "",
   content: "",
   published: false,
+  visible_from: "",
+  visible_until: "",
 };
 
 const BlogPage: React.FC = () => {
@@ -59,23 +65,42 @@ const BlogPage: React.FC = () => {
     await refetch();
   }, [queryClient, organizationId, refetch]);
 
-  const publishedCount = useMemo(
-    () => blogPosts.filter((post) => post.setting_value.published).length,
+  const liveCount = useMemo(
+    () =>
+      blogPosts.filter(
+        (post) => getBlogScheduleStatus(post.setting_value) === "live",
+      ).length,
     [blogPosts],
   );
-  const draftCount = blogPosts.length - publishedCount;
+  const scheduledCount = useMemo(
+    () =>
+      blogPosts.filter(
+        (post) => getBlogScheduleStatus(post.setting_value) === "scheduled",
+      ).length,
+    [blogPosts],
+  );
+  const draftCount = useMemo(
+    () =>
+      blogPosts.filter(
+        (post) => getBlogScheduleStatus(post.setting_value) === "draft",
+      ).length,
+    [blogPosts],
+  );
 
   const filteredPosts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     return blogPosts.filter((post) => {
+      const status = getBlogScheduleStatus(post.setting_value);
       const matchesSearch =
         !normalizedSearch ||
         post.setting_value.title.toLowerCase().includes(normalizedSearch) ||
         post.setting_value.content.toLowerCase().includes(normalizedSearch);
       const matchesStatus =
         statusFilter === "all" ||
-        (statusFilter === "published" && post.setting_value.published) ||
-        (statusFilter === "draft" && !post.setting_value.published);
+        (statusFilter === "live" && status === "live") ||
+        (statusFilter === "scheduled" && status === "scheduled") ||
+        (statusFilter === "draft" && status === "draft") ||
+        (statusFilter === "expired" && status === "expired");
       return matchesSearch && matchesStatus;
     });
   }, [blogPosts, searchTerm, statusFilter]);
@@ -101,12 +126,28 @@ const BlogPage: React.FC = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+
+      const rangeError = validateBlogVisibilityRange(
+        formData.visible_from,
+        formData.visible_until,
+      );
+      if (rangeError) {
+        toast({
+          title: "Ongeldige periode",
+          description: rangeError,
+          variant: "destructive",
+        });
+        return;
+      }
+
       setIsSaving(true);
       try {
         const settingValue: BlogPost["setting_value"] = {
           title: formData.title.trim(),
           content: formData.content.trim(),
           published: formData.published,
+          visible_from: formData.visible_from.trim() || null,
+          visible_until: formData.visible_until.trim() || null,
         };
         if (formData.published) {
           settingValue.published_at =
@@ -150,6 +191,8 @@ const BlogPage: React.FC = () => {
       title: post.setting_value.title,
       content: post.setting_value.content,
       published: post.setting_value.published,
+      visible_from: post.setting_value.visible_from || "",
+      visible_until: post.setting_value.visible_until || "",
     });
     setIsDialogOpen(true);
   }, []);
@@ -272,7 +315,8 @@ const BlogPage: React.FC = () => {
           onTogglePublished={(post, published) => void togglePublished(post, published)}
           addButton={addButton}
           totalCount={blogPosts.length}
-          publishedCount={publishedCount}
+          liveCount={liveCount}
+          scheduledCount={scheduledCount}
           draftCount={draftCount}
         />
       )}
@@ -320,10 +364,59 @@ const BlogPage: React.FC = () => {
                 setFormData((prev) => ({ ...prev, published: checked }))
               }
             />
-            <Label htmlFor="blog-published" className="cursor-pointer font-medium">
-              Direct publiceren op de website
-            </Label>
+            <div className="space-y-0.5">
+              <Label htmlFor="blog-published" className="cursor-pointer font-medium">
+                Publiceren op de website
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Zet uit om een concept te bewaren. Met een periode kun je berichten vooraf plannen.
+              </p>
+            </div>
           </div>
+
+          {formData.published && (
+            <div className="space-y-3 rounded-lg border border-primary/15 bg-card p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-brand-dark">
+                <Calendar className="h-4 w-4 text-primary" aria-hidden />
+                Zichtbaarheidsperiode
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Laat beide velden leeg om het bericht onbeperkt zichtbaar te houden.
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="blog-visible-from">Zichtbaar vanaf</Label>
+                  <Input
+                    id="blog-visible-from"
+                    type="date"
+                    value={formData.visible_from}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        visible_from: e.target.value,
+                      }))
+                    }
+                    className="min-h-[44px]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="blog-visible-until">Zichtbaar tot</Label>
+                  <Input
+                    id="blog-visible-until"
+                    type="date"
+                    value={formData.visible_until}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        visible_until: e.target.value,
+                      }))
+                    }
+                    className="min-h-[44px]"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button

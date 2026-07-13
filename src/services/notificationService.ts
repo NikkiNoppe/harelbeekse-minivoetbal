@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getRpcSessionArgs } from '@/lib/authSession';
+import { getRpcSessionArgs, getEdgeFunctionHeaders } from '@/lib/authSession';
 import { fetchTeamsForSession } from '@/services/core/teamsSessionFetch';
 import {
   deleteApplicationSettingForSession,
@@ -20,6 +20,9 @@ export interface NotificationData {
     target_users?: number[];
     start_date?: string;
     end_date?: string;
+    send_email?: boolean;
+    email_sent_at?: string;
+    email_sent_count?: number;
   };
 }
 
@@ -35,6 +38,9 @@ export interface Notification {
     target_users?: number[];
     start_date?: string;
     end_date?: string;
+    send_email?: boolean;
+    email_sent_at?: string;
+    email_sent_count?: number;
   };
 }
 
@@ -56,6 +62,9 @@ const transformNotificationData = (data: any[]): Notification[] => {
         target_users: settingValue?.target_users || [],
         start_date: settingValue?.start_date,
         end_date: settingValue?.end_date,
+        send_email: settingValue?.send_email === true,
+        email_sent_at: settingValue?.email_sent_at,
+        email_sent_count: settingValue?.email_sent_count,
       },
     };
   });
@@ -121,7 +130,7 @@ export const notificationService = {
     return this.getAllNotifications();
   },
 
-  async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string }>> {
+  async getAllUsers(): Promise<Array<{ user_id: number; username: string; role: string; email: string | null }>> {
     try {
       const { data, error } = await supabase.rpc(
         'get_all_users_for_admin',
@@ -130,15 +139,43 @@ export const notificationService = {
 
       if (error) throw error;
 
-      return (data || []).map((user: { user_id: number; username: string; role: string }) => ({
+      return (data || []).map((user: { user_id: number; username: string; role: string; email?: string | null }) => ({
         user_id: user.user_id,
         username: user.username,
         role: user.role,
+        email: user.email ?? null,
       }));
     } catch (error) {
       console.error('Error loading users:', error);
       return [];
     }
+  },
+
+  async sendAdminMessageEmails(input: {
+    title?: string;
+    message: string;
+    target_roles?: string[];
+    target_user_ids?: number[];
+  }): Promise<{ queued: number; suppressed: number; failed: number; totalRecipients: number }> {
+    const { data, error } = await supabase.functions.invoke('send-admin-message-emails', {
+      body: input,
+      headers: getEdgeFunctionHeaders(),
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Kon e-mails niet versturen');
+    }
+
+    if (data?.error) {
+      throw new Error(String(data.error));
+    }
+
+    return {
+      queued: Number(data?.queued ?? 0),
+      suppressed: Number(data?.suppressed ?? 0),
+      failed: Number(data?.failed ?? 0),
+      totalRecipients: Number(data?.totalRecipients ?? 0),
+    };
   },
 
   async getAllTeams(): Promise<Array<{ team_id: number; team_name: string }>> {

@@ -78,25 +78,25 @@ export const SIDEBAR_BEHEER_ITEMS: NavItem[] = [
 ];
 
 export const SPEELFORMATEN_ITEMS: NavItem[] = [
-  { key: "competition", label: "Competitie", icon: Trophy, visibilityKey: "format-competition" },
-  { key: "cup", label: "Beker", icon: Award, visibilityKey: "format-cup" },
-  { key: "playoffs", label: "Play-off", icon: Target, visibilityKey: "format-playoffs" },
+  { key: "competition", label: "Competitie", icon: Trophy, visibilityKey: "format-competition", superAdminOnly: true },
+  { key: "cup", label: "Beker", icon: Award, visibilityKey: "format-cup", superAdminOnly: true },
+  { key: "playoffs", label: "Play-off", icon: Target, visibilityKey: "format-playoffs", superAdminOnly: true },
 ];
 
 export const FINANCIEEL_ITEMS: NavItem[] = [
   { key: "financial", label: "Financieel", icon: DollarSign, adminOnly: true },
 ];
 
-/** Org-admin: seizoen, regels, blog, tab-zichtbaarheid (niet platformbreed). */
+/** Org-admin: seizoen, regels, blog, berichten, tab-zichtbaarheid (niet platformbreed). */
 export const HEADER_ORGANISATIE_ITEMS: NavItem[] = [
   { key: "settings", label: "Competitie-instellingen", icon: Settings, adminOnly: true },
   { key: "blog-management", label: "Blog beheer", icon: BookOpen, adminOnly: true },
+  { key: "notification", label: "Berichten", icon: MessageSquare, adminOnly: true },
 ];
 
-/** SuperAdmin: multi-tenant platform, systeemberichten. */
+/** SuperAdmin: multi-tenant platform. */
 export const HEADER_PLATFORM_ITEMS: NavItem[] = [
   { key: "superadmin-beheer", label: "Platform beheer", icon: Building2, superAdminOnly: true },
-  { key: "notification", label: "Systeemberichten", icon: MessageSquare, adminOnly: true, superAdminOnly: true },
 ];
 
 /** @deprecated Gebruik HEADER_ORGANISATIE_ITEMS + HEADER_PLATFORM_ITEMS in nieuwe UI. */
@@ -295,8 +295,10 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
       id: "speelschema",
       title: "Speelschema",
       items: speelschema,
-      collapsible: speelschema.length > 1,
+      collapsible: true,
       defaultOpen: false,
+      variant: "superadmin",
+      badge: "SuperAdmin",
     });
   }
 
@@ -305,7 +307,7 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
       id: "platform",
       title: "Platform",
       items: platform,
-      collapsible: platform.length > 1,
+      collapsible: true,
       defaultOpen: false,
       variant: "superadmin",
       badge: "SuperAdmin",

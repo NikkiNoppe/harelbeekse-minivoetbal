@@ -36,7 +36,7 @@ export const useMatchFormsData = (
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { organizationId } = useOrgQueryScope();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   
   // Loading time management: minimum 250ms, maximum 5000ms timeout
   const MIN_LOADING_TIME = 250; // Minimum 250ms for better UX
@@ -82,7 +82,7 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    enabled: queriesEnabled && loadLeague,
+    enabled: queriesEnabled && loadLeague && orgQueryEnabled,
     ...sharedQueryOptions,
   });
 
@@ -100,7 +100,7 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    enabled: queriesEnabled && loadCup,
+    enabled: queriesEnabled && loadCup && orgQueryEnabled,
     ...sharedQueryOptions,
   });
 
@@ -118,7 +118,7 @@ export const useMatchFormsData = (
         refereeFilter
       );
     },
-    enabled: queriesEnabled && loadPlayoff,
+    enabled: queriesEnabled && loadPlayoff && orgQueryEnabled,
     ...sharedQueryOptions,
   });
 

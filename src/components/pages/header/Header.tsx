@@ -54,6 +54,9 @@ const superadminAccordionTriggerClass =
 const superadminBadgeClass =
   "rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-800";
 
+const superadminSectionHeadingClass =
+  "text-sm font-semibold text-violet-800 uppercase tracking-wider";
+
 interface NavLinkButtonProps {
   item: NavItem;
   isActive: boolean;
@@ -160,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({
         normalizedRole,
         userRole: user?.role,
         isAuthenticated,
-      }),
+      }).filter((section) => !section.variant || section.variant !== "superadmin" || isSuperAdmin),
     [isTabVisible, isAdmin, isSuperAdmin, normalizedRole, user?.role, isAuthenticated],
   );
 
@@ -192,7 +195,7 @@ const Header: React.FC<HeaderProps> = ({
     const work: SheetSection[] = [];
     const bottom: SheetSection[] = [];
     for (const section of sheetSections) {
-      if (section.id === "platform") {
+      if (section.variant === "superadmin") {
         bottom.push(section);
       } else {
         work.push(section);
@@ -307,8 +310,23 @@ const Header: React.FC<HeaderProps> = ({
 
     if (!section.collapsible) {
       return (
-        <div key={section.id}>
-          {renderNavGroup(section.title, section.items)}
+        <div
+          key={section.id}
+          className={cn(section.variant === "superadmin" && "rounded-lg border border-violet-200/80 bg-violet-50/40 p-2")}
+        >
+          {section.variant === "superadmin" ? (
+            <div className="mb-2 flex flex-wrap items-center gap-2 px-2">
+              <h3 className={cn(superadminSectionHeadingClass, "px-2")}>
+                {section.title}
+              </h3>
+              {section.badge ? <span className={superadminBadgeClass}>{section.badge}</span> : null}
+            </div>
+          ) : (
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider px-2 mb-2">
+              {section.title}
+            </h3>
+          )}
+          {renderSectionItems(section.items)}
         </div>
       );
     }
@@ -317,7 +335,10 @@ const Header: React.FC<HeaderProps> = ({
       <AccordionItem
         key={section.id}
         value={section.id}
-        className={cn("border-none", section.variant === "superadmin" && "rounded-lg")}
+        className={cn(
+          "border-none",
+          section.variant === "superadmin" && "rounded-lg border border-violet-200/80 bg-violet-50/40 px-1",
+        )}
       >
         <AccordionTrigger className={triggerClass}>
           <span className="flex min-w-0 flex-1 items-center gap-2">
@@ -328,6 +349,11 @@ const Header: React.FC<HeaderProps> = ({
           </span>
         </AccordionTrigger>
         <AccordionContent className="space-y-2 pt-2">
+          {section.variant === "superadmin" ? (
+            <p className="px-2 text-[11px] leading-snug text-violet-900/70">
+              Alleen zichtbaar en bedoeld voor SuperAdmin-beheer.
+            </p>
+          ) : null}
           {renderSectionItems(section.items)}
         </AccordionContent>
       </AccordionItem>
@@ -465,11 +491,18 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
 
-                {isAuthenticated && bottomSheetSections.length > 0 && (
-                  <div className="mt-auto pt-4">
+                {isAuthenticated && isSuperAdmin && bottomSheetSections.length > 0 && (
+                  <div
+                    className="mt-auto border-t border-violet-200/90 pt-4"
+                    role="group"
+                    aria-label="SuperAdmin navigatie"
+                  >
+                    <p className="mb-3 px-2 text-[10px] font-semibold uppercase tracking-wider text-violet-800/80">
+                      SuperAdmin zone
+                    </p>
                     {renderAuthNavBlock(
                       bottomSheetSections,
-                      `${navSessionKey}-platform`,
+                      `${navSessionKey}-superadmin`,
                       [],
                     )}
                   </div>

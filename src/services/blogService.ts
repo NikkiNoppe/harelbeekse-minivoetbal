@@ -5,6 +5,7 @@ import {
   updateApplicationSettingForSession,
 } from '@/services/core/applicationSettingsSessionFetch';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
+import { isBlogPostPubliclyVisible } from '@/lib/blogVisibility';
 
 export interface BlogPostData {
   id?: number;
@@ -15,6 +16,8 @@ export interface BlogPostData {
     content: string;
     published: boolean;
     published_at?: string;
+    visible_from?: string | null;
+    visible_until?: string | null;
   };
 }
 
@@ -27,6 +30,8 @@ export interface BlogPost {
     content: string;
     published: boolean;
     published_at?: string;
+    visible_from?: string | null;
+    visible_until?: string | null;
   };
 }
 
@@ -54,10 +59,29 @@ const transformBlogPostData = (data: any[]): BlogPost[] => {
         content: settingValue?.content || '',
         published: settingValue?.published || false,
         published_at: settingValue?.published_at,
+        visible_from: settingValue?.visible_from ?? null,
+        visible_until: settingValue?.visible_until ?? null,
       },
     };
   });
 };
+
+function normalizeBlogSettingValue(
+  settingValue: BlogPostData['setting_value'],
+): BlogPostData['setting_value'] {
+  const normalized = { ...settingValue };
+  normalized.visible_from = normalized.visible_from?.trim() || null;
+  normalized.visible_until = normalized.visible_until?.trim() || null;
+
+  if (normalized.published && !normalized.published_at) {
+    normalized.published_at = new Date().toISOString();
+  }
+  if (!normalized.published) {
+    delete normalized.published_at;
+  }
+
+  return normalized;
+}
 
 export const blogService = {
   async getAllBlogPosts(): Promise<BlogPost[]> {
@@ -74,7 +98,9 @@ export const blogService = {
     try {
       const rows = await fetchPublicApplicationSettings(['blog_posts'], organizationId);
       const sorted = [...rows].sort((a, b) => b.id - a.id);
-      return transformBlogPostData(sorted);
+      return transformBlogPostData(sorted).filter((post) =>
+        isBlogPostPubliclyVisible(post.setting_value),
+      );
     } catch (error) {
       console.error('Error loading published blog posts:', error);
       throw new Error('Kon gepubliceerde blog posts niet laden');
@@ -83,10 +109,7 @@ export const blogService = {
 
   async createBlogPost(blogPostData: Omit<BlogPostData, 'id'>): Promise<void> {
     try {
-      const settingValue = { ...blogPostData.setting_value };
-      if (settingValue.published && !settingValue.published_at) {
-        settingValue.published_at = new Date().toISOString();
-      }
+      const settingValue = normalizeBlogSettingValue({ ...blogPostData.setting_value });
 
       await insertApplicationSettingForSession({
         setting_category: 'blog_posts',
@@ -105,13 +128,7 @@ export const blogService = {
         throw new Error('Geen bloggegevens om bij te werken');
       }
 
-      const settingValue = { ...blogPostData.setting_value };
-      if (settingValue.published && !settingValue.published_at) {
-        settingValue.published_at = new Date().toISOString();
-      }
-      if (!settingValue.published) {
-        delete settingValue.published_at;
-      }
+      const settingValue = normalizeBlogSettingValue({ ...blogPostData.setting_value });
 
       await updateApplicationSettingForSession(id, {
         setting_value: settingValue,
@@ -145,16 +162,12 @@ export const blogService = {
           ? JSON.parse(currentRow.setting_value)
           : currentRow.setting_value;
 
-      const updatedValue = {
+      const updatedValue = normalizeBlogSettingValue({
         ...currentValue,
         published,
-        ...(published
-          ? { published_at: currentValue?.published_at || new Date().toISOString() }
-          : {}),
-      };
-      if (!published) {
-        delete updatedValue.published_at;
-      }
+        title: currentValue?.title || '',
+        content: currentValue?.content || '',
+      });
 
       await updateApplicationSettingForSession(id, {
         setting_value: updatedValue,

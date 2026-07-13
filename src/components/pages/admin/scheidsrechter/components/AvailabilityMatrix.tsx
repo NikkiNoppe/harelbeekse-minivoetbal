@@ -252,6 +252,9 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   const [assigning, setAssigning] = useState<string | null>(null);
   const [bulkAssigning, setBulkAssigning] = useState(false);
   const [copyMessagesOpen, setCopyMessagesOpen] = useState(false);
+  const [menuCellKey, setMenuCellKey] = useState<string | null>(null);
+  const longPressTimerRef = React.useRef<number | null>(null);
+  const longPressOpenedRef = React.useRef(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -452,6 +455,34 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     setAssignments((current) => current.filter((assignment) => !matchIds.has(assignment.match_id)));
   }, []);
 
+  const bumpWorkloadCounts = useCallback((refereeId: number, session: Session, delta: number) => {
+    setMonthCounts((prev) => {
+      const next = new Map(prev);
+      next.set(refereeId, Math.max(0, (next.get(refereeId) || 0) + delta));
+      return next;
+    });
+    setSeasonCounts((prev) => {
+      const next = new Map(prev);
+      next.set(refereeId, Math.max(0, (next.get(refereeId) || 0) + delta));
+      return next;
+    });
+  }, []);
+
+  const openCellMenu = useCallback((cellKey: string) => {
+    setMenuCellKey(cellKey);
+  }, []);
+
+  const closeCellMenu = useCallback(() => {
+    setMenuCellKey(null);
+  }, []);
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
   // Wijs een ref toe aan alle wedstrijden in dezelfde sessie (zelfde datum + locatie).
   // Als showUndo true is, toont een 5s undo-toast.
   const assignToSessionInternal = async (
@@ -476,6 +507,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       return { ok: false };
     }
     applyLocalSessionAssignment(session, refereeId);
+    bumpWorkloadCounts(refereeId, session, session.matches.length);
 
     // Haal enkel voor undo een vers assignment op; gewone toewijzing blijft volledig lokaal.
     const fresh = showUndo
@@ -491,6 +523,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             if (ok) {
               toast.success('Toewijzing teruggedraaid');
               clearLocalSessionAssignment(session);
+              bumpWorkloadCounts(refereeId, session, -session.matches.length);
             } else {
               toast.error('Kon toewijzing niet ongedaan maken');
             }
@@ -503,6 +536,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
   };
 
   const handleAssign = async (session: Session, refereeId: number) => {
+    if (getSessionAssignedReferee(session) !== null) {
+      toast.error('Er is al een scheidsrechter toegewezen aan deze sessie');
+      return;
+    }
     const targetMatch = session.matches.find((m) => !m.assigned_referee_id);
     if (!targetMatch) {
       toast.error('Alle wedstrijden in deze sessie zijn al toegewezen');
@@ -512,13 +549,141 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
     const cellKey = `${targetMatch.match_id}-${refereeId}`;
     setAssigning(cellKey);
     try {
-      await assignToSessionInternal(session, refereeId, refName, false);
+      await assignToSessionInternal(session, refereeId, refName, true);
     } catch {
       toast.error('Onverwachte fout');
     } finally {
       setAssigning(null);
     }
   };
+
+  const handleCellPrimaryAction = async (
+    session: Session,
+    refereeId: number,
+    context: {
+      isAssigned: boolean;
+      isOtherAssigned: boolean;
+      available: boolean;
+      hasResponded: boolean;
+      assignment: AssignmentData | null;
+    },
+  ) => {
+    if (context.isOtherAssigned) return;
+
+    if (context.isAssigned && context.assignment) {
+      await handleRemove(context.assignment);
+      return;
+    }
+
+    if (context.available || !context.hasResponded) {
+      await handleAssign(session, refereeId);
+      return;
+    }
+
+    if (context.hasResponded && !context.available) {
+      await handleSetAvailabilityStatus(session, refereeId, true);
+    }
+  };
+
+  const getCellInteractionHandlers = (
+    session: Session,
+    refereeId: number,
+    cellKey: string,
+    context: {
+      isAssigned: boolean;
+      isOtherAssigned: boolean;
+      available: boolean;
+      hasResponded: boolean;
+      assignment: AssignmentData | null;
+      clickable: boolean;
+      isLoading: boolean;
+    },
+  ) => ({
+    onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (event.button !== 0 || context.isLoading || !context.clickable || context.isOtherAssigned) {
+        return;
+      }
+      event.preventDefault();
+    },
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (context.isLoading || !context.clickable || context.isOtherAssigned) return;
+      if (longPressOpenedRef.current) {
+        longPressOpenedRef.current = false;
+        return;
+      }
+      void handleCellPrimaryAction(session, refereeId, context);
+    },
+    onContextMenu: (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (context.isLoading || !context.clickable || context.isOtherAssigned) return;
+      event.preventDefault();
+      openCellMenu(cellKey);
+    },
+    onTouchStart: () => {
+      if (context.isLoading || !context.clickable || context.isOtherAssigned) return;
+      longPressOpenedRef.current = false;
+      clearLongPressTimer();
+      longPressTimerRef.current = window.setTimeout(() => {
+        longPressOpenedRef.current = true;
+        openCellMenu(cellKey);
+      }, 500);
+    },
+    onTouchEnd: () => {
+      clearLongPressTimer();
+    },
+    onTouchMove: () => {
+      clearLongPressTimer();
+    },
+    onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      if (context.isLoading || !context.clickable || context.isOtherAssigned) return;
+      void handleCellPrimaryAction(session, refereeId, context);
+    },
+  });
+
+  const renderRefereeCellMenuContent = (
+    session: Session,
+    refereeId: number,
+    context: {
+      available: boolean;
+      isAssigned: boolean;
+      isOtherAssigned: boolean;
+      assignment: AssignmentData | null;
+      hasResponded: boolean;
+    },
+  ) => (
+    <>
+      <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, refereeId, true)}>
+        <Check className="mr-2 h-3.5 w-3.5 text-success" />
+        Beschikbaar
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, refereeId, false)}>
+        <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+        Niet beschikbaar
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, refereeId, null)}>
+        <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+        Geen reactie
+      </DropdownMenuItem>
+      {(!context.isAssigned && !context.isOtherAssigned) || context.isAssigned ? (
+        <DropdownMenuSeparator />
+      ) : null}
+      {!context.isAssigned && !context.isOtherAssigned && (
+        <DropdownMenuItem onSelect={() => handleAssign(session, refereeId)}>
+          <Star className="mr-2 h-3.5 w-3.5 text-success" />
+          Toewijzen
+        </DropdownMenuItem>
+      )}
+      {context.isAssigned && context.assignment && (
+        <DropdownMenuItem onSelect={() => handleRemove(context.assignment)}>
+          <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
+          Toewijzing verwijderen
+        </DropdownMenuItem>
+      )}
+    </>
+  );
 
   const handleSetAvailabilityStatus = async (
     session: Session,
@@ -603,6 +768,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
       if (success) {
         if (session) {
           clearLocalSessionAssignment(session);
+          bumpWorkloadCounts(assignment.referee_id, session, -session.matches.length);
         }
       } else {
         toast.error('Kon toewijzing niet verwijderen');
@@ -1071,6 +1237,22 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                             cellContent = <RefreshCw className="h-4 w-4 mx-auto animate-spin text-foreground" />;
                           }
 
+                          const cellContext = {
+                            isAssigned,
+                            isOtherAssigned,
+                            available,
+                            hasResponded,
+                            assignment,
+                            clickable,
+                            isLoading,
+                          };
+                          const cellHandlers = getCellInteractionHandlers(
+                            session,
+                            ref.user_id,
+                            cellKey,
+                            cellContext,
+                          );
+
                           return (
                             <td
                               key={ref.user_id}
@@ -1081,7 +1263,12 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                 height: SESSION_ROW_HEIGHT,
                               }}
                             >
-                              <DropdownMenu>
+                              <DropdownMenu
+                                open={menuCellKey === cellKey}
+                                onOpenChange={(open) => {
+                                  if (!open) closeCellMenu();
+                                }}
+                              >
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <DropdownMenuTrigger asChild disabled={isLoading || !clickable || isOtherAssigned}>
@@ -1089,8 +1276,10 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                         type="button"
                                         aria-pressed={clickable ? isAssigned : undefined}
                                         aria-label={tooltipText}
+                                        aria-haspopup="menu"
                                         className={`flex h-full w-full items-center justify-center transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:cursor-not-allowed ${cellClass}`}
                                         style={{ height: SESSION_ROW_HEIGHT }}
+                                        {...cellHandlers}
                                       >
                                         {cellContent}
                                       </button>
@@ -1101,31 +1290,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                   </TooltipContent>
                                 </Tooltip>
                                 <DropdownMenuContent align="center" className="w-44 border border-[hsl(var(--color-200))] shadow-sm">
-                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, true)}>
-                                    <Check className="mr-2 h-3.5 w-3.5 text-success" />
-                                    Beschikbaar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, false)}>
-                                    <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
-                                    Niet beschikbaar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, null)}>
-                                    <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                                    Geen reactie
-                                  </DropdownMenuItem>
-                                  {(available || isAssigned) && <DropdownMenuSeparator />}
-                                  {available && !isAssigned && !isOtherAssigned && (
-                                    <DropdownMenuItem onSelect={() => handleAssign(session, ref.user_id)}>
-                                      <Star className="mr-2 h-3.5 w-3.5 text-success" />
-                                      Toewijzen
-                                    </DropdownMenuItem>
-                                  )}
-                                  {isAssigned && assignment && (
-                                    <DropdownMenuItem onSelect={() => handleRemove(assignment)}>
-                                      <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
-                                      Toewijzing verwijderen
-                                    </DropdownMenuItem>
-                                  )}
+                                  {renderRefereeCellMenuContent(session, ref.user_id, {
+                                    available,
+                                    isAssigned,
+                                    isOtherAssigned,
+                                    assignment,
+                                    hasResponded,
+                                  })}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </td>
@@ -1210,12 +1381,36 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               ? 'beschikbaar'
                               : 'niet beschikbaar';
 
+                        const mobileClickable = !isLoadingCell && (!isOtherAssigned || isAssigned);
+                        const mobileCellContext = {
+                          isAssigned,
+                          isOtherAssigned,
+                          available,
+                          hasResponded,
+                          assignment,
+                          clickable: mobileClickable,
+                          isLoading: isLoadingCell,
+                        };
+                        const mobileCellHandlers = getCellInteractionHandlers(
+                          session,
+                          ref.user_id,
+                          cellKey,
+                          mobileCellContext,
+                        );
+
                         return (
-                          <DropdownMenu key={ref.user_id}>
+                          <DropdownMenu
+                            key={ref.user_id}
+                            open={menuCellKey === cellKey}
+                            onOpenChange={(open) => {
+                              if (!open) closeCellMenu();
+                            }}
+                          >
                             <DropdownMenuTrigger asChild disabled={isLoadingCell || (isOtherAssigned && !isAssigned)}>
                               <button
                                 type="button"
                                 aria-label={`${ref.username} – ${statusLabel}`}
+                                aria-haspopup="menu"
                                 className={`
                                   inline-flex min-h-[44px] w-full min-w-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium
                                   transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none
@@ -1223,6 +1418,7 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                                   ${isOtherAssigned && !isAssigned ? 'opacity-40' : ''}
                                   disabled:cursor-not-allowed
                                 `}
+                                {...mobileCellHandlers}
                               >
                                 {isLoadingCell ? (
                                   <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
@@ -1239,31 +1435,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-44 border border-[hsl(var(--color-200))] shadow-sm">
-                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, true)}>
-                                <Check className="mr-2 h-3.5 w-3.5 text-success" />
-                                Beschikbaar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, false)}>
-                                <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
-                                Niet beschikbaar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleSetAvailabilityStatus(session, ref.user_id, null)}>
-                                <Minus className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                                Geen reactie
-                              </DropdownMenuItem>
-                              {(available || isAssigned) && <DropdownMenuSeparator />}
-                              {available && !isAssigned && !isOtherAssigned && (
-                                <DropdownMenuItem onSelect={() => handleAssign(session, ref.user_id)}>
-                                  <Star className="mr-2 h-3.5 w-3.5 text-success" />
-                                  Toewijzen
-                                </DropdownMenuItem>
-                              )}
-                              {isAssigned && assignment && (
-                                <DropdownMenuItem onSelect={() => handleRemove(assignment)}>
-                                  <X className="mr-2 h-3.5 w-3.5 text-destructive/80" />
-                                  Toewijzing verwijderen
-                                </DropdownMenuItem>
-                              )}
+                              {renderRefereeCellMenuContent(session, ref.user_id, {
+                                available,
+                                isAssigned,
+                                isOtherAssigned,
+                                assignment,
+                                hasResponded,
+                              })}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         );

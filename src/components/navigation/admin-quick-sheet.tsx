@@ -3,7 +3,7 @@ import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { 
   Trophy, Award, Target, Users, Shield, Ban, 
-  User, Settings, BookOpen, AlertTriangle, Zap 
+  User, Settings, BookOpen, MessageSquare, Zap 
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/routes";
@@ -42,13 +42,13 @@ const managementActions: ActionItem[] = [
 const organisatieActions: ActionItem[] = [
   { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
   { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
+  { key: "notification", label: "Berichten", icon: <MessageSquare size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true },
 ];
 
 const systemActions: ActionItem[] = [
   { key: "competition", label: "Competitie Planning", icon: <Trophy size={16} />, path: ADMIN_ROUTES.competition, adminOnly: true, superAdminOnly: true },
   { key: "cup", label: "Beker Planning", icon: <Award size={16} />, path: ADMIN_ROUTES.cup, adminOnly: true, superAdminOnly: true },
   { key: "playoffs", label: "Playoff Planning", icon: <Target size={16} />, path: ADMIN_ROUTES.playoffs, adminOnly: true, superAdminOnly: true },
-  { key: "notification", label: "Berichten", icon: <AlertTriangle size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true, superAdminOnly: true },
 ];
 
 const AdminQuickSheet: React.FC<AdminQuickSheetProps> = ({ open, onOpenChange }) => {

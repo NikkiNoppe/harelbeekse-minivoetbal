@@ -42,5 +42,8 @@ verify_jwt = false
 [functions.send-forfait-notification]
 verify_jwt = false
 
+[functions.send-admin-message-emails]
+verify_jwt = false
+
 [functions.notify-auto-suspension]
 verify_jwt = false

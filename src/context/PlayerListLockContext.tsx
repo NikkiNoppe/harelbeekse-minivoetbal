@@ -35,6 +35,7 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
   const [isSettingsLocked, setIsSettingsLocked] = useState(false);
   const [isSeasonLocked, setIsSeasonLocked] = useState(false);
   const [lockDate, setLockDate] = useState<string | null>(null);
+  const [lockUntilDate, setLockUntilDate] = useState<string | null>(null);
   const [seasonEndDate, setSeasonEndDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +70,7 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
         if (settings?.setting_value) {
           const settingValue = settings.setting_value as {
             lock_from_date?: string;
+            lock_until_date?: string;
             lock_enabled?: boolean;
           };
           settingsLocked =
@@ -76,6 +78,9 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
             isSettingsPlayerListLocked(settingValue);
           if (settingValue.lock_enabled !== false) {
             settingsLockDate = settingValue.lock_from_date ?? null;
+            setLockUntilDate(settingValue.lock_until_date ?? null);
+          } else {
+            setLockUntilDate(null);
           }
         }
       } catch (settingsError) {
@@ -127,8 +132,9 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
         lockDate,
         seasonEndDate,
         formatDateShort,
+        lockUntilDate,
       ),
-    [lockReason, lockDate, seasonEndDate],
+    [lockReason, lockDate, seasonEndDate, lockUntilDate],
   );
 
   const canEdit = useMemo(() => {

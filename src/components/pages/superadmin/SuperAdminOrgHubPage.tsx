@@ -833,15 +833,15 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
                   />
                   {isActive ? (
                     <FormSection
-                      title="Navigatie & thema"
-                      description="Tab-zichtbaarheid en kleurenpalet voor deze tenant (platformniveau)."
+                      title="Platform-instellingen"
+                      description="Competitie-opzet, tab-zichtbaarheid en kleurenpalet voor deze tenant."
                     >
                       <SuperAdminOrgTenantSettings />
                     </FormSection>
                   ) : (
                     <p className="text-sm text-muted-foreground rounded-lg border border-dashed border-primary/20 px-4 py-3">
-                      Maak deze organisatie <strong className="font-medium">actief</strong> om tab-zichtbaarheid
-                      en kleuren te bewerken.
+                      Maak deze organisatie <strong className="font-medium">actief</strong> om competitie-opzet,
+                      tab-zichtbaarheid en kleuren te bewerken.
                     </p>
                   )}
                   <OrgEditorForm

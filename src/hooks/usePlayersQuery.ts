@@ -88,11 +88,11 @@ const fetchPlayersViaRPC = async (teamId: number | null): Promise<Player[]> => {
  */
 export const usePlayersQuery = (teamId: number | null = null) => {
   const { user, authContextReady } = useAuth();
-  const { organizationId } = useOrgQueryScope();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const isAdmin = user?.role === "admin";
   
   // Determine what to fetch based on teamId and user role
-  const shouldFetch = !!user && authContextReady && (isAdmin || (user.teamId !== undefined && user.teamId !== null));
+  const shouldFetch = orgQueryEnabled && !!user && authContextReady && (isAdmin || (user.teamId !== undefined && user.teamId !== null));
   
   // Only log in development and only when query state actually changes
   const prevState = useRef<{ teamId: number | null; shouldFetch: boolean } | null>(null);
@@ -171,7 +171,7 @@ export const usePlayersQuery = (teamId: number | null = null) => {
  */
 export const useTeamsQuery = () => {
   const { authContextReady } = useAuth();
-  const { organizationId } = useOrgQueryScope();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   return useQuery({
     queryKey: withOrgQueryKey(['teams'], organizationId),
@@ -179,7 +179,7 @@ export const useTeamsQuery = () => {
       const teams = await fetchTeamsForSession();
       return teams.map((t) => ({ team_id: t.team_id, team_name: t.team_name }));
     },
-    enabled: authContextReady, // Only fetch when auth is ready
+    enabled: authContextReady && orgQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes - teams change rarely
     gcTime: 30 * 60 * 1000, // 30 minutes cache
     retry: 2,

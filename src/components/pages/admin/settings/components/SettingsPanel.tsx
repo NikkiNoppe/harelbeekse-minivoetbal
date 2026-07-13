@@ -2,7 +2,6 @@
 import React from "react";
 import {
   Settings,
-  Trophy,
   Building,
   ShieldAlert,
 } from "lucide-react";
@@ -10,14 +9,12 @@ import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { SectionAccordionItem } from "@/components/layout";
 import PlayerListLockSettings from "@/components/pages/admin/settings/components/PlayerListLockSettings";
-import CompetitionFormatsSettings from "@/components/pages/admin/settings/components/CompetitionFormatsSettings";
 import VenuesSettings from "@/components/pages/admin/settings/components/VenuesSettings";
 import TimeslotsSettings from "@/components/pages/admin/settings/components/TimeslotsSettings";
 import VacationsSettings from "@/components/pages/admin/settings/components/VacationsSettings";
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 import MatchFormSettings from "@/components/pages/admin/settings/components/MatchFormSettings";
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
-import { useAuth } from "@/hooks/useAuth";
 
 function GroupHeading({
   icon: Icon,
@@ -51,8 +48,6 @@ function GroupHeading({
 }
 
 const AdminSettingsPanel: React.FC = () => {
-  const { isSuperAdmin } = useAuth();
-
   return (
     <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
       <div className="space-y-3">
@@ -72,23 +67,6 @@ const AdminSettingsPanel: React.FC = () => {
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
-        {isSuperAdmin && (
-          <SectionAccordionItem
-            value="competition-setup"
-            triggerContent={
-              <GroupHeading
-                icon={Trophy}
-                title="Competitie-opzet"
-                description="Formats die deze organisatie gebruikt voor latere competitiegeneratie."
-                badge="SuperAdmin"
-              />
-            }
-            itemClassName="border-primary/20 shadow-sm hover:shadow-md transition-shadow duration-200"
-          >
-            <CompetitionFormatsSettings />
-          </SectionAccordionItem>
-        )}
-
         <SectionAccordionItem
           value="season-environment"
           triggerContent={
