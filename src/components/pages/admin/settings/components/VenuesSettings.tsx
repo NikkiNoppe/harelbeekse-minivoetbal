@@ -9,6 +9,7 @@ import { Settings, Edit, Trash2, Building, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { competitionDataService } from "@/services";
+import { SectionIcon } from "@/components/layout";
 
 function nextVenueId(venues: Array<{ venue_id?: number }>): number {
   const maxId = venues.reduce(
@@ -214,7 +215,7 @@ const VenuesSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+            <SectionIcon icon={Settings} />
             Sportzalen
           </CardTitle>
         </CardHeader>

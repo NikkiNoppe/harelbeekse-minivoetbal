@@ -7,6 +7,8 @@ export {
   PUBLIC_SECTION_HEADING_CLASS,
   PUBLIC_CARD_CLASS,
 } from "./public-page";
+export { SectionIcon } from "./section-icon";
+export type { SectionIconVariant } from "./section-icon";
 export { SectionCollapsibleCard } from "./SectionCollapsibleCard";
 export { SectionAccordionItem } from "./SectionAccordionItem";
 export {

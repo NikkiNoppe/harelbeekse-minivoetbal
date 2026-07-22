@@ -23,6 +23,7 @@ import type { SlotUnavailability } from '@/types/slotUnavailability';
 import type { Venue, VenueTimeslot } from '@/services/competitionDataService';
 import { PUBLIC_CARD_CLASS } from '@/components/layout';
 import { cn } from '@/lib/utils';
+import { SectionIcon } from "@/components/layout";
 
 const DAY_NAMES: Record<number, string> = {
   0: 'Zondag',
@@ -214,7 +215,7 @@ const SlotUnavailabilitySettings: React.FC = () => {
       <Card className={cn(PUBLIC_CARD_CLASS)}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-brand-dark">
-            <MapPin className="h-5 w-5 text-primary" aria-hidden />
+            <SectionIcon icon={MapPin} />
             Veld niet beschikbaar
           </CardTitle>
           <CardDescription>

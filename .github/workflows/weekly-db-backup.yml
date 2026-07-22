@@ -1,0 +1,84 @@
+# Wekelijkse volledige Postgres-dump (gratis Supabase heeft geen platform-backups).
+#
+# Schema: zondag 06:00 Europe/Brussels (CEST = 04:00 UTC; in wintertijd ≈ 05:00 lokale tijd).
+# Handmatig: Actions → "Weekly database backup" → Run workflow.
+#
+# Secret (repo Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL
+# Direct connection string uit Dashboard → Project Settings → Database → URI
+# Voorbeeld: postgresql://postgres.[PASSWORD]@db.kuyviionmstyvkvglizh.supabase.co:5432/postgres
+# (wachtwoord percent-encoden als het speciale tekens bevat)
+#
+# Artifacts: Actions-run → Artifacts → weekly-db-backup-YYYY-MM-DD (90 dagen retentie).
+# Restore: zie Supabase docs — roles.sql + schema.sql + data.sql via psql.
+
+name: Weekly database backup
+
+on:
+  schedule:
+    # Zondag 04:00 UTC ≈ 06:00 CEST (België zomertijd)
+    - cron: "0 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump roles, schema and data
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify secret
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::Secret SUPABASE_DB_URL ontbreekt. Voeg die toe onder Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Create backup directory
+        run: |
+          DATE_UTC=$(date -u +%Y-%m-%d)
+          echo "BACKUP_DATE=$DATE_UTC" >> "$GITHUB_ENV"
+          mkdir -p "backups/$DATE_UTC"
+
+      - name: Dump roles
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f "backups/${BACKUP_DATE}/roles.sql" --role-only
+
+      - name: Dump schema
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f "backups/${BACKUP_DATE}/schema.sql"
+
+      - name: Dump data
+        run: |
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f "backups/${BACKUP_DATE}/data.sql" \
+            --data-only --use-copy \
+            -x "storage.buckets_vectors" \
+            -x "storage.vector_indexes"
+
+      - name: Summarize dump sizes
+        run: |
+          ls -lh "backups/${BACKUP_DATE}/"
+          echo "Backup date (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-db-backup-${{ env.BACKUP_DATE }}
+          path: backups/${{ env.BACKUP_DATE }}/
+          retention-days: 90
+          if-no-files-found: error

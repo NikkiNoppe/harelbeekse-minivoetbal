@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { SectionAccordionItem } from "@/components/layout";
+import { SectionAccordionItem, SectionIcon } from "@/components/layout";
 import PlayerListLockSettings from "@/components/pages/admin/settings/components/PlayerListLockSettings";
 import VenuesSettings from "@/components/pages/admin/settings/components/VenuesSettings";
 import TimeslotsSettings from "@/components/pages/admin/settings/components/TimeslotsSettings";
@@ -17,7 +17,7 @@ import MatchFormSettings from "@/components/pages/admin/settings/components/Matc
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 
 function GroupHeading({
-  icon: Icon,
+  icon,
   title,
   description,
   badge,
@@ -29,9 +29,7 @@ function GroupHeading({
 }) {
   return (
     <span className="flex min-w-0 flex-1 items-start gap-3 text-left">
-      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <Icon className="h-4 w-4" aria-hidden />
-      </span>
+      <SectionIcon icon={icon} variant="group" />
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="block truncate text-sm font-semibold text-brand-dark">{title}</span>
@@ -52,7 +50,7 @@ const AdminSettingsPanel: React.FC = () => {
     <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
-          <Settings className="h-4 w-4" />
+          <SectionIcon icon={Settings} variant="compact" />
           Organisatie-instellingen
         </div>
         <div className="space-y-2">

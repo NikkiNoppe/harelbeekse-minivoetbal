@@ -24,6 +24,9 @@ dist-ssr
 # Supabase local CLI cache
 supabase/.temp/
 
+# Local / CI database dumps (never commit)
+backups/
+
 # Editor directories and files
 .vscode/safari-debug-profile/
 .vscode/chrome-debug-profile/

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
 import {
+import { SectionIcon } from "@/components/layout";
   insertApplicationSettingForSession,
   listApplicationSettingsForSession,
   updateApplicationSettingForSession,
@@ -122,7 +123,7 @@ const MatchFormSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+            <SectionIcon icon={FileText} />
             Wedstrijdformulieren
           </CardTitle>
         </CardHeader>
@@ -137,7 +138,7 @@ const MatchFormSettings: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+          <SectionIcon icon={FileText} />
           Wedstrijdformulieren
         </CardTitle>
         <CardDescription>

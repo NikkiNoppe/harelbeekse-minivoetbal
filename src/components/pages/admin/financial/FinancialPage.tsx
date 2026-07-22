@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout";
 import { FinancialTeamDetailModal, FinancialSettingsModal } from "@/components/modals";
 import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { monthlyReportsService } from "@/services/financial";
@@ -179,12 +180,7 @@ const AdminFinancialPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: "var(--primary)" }}>
-          <Euro className="h-5 w-5" />
-          € Financieel
-        </h2>
-      </div>
+      <PageHeader title="Financieel" icon={Euro} />
 
       <section>
         <Card className="!bg-transparent !shadow-none" style={{ backgroundColor: "transparent", boxShadow: "none" }}>

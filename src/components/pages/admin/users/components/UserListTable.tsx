@@ -221,11 +221,11 @@ const UserListTable: React.FC<UserListProps> = ({
           <Table className="table w-full">
             <TableHeader>
               <TableRow className="table-header-row">
-                <TableHead className="min-w-[220px]">Naam</TableHead>
+                <TableHead className="left min-w-[220px]">Naam</TableHead>
                 <TableHead className="hidden min-w-[240px] lg:table-cell">Email</TableHead>
                 <TableHead className="min-w-[150px]">Rol</TableHead>
                 <TableHead className="hidden min-w-[280px] xl:table-cell">Teams</TableHead>
-                {editMode && <TableHead className="text-center min-w-[104px]">Acties</TableHead>}
+                {editMode && <TableHead className="right min-w-[104px]">Acties</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -233,26 +233,32 @@ const UserListTable: React.FC<UserListProps> = ({
                 // Loading skeleton
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`}>
-                    <TableCell className="table-skeleton-cell">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="h-4 w-4 rounded-full" />
+                    <TableCell className="left table-skeleton-cell">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
                         <Skeleton className="h-4 w-32" />
                       </div>
                     </TableCell>
                     <TableCell className="table-skeleton-cell hidden lg:table-cell">
-                      <Skeleton className="h-4 w-40" />
+                      <div className="flex justify-center">
+                        <Skeleton className="h-4 w-40" />
+                      </div>
                     </TableCell>
                     <TableCell className="table-skeleton-cell">
-                      <Skeleton className="h-4 w-24" />
+                      <div className="flex justify-center">
+                        <Skeleton className="h-6 w-28 rounded-full" />
+                      </div>
                     </TableCell>
                     <TableCell className="table-skeleton-cell hidden xl:table-cell">
-                      <Skeleton className="h-4 w-28" />
+                      <div className="flex justify-center">
+                        <Skeleton className="h-6 w-28 rounded-full" />
+                      </div>
                     </TableCell>
                     {editMode && (
-                      <TableCell className="text-center table-skeleton-cell">
-                        <div className="flex justify-center gap-1">
-                          <Skeleton className="h-8 w-8 rounded-md" />
-                          <Skeleton className="h-8 w-8 rounded-md" />
+                      <TableCell className="right table-skeleton-cell">
+                        <div className="flex justify-end gap-1.5">
+                          <Skeleton className="h-11 w-11 rounded-md" />
+                          <Skeleton className="h-11 w-11 rounded-md" />
                         </div>
                       </TableCell>
                     )}
@@ -260,24 +266,24 @@ const UserListTable: React.FC<UserListProps> = ({
                 ))
               ) : !users || users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={editMode ? 5 : 4} className="text-center py-6">
+                  <TableCell colSpan={editMode ? 5 : 4} className="py-6 text-center text-muted-foreground">
                     {loading ? 'Laden...' : 'Geen gebruikers gevonden'}
                   </TableCell>
                 </TableRow>
               ) : (
                 users.map(user => (
                   <TableRow key={user.user_id}>
-                    <TableCell className="font-medium">
+                    <TableCell className="left font-medium">
                       <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <User className="h-4 w-4" />
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary shadow-sm">
+                          <User className="h-4 w-4" aria-hidden />
                         </span>
-                        <div className="min-w-0">
+                        <div className="min-w-0 text-left">
                           <span className="block truncate max-w-[140px] sm:max-w-[220px] text-brand-dark">
                             {user.username}
                           </span>
                           <span className="block truncate text-xs text-muted-foreground lg:hidden">
-                            {user.email || "-"}
+                            {user.email || "—"}
                           </span>
                           <div className="mt-1 flex flex-wrap gap-1 xl:hidden">
                             {user.teams && user.teams.length > 0 ? (
@@ -285,18 +291,16 @@ const UserListTable: React.FC<UserListProps> = ({
                                 <Badge
                                   key={team.team_id}
                                   variant="outline"
-                                  className="bg-brand-50 text-[10px] sm:text-xs"
+                                  className="border-primary/20 bg-brand-50 text-[10px] sm:text-xs"
                                 >
                                   {team.team_name}
                                 </Badge>
                               ))
                             ) : (
-                              <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                Geen teams
-                              </Badge>
+                              <span className="text-[10px] text-muted-foreground sm:text-xs">Geen teams</span>
                             )}
                             {user.teams && user.teams.length > 2 ? (
-                              <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                              <Badge variant="secondary" className="border border-border/70 text-[10px] sm:text-xs">
                                 +{user.teams.length - 2}
                               </Badge>
                             ) : null}
@@ -304,37 +308,47 @@ const UserListTable: React.FC<UserListProps> = ({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground hidden lg:table-cell">
-                      <div className="truncate max-w-[200px]" title={user.email || ""}>
-                        {user.email || "-"}
+                    <TableCell className="hidden text-muted-foreground lg:table-cell">
+                      <div className="truncate max-w-[200px] mx-auto" title={user.email || undefined}>
+                        {user.email || "—"}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={roleBadgeVariant(user.role)}>
-                        {React.createElement(roleIcon(user.role), { className: "mr-1 h-3 w-3" })}
-                        {roleLabel(user.role)}
-                      </Badge>
+                      <div className="flex justify-center">
+                        <Badge
+                          variant={roleBadgeVariant(user.role)}
+                          className="inline-flex items-center gap-1.5 border border-primary/20"
+                        >
+                          {React.createElement(roleIcon(user.role), {
+                            className: "h-3.5 w-3.5 shrink-0",
+                            "aria-hidden": true,
+                          })}
+                          {roleLabel(user.role)}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell">
                       {user.teams && user.teams.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap justify-center gap-1.5">
                           {user.teams.length <= 2 ? (
-                            // Show all teams if 2 or fewer
                             user.teams.map(team => (
-                              <Badge key={team.team_id} variant="outline" className="bg-brand-50">
+                              <Badge
+                                key={team.team_id}
+                                variant="outline"
+                                className="border-primary/20 bg-brand-50"
+                              >
                                 {team.team_name}
                               </Badge>
                             ))
                           ) : (
-                            // Show first team and count for more than 2
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <div className="flex items-center gap-1">
-                                    <Badge variant="outline" className="bg-brand-50">
+                                  <div className="flex items-center justify-center gap-1.5">
+                                    <Badge variant="outline" className="border-primary/20 bg-brand-50">
                                       {user.teams[0].team_name}
                                     </Badge>
-                                    <Badge variant="secondary">
+                                    <Badge variant="secondary" className="border border-border/70">
                                       +{user.teams.length - 1}
                                     </Badge>
                                   </div>
@@ -351,38 +365,38 @@ const UserListTable: React.FC<UserListProps> = ({
                           )}
                         </div>
                       ) : (
-                        "-"
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                     {editMode && (
-                      <TableCell className="text-center">
-                        <div className="flex items-center gap-1 justify-center">
+                      <TableCell className="right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
                             type="button"
                             onClick={() => onEditUser?.(user)}
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px]"
+                            variant="unstyled"
+                            className="btn btn--icon btn--edit"
                             disabled={isUpdating || isDeleting}
+                            aria-label={`Bewerk ${user.username}`}
                           >
                             {isUpdating ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                             ) : (
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4" aria-hidden />
                             )}
                           </Button>
                           <Button
                             type="button"
                             onClick={() => handleDeleteClick(user)}
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px] text-destructive"
+                            variant="unstyled"
+                            className="btn btn--icon btn--danger"
                             disabled={isUpdating || isDeleting}
+                            aria-label={`Verwijder ${user.username}`}
                           >
                             {isDeleting ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             )}
                           </Button>
                         </div>

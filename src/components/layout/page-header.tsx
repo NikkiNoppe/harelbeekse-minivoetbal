@@ -1,13 +1,18 @@
-import React, { memo } from "react";
+import React, { memo, type ComponentType, type SVGProps } from "react";
 import { useOrgAwareNavigate } from "@/hooks/useOrgAwareNavigate";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useOrganization } from "@/hooks/useOrganization";
+import { SectionIcon } from "./section-icon";
+
+type PageHeaderIcon = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  /** Optioneel pagina-icoon — zelfde SectionIcon-styling overal */
+  icon?: PageHeaderIcon;
   backPath?: string;
   backLabel?: string;
   rightAction?: React.ReactNode;
@@ -17,6 +22,7 @@ interface PageHeaderProps {
 const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   subtitle,
+  icon,
   backPath,
   backLabel = "Terug",
   rightAction,
@@ -67,11 +73,18 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       >
         <h1
           className={cn(
+            "flex items-center gap-2.5",
             useAccentBar
               ? "text-base sm:text-lg font-bold text-black leading-tight"
               : "text-2xl font-bold leading-tight text-[var(--color-700)]",
           )}
         >
+          {icon ? (
+            <SectionIcon
+              icon={icon}
+              className={useAccentBar ? "text-black" : undefined}
+            />
+          ) : null}
           {title}
         </h1>
         {subtitle && (

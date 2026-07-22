@@ -11,6 +11,7 @@ import {
   type ColorScale,
 } from "@/lib/colorUtils";
 import { applyThemeToDocument } from "@/lib/themeDocument";
+import { SectionIcon } from "@/components/layout";
 
 const SCALE_LABELS: Record<keyof ColorScale, string> = {
   50: "50", 100: "100", 200: "200", 300: "300", 400: "400",
@@ -80,7 +81,7 @@ const ThemeColorsSettings: React.FC = () => {
     <div className="space-y-6 animate-slide-up">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--color-primary-base)" }}>
-          <Palette className="h-5 w-5" aria-hidden />
+          <SectionIcon icon={Palette} />
           Kleurenpalet Beheer
         </h3>
         <div className="flex flex-wrap gap-2">

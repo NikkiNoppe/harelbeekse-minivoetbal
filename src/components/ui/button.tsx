@@ -67,10 +67,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       },
     };
 
-    // Project-knoppen (.btn.btn--primary|secondary|danger): alleen layout/size, geen shadcn variant-kleuren
+    // Project-knoppen (.btn.btn--*): alleen layout/size, geen shadcn variant-kleuren
     const usesProjectBtnClass =
       typeof className === "string" &&
-      /\bbtn--(?:primary|secondary|danger)\b/.test(className);
+      /\bbtn--(?:primary|secondary|danger|edit|icon|outline)\b/.test(className);
     const finalClassName = usesProjectBtnClass
       ? cn(className, buttonVariants({ size, variant: "unstyled" }))
       : cn(buttonVariants({ variant, size, className }));

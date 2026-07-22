@@ -1352,10 +1352,12 @@ tbody tr:hover { background: var(--color-50); }
 .table tbody tr:nth-child(even) {
   background: var(--color-50);
 }
-.table td.left {
+.table td.left,
+.table th.left {
   text-align: left;
 }
-.table td.right {
+.table td.right,
+.table th.right {
   text-align: right;
 }
 @media (max-width: 768px) {

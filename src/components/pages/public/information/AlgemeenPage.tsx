@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, Loader2, Home} from "lucide-react";
 import { BlogPost } from "@/services";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useBlogPosts } from "@/hooks/useBlogPosts";
@@ -213,7 +213,7 @@ const AlgemeenPage: React.FC = () => {
 
   return (
     <PublicPage>
-      <PageHeader title={algemeen.title} subtitle={algemeen.subtitle} />
+      <PageHeader title={algemeen.title} subtitle={algemeen.subtitle} icon={Home} />
 
       <CompetitionInfo aboutParagraph={algemeen.aboutParagraph} />
       <NewsSection />

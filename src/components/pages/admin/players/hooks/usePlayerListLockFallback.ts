@@ -12,7 +12,9 @@ import {
   buildPlayerListLockMessage,
   isSettingsPlayerListLocked,
   isWithinActiveSeason,
+  resolveLockMessageDates,
   resolvePlayerListLockReason,
+  type PlayerListLockSettingValue,
 } from "@/lib/playerListLockUtils";
 
 /**
@@ -59,16 +61,13 @@ export const usePlayerListLockFallback = () => {
       const settings = findPublicSetting(lockRows, "player_list_lock", "global_lock");
 
       if (settings?.setting_value) {
-        const settingValue = settings.setting_value as {
-          lock_from_date?: string;
-          lock_until_date?: string;
-          lock_enabled?: boolean;
-        };
+        const settingValue = settings.setting_value as PlayerListLockSettingValue;
         settingsLocked =
           Boolean(rpcLocked) || isSettingsPlayerListLocked(settingValue);
         if (settingValue.lock_enabled !== false) {
-          settingsLockDate = settingValue.lock_from_date ?? null;
-          setLockUntilDate(settingValue.lock_until_date ?? null);
+          const dates = resolveLockMessageDates(settingValue);
+          settingsLockDate = dates.from;
+          setLockUntilDate(dates.until);
         } else {
           setLockUntilDate(null);
         }

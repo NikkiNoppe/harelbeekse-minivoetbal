@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Trophy, Info } from "lucide-react";
+import { AlertCircle, Trophy, Info, Target} from "lucide-react";
 import { usePublicPlayoffData, PlayoffTeam, PlayoffMatchData, HeadToHeadMatch } from "@/hooks/usePublicPlayoffData";
 import { FilterSelect, FilterGroup } from "@/components/ui/filter-select";
 import { PageHeader } from "@/components/layout";
@@ -274,6 +274,7 @@ const PlayoffLoading = memo(() => (
   <div className="space-y-6 motion-safe:animate-slide-up">
     <PageHeader
       title="Play-Off"
+        icon={Target}
       subtitle="Seizoen 2025-2026"
     />
     <section aria-labelledby="po1-loading-heading">
@@ -293,7 +294,8 @@ PlayoffLoading.displayName = 'PlayoffLoading';
 const PlayoffError = memo(({ onRetry }: { onRetry: () => void }) => (
   <div className="space-y-6 animate-slide-up">
     <PageHeader 
-      title="Play-Off Klassement" 
+      title="Play-Off Klassement"
+        icon={Target} 
       subtitle="Seizoen 2025-2026"
     />
     <Card>
@@ -314,7 +316,8 @@ PlayoffError.displayName = 'PlayoffError';
 const PlayoffEmptyState = memo(() => (
   <div className="space-y-6 animate-slide-up">
     <PageHeader 
-      title="Play-Off Klassement" 
+      title="Play-Off Klassement"
+        icon={Target} 
       subtitle="Seizoen 2025-2026"
     />
     <Card>
@@ -579,6 +582,7 @@ const PlayOffPage: React.FC = () => {
     <div className="space-y-6 motion-safe:animate-slide-up">
       <PageHeader
         title="Play-Off"
+        icon={Target}
         subtitle="Seizoen 2025-2026"
       />
 

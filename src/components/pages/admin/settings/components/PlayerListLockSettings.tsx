@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,18 +14,32 @@ import {
   Lock,
   LockOpen,
   Loader2,
+  Plus,
+  Trash2,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
-import { PUBLIC_CARD_CLASS } from "@/components/layout";
+import { PUBLIC_CARD_CLASS, SectionIcon } from "@/components/layout";
 import {
-  formatLockDateRange,
+  formatLockPeriodsSummary,
   getPlayerListLockScheduleStatus,
+  normalizePlayerListLockPeriods,
   PLAYER_LIST_LOCK_STATUS_LABELS,
-  validatePlayerListLockRange,
+  toPlayerListLockSettingValue,
+  validatePlayerListLockPeriods,
+  type PlayerListLockPeriod,
   type PlayerListLockScheduleStatus,
+  type PlayerListLockSettingValue,
 } from "@/lib/playerListLockUtils";
 import {
   insertApplicationSettingForSession,
@@ -34,9 +49,6 @@ import {
 
 interface LockSettings {
   id: number;
-  lock_from_date: string | null;
-  lock_until_date: string | null;
-  lock_enabled: boolean;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -48,32 +60,21 @@ const STATUS_BADGE_CLASS: Record<PlayerListLockScheduleStatus, string> = {
   expired: "bg-muted text-muted-foreground",
 };
 
-function formatLockDate(dateString?: string | null): string {
-  if (!dateString?.trim()) return "Niet ingesteld";
-  return formatDateShort(dateString);
+function emptyPeriod(): PlayerListLockPeriod {
+  return { from: "", until: null };
 }
 
-function toFingerprint(
-  lockEnabled: boolean,
-  lockFromDate: string,
-  lockUntilDate: string,
-): string {
-  return JSON.stringify({
-    lock_enabled: lockEnabled,
-    lock_from_date: lockFromDate || "",
-    lock_until_date: lockUntilDate || "",
-  });
+function toFingerprint(lockEnabled: boolean, periods: PlayerListLockPeriod[]): string {
+  return JSON.stringify(toPlayerListLockSettingValue(lockEnabled, periods));
 }
 
 const PlayerListLockSettings: React.FC = () => {
   const [settings, setSettings] = useState<LockSettings | null>(null);
-  const [lockFromDate, setLockFromDate] = useState("");
-  const [lockUntilDate, setLockUntilDate] = useState("");
   const [lockEnabled, setLockEnabled] = useState(false);
-  const [savedSnapshot, setSavedSnapshot] = useState({
+  const [periods, setPeriods] = useState<PlayerListLockPeriod[]>([emptyPeriod()]);
+  const [savedSnapshot, setSavedSnapshot] = useState<PlayerListLockSettingValue>({
     lock_enabled: false,
-    lock_from_date: "",
-    lock_until_date: "",
+    periods: [],
   });
   const [loading, setLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
@@ -82,40 +83,45 @@ const PlayerListLockSettings: React.FC = () => {
   const { toast } = useToast();
   const { orgQueryEnabled } = useOrgQueryScope();
 
+  const draftSettingValue = useMemo(
+    () => toPlayerListLockSettingValue(lockEnabled, periods),
+    [lockEnabled, periods],
+  );
+
   const scheduleStatus = useMemo(
-    () =>
-      getPlayerListLockScheduleStatus({
-        lock_enabled: lockEnabled,
-        lock_from_date: lockFromDate || null,
-        lock_until_date: lockUntilDate || null,
-      }),
-    [lockEnabled, lockFromDate, lockUntilDate],
+    () => getPlayerListLockScheduleStatus(draftSettingValue),
+    [draftSettingValue],
   );
 
-  const rangeError = useMemo(
-    () => validatePlayerListLockRange(lockFromDate, lockUntilDate),
-    [lockFromDate, lockUntilDate],
+  const validationError = useMemo(
+    () => validatePlayerListLockPeriods(lockEnabled, periods),
+    [lockEnabled, periods],
   );
 
-  const missingPeriodError =
-    lockEnabled && !lockFromDate && !lockUntilDate
-      ? "Stel minstens een start- of einddatum in."
-      : null;
-
-  const validationError = rangeError ?? missingPeriodError;
   const isValid = !validationError;
 
   const currentFingerprint = useMemo(
-    () => toFingerprint(lockEnabled, lockFromDate, lockUntilDate),
-    [lockEnabled, lockFromDate, lockUntilDate],
+    () => toFingerprint(lockEnabled, periods),
+    [lockEnabled, periods],
   );
-
-  const periodLabel = formatLockDateRange(lockFromDate, lockUntilDate, formatDateShort);
 
   useEffect(() => {
     if (!orgQueryEnabled) return;
     void fetchSettings();
   }, [orgQueryEnabled]);
+
+  const applyLoadedValue = (id: number, settingValue: PlayerListLockSettingValue) => {
+    const enabled = settingValue.lock_enabled ?? false;
+    const normalized = normalizePlayerListLockPeriods(settingValue);
+    const nextPeriods = normalized.length > 0 ? normalized : [emptyPeriod()];
+    const persisted = toPlayerListLockSettingValue(enabled, normalized);
+
+    setSettings({ id });
+    setLockEnabled(enabled);
+    setPeriods(nextPeriods);
+    setSavedSnapshot(persisted);
+    lastSavedFingerprint.current = toFingerprint(enabled, normalized);
+  };
 
   const fetchSettings = async () => {
     try {
@@ -123,50 +129,15 @@ const PlayerListLockSettings: React.FC = () => {
       const data = rows.find((row) => row.setting_name === "global_lock");
 
       if (data) {
-        const settingValue = data.setting_value as {
-          lock_from_date?: string | null;
-          lock_until_date?: string | null;
-          lock_enabled?: boolean;
-        };
-        const enabled = settingValue?.lock_enabled ?? false;
-        const from = settingValue?.lock_from_date || "";
-        const until = settingValue?.lock_until_date || "";
-
-        setSettings({
-          id: data.id,
-          lock_from_date: settingValue?.lock_from_date || null,
-          lock_until_date: settingValue?.lock_until_date || null,
-          lock_enabled: enabled,
-        });
-        setLockFromDate(from);
-        setLockUntilDate(until);
-        setLockEnabled(enabled);
-        setSavedSnapshot({
-          lock_enabled: enabled,
-          lock_from_date: from,
-          lock_until_date: until,
-        });
-        lastSavedFingerprint.current = toFingerprint(enabled, from, until);
+        applyLoadedValue(data.id, (data.setting_value ?? {}) as PlayerListLockSettingValue);
       } else {
-        const defaultSettingValue = {
-          lock_from_date: null,
-          lock_until_date: null,
-          lock_enabled: false,
-        };
-
+        const defaultSettingValue = toPlayerListLockSettingValue(false, []);
         const newId = await insertApplicationSettingForSession({
           setting_category: "player_list_lock",
           setting_name: "global_lock",
           setting_value: defaultSettingValue,
         });
-
-        setSettings({
-          id: newId,
-          lock_from_date: null,
-          lock_until_date: null,
-          lock_enabled: false,
-        });
-        lastSavedFingerprint.current = toFingerprint(false, "", "");
+        applyLoadedValue(newId, defaultSettingValue);
       }
 
       setHasChanges(false);
@@ -183,38 +154,20 @@ const PlayerListLockSettings: React.FC = () => {
     }
   };
 
-  const persistSettings = async (
-    nextEnabled: boolean,
-    nextFrom: string,
-    nextUntil: string,
-  ) => {
+  const persistSettings = async (nextEnabled: boolean, nextPeriods: PlayerListLockPeriod[]) => {
     if (!settings) return;
 
     setSaveState("saving");
     try {
-      const settingValue = {
-        lock_from_date: nextFrom || null,
-        lock_until_date: nextUntil || null,
-        lock_enabled: nextEnabled,
-      };
+      const settingValue = toPlayerListLockSettingValue(nextEnabled, nextPeriods);
 
       await updateApplicationSettingForSession(settings.id, {
         setting_value: settingValue,
         setting_category: "player_list_lock",
       });
 
-      setSettings({
-        ...settings,
-        lock_from_date: nextFrom || null,
-        lock_until_date: nextUntil || null,
-        lock_enabled: nextEnabled,
-      });
-      setSavedSnapshot({
-        lock_enabled: nextEnabled,
-        lock_from_date: nextFrom,
-        lock_until_date: nextUntil,
-      });
-      lastSavedFingerprint.current = toFingerprint(nextEnabled, nextFrom, nextUntil);
+      setSavedSnapshot(settingValue);
+      lastSavedFingerprint.current = toFingerprint(nextEnabled, nextPeriods);
       setHasChanges(false);
       setSaveState("saved");
     } catch (error) {
@@ -228,16 +181,40 @@ const PlayerListLockSettings: React.FC = () => {
     }
   };
 
-  const updateField = (patch: {
-    lockEnabled?: boolean;
-    lockFromDate?: string;
-    lockUntilDate?: string;
-  }) => {
-    if (patch.lockEnabled !== undefined) setLockEnabled(patch.lockEnabled);
-    if (patch.lockFromDate !== undefined) setLockFromDate(patch.lockFromDate);
-    if (patch.lockUntilDate !== undefined) setLockUntilDate(patch.lockUntilDate);
+  const markDirty = () => {
     setHasChanges(true);
     setSaveState("idle");
+  };
+
+  const updatePeriod = (index: number, patch: Partial<PlayerListLockPeriod>) => {
+    setPeriods((prev) =>
+      prev.map((period, i) => {
+        if (i !== index) return period;
+        return {
+          from: patch.from !== undefined ? patch.from : period.from,
+          until:
+            patch.until !== undefined
+              ? patch.until?.trim()
+                ? patch.until.trim()
+                : null
+              : period.until,
+        };
+      }),
+    );
+    markDirty();
+  };
+
+  const addPeriod = () => {
+    setPeriods((prev) => [...prev, emptyPeriod()]);
+    markDirty();
+  };
+
+  const removePeriod = (index: number) => {
+    setPeriods((prev) => {
+      if (prev.length <= 1) return [emptyPeriod()];
+      return prev.filter((_, i) => i !== index);
+    });
+    markDirty();
   };
 
   useEffect(() => {
@@ -245,7 +222,7 @@ const PlayerListLockSettings: React.FC = () => {
     if (currentFingerprint === lastSavedFingerprint.current) return;
 
     const timeoutId = window.setTimeout(() => {
-      void persistSettings(lockEnabled, lockFromDate, lockUntilDate);
+      void persistSettings(lockEnabled, periods);
     }, 500);
 
     return () => window.clearTimeout(timeoutId);
@@ -254,8 +231,7 @@ const PlayerListLockSettings: React.FC = () => {
     hasChanges,
     isValid,
     lockEnabled,
-    lockFromDate,
-    lockUntilDate,
+    periods,
     settings,
   ]);
 
@@ -298,24 +274,19 @@ const PlayerListLockSettings: React.FC = () => {
           <Skeleton className="h-6 w-56" />
           <Skeleton className="h-4 w-full max-w-md" />
         </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Skeleton className="h-24 rounded-xl" />
-              <Skeleton className="h-24 rounded-xl" />
-            </div>
-            <Skeleton className="h-48 rounded-xl" />
-          </div>
+        <CardContent className="space-y-3 pt-0">
+          <Skeleton className="h-11 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-xl" />
         </CardContent>
       </Card>
     );
   }
 
-  const savedScheduleStatus = getPlayerListLockScheduleStatus({
-    lock_enabled: savedSnapshot.lock_enabled,
-    lock_from_date: savedSnapshot.lock_from_date || null,
-    lock_until_date: savedSnapshot.lock_until_date || null,
-  });
+  const savedScheduleStatus = getPlayerListLockScheduleStatus(savedSnapshot);
+  const savedPeriods = normalizePlayerListLockPeriods(savedSnapshot);
+  const savedSummary = savedSnapshot.lock_enabled
+    ? formatLockPeriodsSummary(savedPeriods, formatDateShort) ?? "Datums nog invullen"
+    : "Uitgeschakeld";
 
   return (
     <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
@@ -323,12 +294,12 @@ const PlayerListLockSettings: React.FC = () => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1 min-w-0">
             <CardTitle className="flex items-center gap-2 text-brand-dark">
-              <Lock className="h-5 w-5 text-primary" aria-hidden />
+              <SectionIcon icon={Lock} />
               Spelerslijst vergrendeling
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Plan wanneer teammanagers geen wijzigingen meer mogen doorvoeren. Geldige
-              wijzigingen worden automatisch bewaard.
+              Periodes waarin teammanagers de lijst niet mogen wijzigen. Daarbuiten blijft
+              alles bewerkbaar.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -343,136 +314,147 @@ const PlayerListLockSettings: React.FC = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-0">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div
-              className={cn(
-                "rounded-xl border p-4",
-                savedScheduleStatus === "active"
-                  ? "border-destructive/25 bg-destructive/5"
-                  : "border-primary/15 bg-brand-50/30",
-              )}
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Vergrendeld nu
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                {savedScheduleStatus === "active" ? (
-                  <Lock className="h-4 w-4 text-destructive" aria-hidden />
-                ) : (
-                  <LockOpen className="h-4 w-4 text-muted-foreground" aria-hidden />
-                )}
-                <p
-                  className={cn(
-                    "text-base font-semibold",
-                    savedScheduleStatus === "active"
-                      ? "text-destructive"
-                      : "text-brand-dark",
-                  )}
-                >
-                  {savedScheduleStatus === "active" ? "Ja" : "Nee"}
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Geplande periode
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-snug text-brand-dark">
-                {savedSnapshot.lock_enabled
-                  ? formatLockDateRange(
-                      savedSnapshot.lock_from_date,
-                      savedSnapshot.lock_until_date,
-                      formatDateShort,
-                    ) ?? "Datums nog invullen"
-                  : "Uitgeschakeld"}
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border/70 bg-background p-4 sm:p-5 space-y-4">
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/10 bg-card px-4 py-3 min-h-[44px]">
-              <div className="space-y-0.5 min-w-0">
-                <Label htmlFor="lock-enabled" className="text-sm font-medium text-brand-dark">
-                  Vergrendeling inschakelen
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Pauzeer de planning zonder datums te wissen.
-                </p>
-              </div>
-              <Switch
-                id="lock-enabled"
-                checked={lockEnabled}
-                onCheckedChange={(checked) => updateField({ lockEnabled: checked })}
-                className="shrink-0"
-              />
-            </div>
-
-            {lockEnabled ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-brand-dark">
-                  <Calendar className="h-4 w-4 text-primary" aria-hidden />
-                  Vergrendelingsperiode
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="lock-from-date">Vanaf</Label>
-                    <Input
-                      id="lock-from-date"
-                      type="date"
-                      value={lockFromDate}
-                      onChange={(e) => updateField({ lockFromDate: e.target.value })}
-                      className="min-h-[44px]"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {formatLockDate(lockFromDate)}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lock-until-date">Tot (optioneel)</Label>
-                    <Input
-                      id="lock-until-date"
-                      type="date"
-                      value={lockUntilDate}
-                      onChange={(e) => updateField({ lockUntilDate: e.target.value })}
-                      className="min-h-[44px]"
-                      min={lockFromDate || undefined}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {lockUntilDate ? formatLockDate(lockUntilDate) : "Onbeperkt na start"}
-                    </p>
-                  </div>
-                </div>
-
-                {validationError && hasChanges ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" aria-hidden />
-                    <AlertDescription>{validationError}</AlertDescription>
-                  </Alert>
-                ) : scheduleStatus === "scheduled" && lockFromDate ? (
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Start automatisch op{" "}
-                    <span className="font-medium text-brand-dark">
-                      {formatDateShort(lockFromDate)}
-                    </span>
-                    {periodLabel ? ` (${periodLabel})` : "."}
-                  </p>
-                ) : (
-                  <p className="text-xs leading-relaxed text-muted-foreground">
-                    Laat &quot;tot&quot; leeg om na de startdatum onbeperkt vergrendeld te blijven.
-                  </p>
-                )}
-              </div>
+      <CardContent className="space-y-3 pt-0">
+        {/* Compact status strip */}
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border px-3 py-2.5 text-sm",
+            savedScheduleStatus === "active"
+              ? "border-destructive/25 bg-destructive/5"
+              : "border-primary/15 bg-brand-50/30",
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5 font-medium text-brand-dark">
+            {savedScheduleStatus === "active" ? (
+              <Lock className="h-3.5 w-3.5 text-destructive" aria-hidden />
             ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground rounded-lg border border-dashed border-primary/15 px-4 py-3">
-                Schakel vergrendeling in om een periode in te plannen vóór het seizoen start.
+              <LockOpen className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+            )}
+            Nu:{" "}
+            <span
+              className={
+                savedScheduleStatus === "active" ? "text-destructive" : "text-muted-foreground"
+              }
+            >
+              {savedScheduleStatus === "active" ? "vergrendeld" : "open"}
+            </span>
+          </span>
+          <span className="hidden h-4 w-px bg-border sm:block" aria-hidden />
+          <span className="min-w-0 text-muted-foreground">
+            <span className="font-medium text-brand-dark">Periodes:</span>{" "}
+            <span className="break-words">{savedSummary}</span>
+          </span>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/10 px-3 py-2.5 min-h-[44px]">
+          <div className="space-y-0.5 min-w-0">
+            <Label htmlFor="lock-enabled" className="text-sm font-medium text-brand-dark">
+              Vergrendeling inschakelen
+            </Label>
+            <p className="text-xs text-muted-foreground">Periodes blijven bewaard als je dit uitzet.</p>
+          </div>
+          <Switch
+            id="lock-enabled"
+            checked={lockEnabled}
+            onCheckedChange={(checked) => {
+              setLockEnabled(checked);
+              markDirty();
+            }}
+            className="shrink-0"
+          />
+        </div>
+
+        {lockEnabled ? (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-dark">
+                <Calendar className="h-4 w-4 text-primary" aria-hidden />
+                Periodes
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-[44px] w-full sm:w-auto gap-1"
+                onClick={addPeriod}
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Toevoegen
+              </Button>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-primary/10">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-10 text-xs font-medium">Vanaf</TableHead>
+                    <TableHead className="h-10 text-xs font-medium">Tot (optioneel)</TableHead>
+                    <TableHead className="h-10 w-12">
+                      <span className="sr-only">Verwijderen</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {periods.map((period, index) => (
+                    <TableRow key={`lock-period-${index}`}>
+                      <TableCell className="py-2">
+                        <Input
+                          id={`lock-from-${index}`}
+                          type="date"
+                          aria-label={`Periode ${index + 1} vanaf`}
+                          value={period.from}
+                          onChange={(e) => updatePeriod(index, { from: e.target.value })}
+                          className="min-h-[44px] max-w-[11rem]"
+                        />
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Input
+                          id={`lock-until-${index}`}
+                          type="date"
+                          aria-label={`Periode ${index + 1} tot`}
+                          value={period.until ?? ""}
+                          onChange={(e) => updatePeriod(index, { until: e.target.value })}
+                          className="min-h-[44px] max-w-[11rem]"
+                          min={period.from || undefined}
+                        />
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive"
+                          onClick={() => removePeriod(index)}
+                          aria-label={`Periode ${index + 1} verwijderen`}
+                          disabled={periods.length <= 1 && !period.from && !period.until}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {validationError && hasChanges ? (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" aria-hidden />
+                <AlertDescription className="text-sm">{validationError}</AlertDescription>
+              </Alert>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {scheduleStatus === "scheduled"
+                  ? "Tussen periodes is de lijst bewerkbaar."
+                  : 'Laat "tot" leeg voor onbeperkt na de startdatum.'}
               </p>
             )}
           </div>
-        </div>
+        ) : (
+          <p className="text-xs text-muted-foreground rounded-lg border border-dashed border-primary/15 px-3 py-2.5">
+            Schakel in om periodes te plannen (bijv. seizoen + play-offs).
+          </p>
+        )}
 
         {saveState === "saving" ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">

@@ -1,4 +1,5 @@
 import React from "react";
+import { BookOpen } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PageHeader, PublicPage } from "@/components/layout";
 import {
@@ -156,7 +157,8 @@ const reglement = [
 const ReglementPage: React.FC = () => {
   return (
     <PublicPage>
-      <PageHeader title="Reglement" />
+      <PageHeader title="Reglement"
+        icon={BookOpen} />
 
       <section aria-label="Competitiereglement" className="max-w-3xl mx-auto w-full">
         <Accordion type="single" collapsible defaultValue="" className="space-y-3">

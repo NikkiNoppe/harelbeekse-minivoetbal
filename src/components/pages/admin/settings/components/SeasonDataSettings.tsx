@@ -9,7 +9,7 @@ import { seasonService, type SeasonData } from "@/services";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PUBLIC_CARD_CLASS } from "@/components/layout";
+import { PUBLIC_CARD_CLASS, SectionIcon } from "@/components/layout";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -161,7 +161,7 @@ const SeasonDataSettings: React.FC = () => {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" aria-hidden />
+            <SectionIcon icon={Calendar} />
             Seizoensdata
           </CardTitle>
           {saveStatusBadge}

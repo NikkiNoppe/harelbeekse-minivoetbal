@@ -283,7 +283,8 @@ const TournamentLoading = memo(() => {
   return (
     <PublicPage>
       <PageHeader 
-        title="Beker" 
+        title="Beker"
+        icon={Award} 
         subtitle="Seizoen 2025/2026"
       />
       
@@ -309,7 +310,8 @@ const TournamentError = memo(({
   return (
     <PublicPage>
       <PageHeader 
-        title="Beker" 
+        title="Beker"
+        icon={Award} 
         subtitle="Seizoen 2025/2026"
       />
       <Card className={PUBLIC_CARD_CLASS}>
@@ -337,7 +339,8 @@ const TournamentEmpty = memo(() => {
   return (
     <PublicPage>
       <PageHeader 
-        title="Beker" 
+        title="Beker"
+        icon={Award} 
         subtitle="Seizoen 2025/2026"
       />
       <Card className={PUBLIC_CARD_CLASS}>
@@ -418,7 +421,8 @@ const TournamentContent = memo(({
     <PublicPage>
       {/* Header */}
       <PageHeader 
-        title="Beker" 
+        title="Beker"
+        icon={Award} 
         subtitle="Seizoen 2025/2026"
       />
 

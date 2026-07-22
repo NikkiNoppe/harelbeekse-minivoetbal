@@ -12,7 +12,7 @@ import {
 import { useBranding } from "@/hooks/useBranding";
 import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { PageHeader } from "@/components/layout";
-import { Plus, AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { Plus, AlertCircle, Loader2, RefreshCw, MessageSquare} from "lucide-react";
 import { NotificationFormModal } from "@/components/modals";
 import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import NotificationList, {
@@ -283,6 +283,7 @@ const NotificationPage: React.FC = () => {
     <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
       <PageHeader
         title="Berichten"
+        icon={MessageSquare}
         subtitle={`Beheer berichten voor ${branding.displayName} (${notifications.length} bericht${notifications.length === 1 ? "" : "en"})`}
         rightAction={
           isRefreshing && !isListLoading ? (

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Archive, AlertCircle } from 'lucide-react';
 import { useArchives } from '@/hooks/useArchives';
 import SeasonSelector from './SeasonSelector';
 import StandingsArchiveCard from './StandingsArchiveCard';
 import CupWinnerCard from './CupWinnerCard';
 import CupArchiveCard from './CupArchiveCard';
 import PlayoffArchiveCard from './PlayoffArchiveCard';
-import { Archive, AlertCircle } from 'lucide-react';
 import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from '@/components/layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ const ArchiefPage: React.FC = () => {
       <PublicPage>
         <PageHeader
           title="Archief"
+        icon={Archive}
           subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
         />
         <Skeleton className="h-10 w-full max-w-xs" />
@@ -58,6 +59,7 @@ const ArchiefPage: React.FC = () => {
       <PublicPage>
         <PageHeader
           title="Archief"
+        icon={Archive}
           subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
         />
         <Card className={PUBLIC_CARD_CLASS} role="alert">
@@ -86,6 +88,7 @@ const ArchiefPage: React.FC = () => {
     <PublicPage>
       <PageHeader
         title="Archief"
+        icon={Archive}
         subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
       />
 

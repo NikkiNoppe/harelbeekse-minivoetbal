@@ -21,7 +21,7 @@ import {
   type CompetitionFormat,
 } from "@/services/competitionDataService";
 import { cn } from "@/lib/utils";
-import { PUBLIC_CARD_CLASS } from "@/components/layout";
+import { PUBLIC_CARD_CLASS, SectionIcon } from "@/components/layout";
 
 type EditableCompetitionFormat = CompetitionFormat;
 
@@ -306,7 +306,7 @@ const CompetitionFormatsSettings: React.FC = () => {
       <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-brand-dark">
-            <Trophy className="h-5 w-5 text-primary" />
+            <SectionIcon icon={Trophy} />
             Competitieformats
           </CardTitle>
           <CardDescription>

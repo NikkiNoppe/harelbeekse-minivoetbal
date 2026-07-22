@@ -57,7 +57,8 @@ const ICON_BUTTON_CLASS =
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
   <PublicPage>
-    <PageHeader title="Mijn Profiel" />
+    <PageHeader title="Mijn Profiel"
+        icon={User} />
     
     <div className="space-y-4 sm:space-y-6">
       <Card className={cn(PUBLIC_CARD_CLASS, "bg-gradient-to-br from-primary/5 to-primary/10")}>
@@ -105,7 +106,8 @@ const ProfileError = memo(() => {
   const queryClient = useQueryClient();
   return (
     <PublicPage>
-      <PageHeader title="Mijn Profiel" />
+      <PageHeader title="Mijn Profiel"
+        icon={User} />
       <Card className={PUBLIC_CARD_CLASS}>
         <CardContent className="py-12">
           <div className="text-center">
@@ -1545,7 +1547,8 @@ const UserProfilePage: React.FC = () => {
 
   return (
     <PublicPage>
-      <PageHeader title="Mijn Profiel" />
+      <PageHeader title="Mijn Profiel"
+        icon={User} />
 
       {/* Profiel accordion (teamverantwoordelijke): komende wedstrijd → spelers → schorsingen → financieel → berichten */}
       <div className="space-y-4 sm:space-y-6">

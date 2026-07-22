@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { UserModal } from "@/components/modals";
 import UserListTable from "./components/UserListTable";
-import { Plus, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, AlertCircle, RefreshCw, User} from "lucide-react";
 import { PageHeader } from "@/components/layout";
 
 const AdminUserPage: React.FC = () => {
@@ -81,6 +81,7 @@ const AdminUserPage: React.FC = () => {
     <div className="space-y-4 sm:space-y-6 animate-slide-up">
       <PageHeader
         title="Gebruikersbeheer"
+        icon={User}
         subtitle={`Beheer accounts, rollen en teamkoppelingen binnen deze organisatie (${users.length} gebruiker${users.length === 1 ? "" : "s"})`}
       />
 

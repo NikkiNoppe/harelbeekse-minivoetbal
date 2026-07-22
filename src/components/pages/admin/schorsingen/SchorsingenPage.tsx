@@ -7,7 +7,7 @@ import { AlertCircle, Shield, Trophy, Users, Plus } from "lucide-react";
 import { useSuspensionsData } from "@/domains/cards-suspensions";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/routes";
-import { PageHeader, PUBLIC_CARD_CLASS } from "@/components/layout";
+import { PageHeader, PUBLIC_CARD_CLASS, SectionIcon } from "@/components/layout";
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
 import type { Suspension } from "@/domains/cards-suspensions";
 import { SectionCollapsibleCard } from "@/components/layout";
@@ -111,6 +111,7 @@ const AdminView: React.FC = memo(() => {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Schorsingen Beheer"
+        icon={Shield}
         subtitle={`Beheer actieve schorsingen en gebruik kaarten als context (${filteredSuspensions.length} resultaat${filteredSuspensions.length === 1 ? "" : "en"})`}
       />
 
@@ -160,7 +161,7 @@ const AdminView: React.FC = memo(() => {
           <CardHeader className="space-y-0 p-4 sm:p-5 pb-4">
             <div className="min-w-0 space-y-1.5">
               <CardTitle id="suspensions-heading" className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
+                <SectionIcon icon={AlertCircle} className="text-destructive" />
                 Actieve schorsingen
               </CardTitle>
               <CardDescription>

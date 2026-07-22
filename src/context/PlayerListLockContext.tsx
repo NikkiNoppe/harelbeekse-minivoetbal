@@ -9,8 +9,10 @@ import {
   buildPlayerListLockMessage,
   isSettingsPlayerListLocked,
   isWithinActiveSeason,
+  resolveLockMessageDates,
   resolvePlayerListLockReason,
   type PlayerListLockReason,
+  type PlayerListLockSettingValue,
 } from "@/lib/playerListLockUtils";
 
 interface PlayerListLockContextType {
@@ -67,17 +69,14 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
         const settings = rows.find((row) => row.setting_name === "global_lock");
 
         if (settings?.setting_value) {
-          const settingValue = settings.setting_value as {
-            lock_from_date?: string;
-            lock_until_date?: string;
-            lock_enabled?: boolean;
-          };
+          const settingValue = settings.setting_value as PlayerListLockSettingValue;
           settingsLocked =
             Boolean(rpcLocked) ||
             isSettingsPlayerListLocked(settingValue);
           if (settingValue.lock_enabled !== false) {
-            settingsLockDate = settingValue.lock_from_date ?? null;
-            setLockUntilDate(settingValue.lock_until_date ?? null);
+            const dates = resolveLockMessageDates(settingValue);
+            settingsLockDate = dates.from;
+            setLockUntilDate(dates.until);
           } else {
             setLockUntilDate(null);
           }

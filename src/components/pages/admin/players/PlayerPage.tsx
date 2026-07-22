@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, AlertCircle } from "lucide-react";
+import { Plus, Loader2, AlertCircle, Users} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PUBLIC_CARD_CLASS } from "@/components/layout";
 import PlayersList from "./components/PlayersList";
@@ -124,6 +124,7 @@ const PlayerPage: React.FC = () => {
     <div className="space-y-4 sm:space-y-6 animate-slide-up">
       <PageHeader
         title="Spelerslijst"
+        icon={Users}
         subtitle={subtitle}
       />
 

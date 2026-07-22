@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { SectionIcon } from '@/components/layout/section-icon';
 
 export function OrgHubFormSection({
   title,
   description,
-  icon: Icon,
+  icon,
   children,
 }: {
   title: string;
@@ -16,7 +17,7 @@ export function OrgHubFormSection({
     <section className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold text-brand-dark flex items-center gap-2">
-          {Icon ? <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden /> : null}
+          {icon ? <SectionIcon icon={icon} variant="compact" /> : null}
           {title}
         </h3>
         {description ? (

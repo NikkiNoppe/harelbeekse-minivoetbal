@@ -3,13 +3,14 @@ import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Users, Calendar, Shield, Info } from "lucide-react";
+import { SectionIcon } from "@/components/layout";
 
 const PlayerRegulations: React.FC = () => {
   return (
     <Card className="bg-white">
       <CardHeader className="bg-white">
         <CardTitle className="flex items-center gap-2 text-brand-dark">
-          <Shield className="h-5 w-5" />
+          <SectionIcon icon={Shield} />
           Spelersreglement
         </CardTitle>
         <CardDescription className="text-brand-dark">

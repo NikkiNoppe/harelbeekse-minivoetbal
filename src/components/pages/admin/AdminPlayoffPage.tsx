@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SectionCollapsibleCard } from "@/components/layout";
+import { PageHeader, SectionCollapsibleCard, SectionIcon } from "@/components/layout";
 import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive, Target } from "lucide-react";
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -687,17 +687,16 @@ const AdminPlayoffPage: React.FC = () => {
       {/* Header */}
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-              Playoffs
-            </h2>
-            <p className="text-muted-foreground">Beheer de playoffs - genereren, finaliseren en overzicht</p>
-          </div>
+          <PageHeader
+            className="mb-0 min-w-0 flex-1"
+            title="Playoffs"
+            subtitle="Beheer de playoffs — genereren, finaliseren en overzicht"
+            icon={Target}
+          />
           <Button
             variant="outline"
             onClick={() => setShowArchiveModal(true)}
-            className="border-brand-300 text-brand-800 hover:bg-brand-50"
+            className="w-full shrink-0 border-amber-400/70 text-amber-950 hover:bg-amber-50 hover:text-amber-950 sm:w-auto"
           >
             <Archive className="w-4 h-4 mr-2" />
             Playoff archief
@@ -716,7 +715,7 @@ const AdminPlayoffPage: React.FC = () => {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
+              <SectionIcon icon={Trophy} />
               Huidige Stand
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
@@ -990,7 +989,7 @@ const AdminPlayoffPage: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <SectionIcon icon={Calendar} />
                 Planning per Week
               </CardTitle>
               <CardDescription>Overzicht van alle geplande playoff wedstrijden per speelweek</CardDescription>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Accordion } from "@/components/ui/accordion";
-import { SectionAccordionItem } from "@/components/layout";
+import { SectionAccordionItem, SectionIcon } from "@/components/layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Users, Shield, UserCog, Globe, ClipboardList, Settings, DollarSign, Trophy } from "lucide-react";
 
@@ -239,7 +239,7 @@ const TabVisibilitySettingsUpdated: React.FC = () => {
     <Card>
       <CardHeader className="px-3 sm:px-6 py-3 sm:py-6">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+          <SectionIcon icon={Eye} />
           Tab Zichtbaarheid per Rol
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm">

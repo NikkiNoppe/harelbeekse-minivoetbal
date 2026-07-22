@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingUp, CheckCircle2, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SectionIcon } from '@/components/layout';
 import type { RefereeAssignment } from '@/services/scheidsrechter/types';
 
 interface RefereeStatsSectionProps {
@@ -62,7 +63,7 @@ export function RefereeStatsSection({ assignments, isLoading, embedded = false }
     <section className="space-y-3">
       {!embedded && (
         <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-          <TrendingUp className="h-5 w-5 text-primary" />
+          <SectionIcon icon={TrendingUp} />
           Mijn statistieken
         </h2>
       )}

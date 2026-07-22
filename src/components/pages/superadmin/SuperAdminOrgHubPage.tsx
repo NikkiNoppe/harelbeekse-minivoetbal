@@ -286,6 +286,7 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
 
       <PageHeader
         title="Platform beheer"
+        icon={Building2}
         subtitle="Kies een organisatie links en bewerk branding, e-mail, content en platform-instellingen per tab."
         rightAction={
           <Badge variant="outline" className="min-h-[28px] px-3 text-xs font-medium">

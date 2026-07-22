@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, Trash2, Archive, Trophy } from "lucide-react";
 import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,13 @@ import type { CompetitionFormat } from "@/services/competitionDataService";
 import { normalizeCompetitionFormats } from "@/services/competitionDataService";
 import { teamService } from "@/services/core/teamService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
+import {
+  DivisionTeamAssigner,
+  type DivisionTeamAssignment,
+} from "@/components/pages/admin/competition/DivisionTeamAssigner";
+import { PageHeader, PUBLIC_CARD_CLASS } from "@/components/layout";
+import { cn } from "@/lib/utils";
+
 const AdminCompetitionPage: React.FC = () => {
   const { organizationId, orgQueryEnabled, getSeasonData } = useSeasonDataScope();
   const [initialLoading, setInitialLoading] = useState(true);
@@ -25,6 +32,7 @@ const AdminCompetitionPage: React.FC = () => {
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
+  const [teamDivisions, setTeamDivisions] = useState<DivisionTeamAssignment>({});
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [venues, setVenues] = useState<any[]>([]);
@@ -110,6 +118,10 @@ const AdminCompetitionPage: React.FC = () => {
         end_date: endDate,
         teams: selectedTeams,
         organizationId: organizationId ?? undefined,
+        teamDivisions:
+          format.has_divisions && (format.divisions?.length ?? 0) >= 2
+            ? teamDivisions
+            : undefined,
       };
 
       let createResult: { success: boolean; message: string };
@@ -161,6 +173,10 @@ const AdminCompetitionPage: React.FC = () => {
         end_date: endDate,
         teams: selectedTeams,
         organizationId: organizationId ?? undefined,
+        teamDivisions:
+          format.has_divisions && (format.divisions?.length ?? 0) >= 2
+            ? teamDivisions
+            : undefined,
       };
       const res = await competitionService.previewCompetition(config);
       if (!res.success || !res.plan || res.plan.length === 0) {
@@ -186,6 +202,7 @@ const AdminCompetitionPage: React.FC = () => {
   const handleCancel = () => {
     setSelectedTeams([]);
     setSelectedFormat("");
+    setTeamDivisions({});
     setPreviewPlan(null);
     setPreviewTotal(null);
   };
@@ -223,12 +240,26 @@ const AdminCompetitionPage: React.FC = () => {
   };
 
   const handleTeamToggle = (teamId: number) => {
-    setSelectedTeams(prev => 
-      prev.includes(teamId) 
-        ? prev.filter(id => id !== teamId)
-        : [...prev, teamId]
-    );
+    setSelectedTeams((prev) => {
+      const next = prev.includes(teamId)
+        ? prev.filter((id) => id !== teamId)
+        : [...prev, teamId];
+      return next;
+    });
+    setTeamDivisions((prev) => {
+      if (!(teamId in prev)) return prev;
+      const next = { ...prev };
+      delete next[teamId];
+      return next;
+    });
+    setPreviewPlan(null);
+    setPreviewTotal(null);
   };
+
+  const selectedFormatObj = formats.find((f) => f.id.toString() === selectedFormat);
+  const showDivisionAssigner =
+    Boolean(selectedFormatObj?.has_divisions) &&
+    (selectedFormatObj?.divisions?.length ?? 0) >= 2;
 
   const hasExistingCompetition = existingCompetition.length > 0;
 
@@ -243,30 +274,27 @@ const AdminCompetitionPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-slide-up">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-              Competitie
-            </h2>
-            <p className="text-muted-foreground">
-              Beheer de competitie - aanmaken, verwijderen en overzicht
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowArchiveModal(true)}
-            className="border-brand-300 text-brand-800 hover:bg-brand-50"
-          >
-            <Archive className="w-4 h-4 mr-2" />
-            Seizoen archiveren
-          </Button>
-        </div>
+    <div className="space-y-4 sm:space-y-6 animate-slide-up">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <PageHeader
+          className="mb-0 min-w-0 flex-1"
+          title="Competitie"
+          icon={Trophy}
+          subtitle="Beheer de competitie — aanmaken, verwijderen en overzicht"
+        />
+        <Button
+          variant="outline"
+          onClick={() => setShowArchiveModal(true)}
+          className="w-full shrink-0 border-amber-400/70 text-amber-950 hover:bg-amber-50 hover:text-amber-950 sm:w-auto"
+        >
+          <Archive className="w-4 h-4 mr-2" aria-hidden />
+          Seizoen archiveren
+        </Button>
+      </div>
 
       <ArchiveSeasonModal open={showArchiveModal} onOpenChange={setShowArchiveModal} />
 
-      <section className="space-y-6 mt-6">
+      <section className="space-y-6">
         {/* Competitie Aanmaken */}
         <Card>
           <CardHeader>
@@ -294,39 +322,64 @@ const AdminCompetitionPage: React.FC = () => {
                   </AlertDescription>
                 </Alert>
               ) : null}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-3 rounded-md border bg-white">
-                  <div className="text-xs text-muted-foreground">Seizoensperiode</div>
-                  <div className="font-medium mt-1">
-                    {startDate && endDate ? (
-                      <span>{startDate} → {endDate}</span>
-                    ) : (
-                      <span>Onbekend</span>
-                    )}
-                  </div>
-                </div>
-                <div className="p-3 rounded-md border bg-white">
-                  <div className="text-xs text-muted-foreground">Locaties</div>
-                  <div className="font-medium mt-1">{venues.length} locatie(s)</div>
-                  {venues.length > 0 && (
-                    <ul className="mt-2 text-sm text-muted-foreground space-y-1 max-h-24 overflow-auto">
-                      {venues.map((v: any, idx: number) => (
-                        <li key={idx}>• {v.name || v.venue_name || `Locatie ${idx+1}`}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="p-3 rounded-md border bg-white">
-                  <div className="text-xs text-muted-foreground">Tijdstippen</div>
-                  <div className="font-medium mt-1">{timeslots.length} tijdstip(pen)</div>
-                  {timeslots.length > 0 && (
-                    <ul className="mt-2 text-sm text-muted-foreground space-y-1 max-h-24 overflow-auto">
-                      {timeslots.map((t: any, idx: number) => (
-                        <li key={idx}>• {(t.start_time && t.end_time) ? `${t.start_time} - ${t.end_time}` : (t.label || t.timeslot_id || `Tijdslot ${idx+1}`)}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Seizoensperiode
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-brand-dark leading-snug">
+                      {startDate && endDate ? (
+                        <span>
+                          {startDate} → {endDate}
+                        </span>
+                      ) : (
+                        <span>Onbekend</span>
+                      )}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Locaties
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-brand-dark tabular-nums">
+                      {venues.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">locatie(s)</p>
+                    {venues.length > 0 ? (
+                      <ul className="mt-2 space-y-1 max-h-24 overflow-auto text-sm text-muted-foreground">
+                        {venues.map((v: any, idx: number) => (
+                          <li key={idx}>• {v.name || v.venue_name || `Locatie ${idx + 1}`}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </CardContent>
+                </Card>
+                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                  <CardContent className="p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Tijdstippen
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-brand-dark tabular-nums">
+                      {timeslots.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">tijdstip(pen)</p>
+                    {timeslots.length > 0 ? (
+                      <ul className="mt-2 space-y-1 max-h-24 overflow-auto text-sm text-muted-foreground">
+                        {timeslots.map((t: any, idx: number) => (
+                          <li key={idx}>
+                            •{" "}
+                            {t.start_time && t.end_time
+                              ? `${t.start_time} - ${t.end_time}`
+                              : t.label || t.timeslot_id || `Tijdslot ${idx + 1}`}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </CardContent>
+                </Card>
               </div>
             </div>
 
@@ -334,7 +387,15 @@ const AdminCompetitionPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="format">Competitie Format</Label>
-                <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+                <Select
+                  value={selectedFormat}
+                  onValueChange={(value) => {
+                    setSelectedFormat(value);
+                    setTeamDivisions({});
+                    setPreviewPlan(null);
+                    setPreviewTotal(null);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecteer een format" />
                   </SelectTrigger>
@@ -374,10 +435,34 @@ const AdminCompetitionPage: React.FC = () => {
                   teams={teams}
                   selectedIds={selectedTeams}
                   onToggle={handleTeamToggle}
-                  onSelectAll={() => setSelectedTeams(teams.map(t => t.team_id))}
-                  onClearAll={() => setSelectedTeams([])}
+                  onSelectAll={() => {
+                    setSelectedTeams(teams.map((t) => t.team_id));
+                    setPreviewPlan(null);
+                    setPreviewTotal(null);
+                  }}
+                  onClearAll={() => {
+                    setSelectedTeams([]);
+                    setTeamDivisions({});
+                    setPreviewPlan(null);
+                    setPreviewTotal(null);
+                  }}
                   className="w-full"
                 />
+
+                {showDivisionAssigner && selectedFormatObj?.divisions ? (
+                  <DivisionTeamAssigner
+                    className="mt-4"
+                    divisions={selectedFormatObj.divisions}
+                    teams={teams}
+                    selectedTeamIds={selectedTeams}
+                    assignment={teamDivisions}
+                    onChange={(next) => {
+                      setTeamDivisions(next);
+                      setPreviewPlan(null);
+                      setPreviewTotal(null);
+                    }}
+                  />
+                ) : null}
 
                 {/* Speelmoment voorkeuren (alleen-lezen) voor geselecteerde teams */}
                 <div className="mt-2">
@@ -443,8 +528,25 @@ const AdminCompetitionPage: React.FC = () => {
                   {(() => {
                     const format = formats.find(f => f.id.toString() === selectedFormat);
                     if (!format) return null;
-                    
-                    const regularMatches = selectedTeams.length * (selectedTeams.length - 1) / 2; // 1 ronde per team
+
+                    const rounds = format.regular_rounds || 1;
+                    const useDivisions =
+                      Boolean(format.has_divisions) &&
+                      (format.divisions?.length ?? 0) >= 2;
+
+                    let regularMatches = 0;
+                    if (useDivisions && format.divisions) {
+                      for (const division of format.divisions) {
+                        const n = selectedTeams.filter(
+                          (teamId) => teamDivisions[teamId] === division.id,
+                        ).length;
+                        if (n >= 2) regularMatches += (n * (n - 1) / 2) * rounds;
+                      }
+                    } else {
+                      regularMatches =
+                        (selectedTeams.length * (selectedTeams.length - 1) / 2) * rounds;
+                    }
+
                     const playoffMatches = 0; // Playoffs worden later apart gegenereerd
                     const totalMatches = regularMatches;
                     const weeksNeeded = Math.ceil(totalMatches / 7);
@@ -455,6 +557,9 @@ const AdminCompetitionPage: React.FC = () => {
                     const totalWeeks = Math.ceil(totalDays / 7);
                     
                     const isFeasible = totalWeeks >= weeksNeeded;
+                    const unassignedCount = useDivisions
+                      ? selectedTeams.filter((teamId) => teamDivisions[teamId] == null).length
+                      : 0;
                     
                     return (
                       <div className="space-y-2 text-sm">
@@ -462,9 +567,24 @@ const AdminCompetitionPage: React.FC = () => {
                           <span>Teams:</span>
                           <span className="font-medium">{selectedTeams.length}</span>
                         </div>
+                        {useDivisions ? (
+                          <div className="flex justify-between">
+                            <span>Reeksen:</span>
+                            <span className="font-medium">
+                              {format.divisions!.length}
+                              {unassignedCount > 0
+                                ? ` (${unassignedCount} nog toe te wijzen)`
+                                : ""}
+                            </span>
+                          </div>
+                        ) : null}
                         <div className="flex justify-between">
                           <span>Reguliere competitie:</span>
-                          <span className="font-medium">1 ronde (thuis/uit)</span>
+                          <span className="font-medium">
+                            {useDivisions
+                              ? `${rounds} ronde(s) per reeks`
+                              : `${rounds} ronde(s) (thuis/uit)`}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span>Reguliere wedstrijden:</span>
@@ -507,20 +627,29 @@ const AdminCompetitionPage: React.FC = () => {
               </div>
             )}
 
-            {/* Preview & Create Controls */}
+            {/* Preview & Create Controls — hiërarchie: voorbereiden → primaire actie → annuleren */}
             <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 variant="outline"
                 disabled={isPreviewing || isCreating}
-                className="sm:flex-1"
+                className="sm:flex-1 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
                 onClick={handleGeneratePreview}
               >
                 {isPreviewing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Preview genereren...</> : 'Preview genereren'}
               </Button>
-              <Button onClick={() => setShowConfirm(true)} disabled={isCreating} className="sm:flex-1">
+              <Button
+                onClick={() => setShowConfirm(true)}
+                disabled={isCreating}
+                className="sm:flex-1"
+              >
                 {isCreating ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Aanmaken...</> : (previewPlan ? 'Bevestigen en importeren' : 'Competitie Aanmaken')}
               </Button>
-              <Button variant="secondary" onClick={handleCancel} disabled={isCreating}>
+              <Button
+                variant="secondary"
+                onClick={handleCancel}
+                disabled={isCreating}
+                className="sm:px-4"
+              >
                 Annuleren
               </Button>
             </div>

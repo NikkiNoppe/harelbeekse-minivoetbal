@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileText, Trophy, Calendar, AlertCircle, Target } from "lucide-react";
+import { PageHeader } from "@/components/layout";
 import { useMatchFormsData, type MatchFormsFilters, type MatchFormsTabType } from "@/hooks/useMatchFormsData";
 import { getSessionToken } from "@/lib/authSession";
 import { MatchFormData } from "./types";
@@ -359,12 +360,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
   if (!queriesEnabled) {
     return (
       <div className="space-y-8 animate-slide-up">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-            <FileText className="h-5 w-5" />
-            {pageTitle}
-          </h2>
-        </div>
+        <PageHeader title={pageTitle} icon={FileText} className="mb-0" />
         <TabContentSkeleton />
       </div>
     );
@@ -378,12 +374,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
 
     return (
       <div className="space-y-8 animate-slide-up">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-            <FileText className="h-5 w-5" />
-            {pageTitle}
-          </h2>
-        </div>
+        <PageHeader title={pageTitle} icon={FileText} className="mb-0" />
         <ErrorState
           message={
             errorMessage?.includes('Geen actieve sessie')
@@ -398,12 +389,7 @@ const MatchFormTab: React.FC<MatchFormTabProps> = ({ teamId, teamName, initialTa
 
   return (
     <div className="space-y-8 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--primary)' }}>
-          <FileText className="h-5 w-5" />
-          {pageTitle}
-        </h2>
-      </div>
+      <PageHeader title={pageTitle} icon={FileText} className="mb-0" />
 
       <section>
         {currentData.isLoading ? (

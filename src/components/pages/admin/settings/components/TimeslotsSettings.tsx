@@ -12,6 +12,7 @@ import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { competitionDataService, type VenueTimeslot } from "@/services/competitionDataService";
 import {
+import { SectionIcon } from "@/components/layout";
   formatTimeslotPeriod,
   normalizeTimeslotDateRange,
 } from "@/lib/timeslotAvailability";
@@ -225,7 +226,7 @@ const TimeslotsSettings: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+            <SectionIcon icon={Settings} />
             Tijdslots
           </CardTitle>
         </CardHeader>

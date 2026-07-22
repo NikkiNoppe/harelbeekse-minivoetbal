@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { RefreshCw, Filter, UserCheck, Users, MapPin, Calendar } from 'lucide-react';
+import { RefreshCw, Filter, UserCheck, Users, MapPin, Calendar, Shield } from 'lucide-react';
+import { SectionIcon } from '@/components/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -180,7 +181,10 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
       {!hideHeader && (
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Scheidsrechter Toewijzingen</h2>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-dark">
+              <SectionIcon icon={Shield} />
+              Scheidsrechter Toewijzingen
+            </h2>
             <p className="text-sm text-muted-foreground">
               Wijs scheidsrechters toe aan wedstrijden
             </p>

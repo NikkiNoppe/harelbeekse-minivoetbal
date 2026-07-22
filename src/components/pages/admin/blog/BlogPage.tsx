@@ -16,7 +16,7 @@ import {
 import { useBranding } from "@/hooks/useBranding";
 import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { PageHeader } from "@/components/layout";
-import { Plus, AlertCircle, Loader2, RefreshCw, Calendar } from "lucide-react";
+import { Plus, AlertCircle, Loader2, RefreshCw, Calendar, BookOpen} from "lucide-react";
 import BlogList, { type BlogStatusFilter } from "./components/BlogList";
 import {
   getBlogScheduleStatus,
@@ -267,6 +267,7 @@ const BlogPage: React.FC = () => {
     <div className="space-y-4 sm:space-y-6 animate-slide-up pb-6">
       <PageHeader
         title="Blog beheer"
+        icon={BookOpen}
         subtitle={`Beheer nieuwsberichten voor ${branding.displayName} (${blogPosts.length} bericht${blogPosts.length === 1 ? "" : "en"})`}
         rightAction={
           isRefreshing && !isListLoading ? (

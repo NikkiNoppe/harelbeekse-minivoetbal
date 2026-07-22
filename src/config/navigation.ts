@@ -253,29 +253,25 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
 
   appendMatchFormsSection(sections, matchForms);
 
-  const allowedBeheerKeys = new Set(["players", "teams", "users", "schorsingen"]);
-  const beheerItems = beheerAll.filter((item) => allowedBeheerKeys.has(item.key));
+  const allowedBeheerKeys = new Set(["players", "teams", "users", "schorsingen", "scheidsrechters"]);
+  const beheerItems = beheerAll
+    .filter((item) => allowedBeheerKeys.has(item.key))
+    .map((item) =>
+      item.key === "scheidsrechters" ? relabelNavItem(item, "Scheidsrechter") : item,
+    );
+
+  for (const item of financieel) {
+    if (!beheerItems.some((existing) => existing.key === item.key)) {
+      beheerItems.push(item);
+    }
+  }
+
   if (beheerItems.length > 0) {
     sections.push({
       id: "beheer",
       title: "Beheer",
       items: beheerItems,
       collapsible: beheerItems.length > 1,
-      defaultOpen: false,
-    });
-  }
-
-  const competitiebeheer: NavItem[] = [...financieel];
-  const scheidsAdmin = beheerAll.find((item) => item.key === "scheidsrechters");
-  if (scheidsAdmin) {
-    competitiebeheer.push(relabelNavItem(scheidsAdmin, "Scheidsrechter"));
-  }
-  if (competitiebeheer.length > 0) {
-    sections.push({
-      id: "competitiebeheer",
-      title: "Beheer",
-      items: competitiebeheer,
-      collapsible: competitiebeheer.length > 1,
       defaultOpen: false,
     });
   }

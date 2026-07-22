@@ -4,6 +4,7 @@ import { getSessionToken } from "@/lib/authSession";
 import { useMatchFormsData, MatchFormsFilters } from "@/hooks/useMatchFormsData";
 import { MatchFormData } from "./types";
 import { Target, AlertCircle, Inbox } from "lucide-react";
+import { PageHeader } from "@/components/layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -144,14 +145,7 @@ const AdminPlayoffMatchesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Target className="h-6 w-6 text-primary" />
-            Play-off formulieren
-          </h2>
-        </div>
-      </div>
+      <PageHeader title="Play-off formulieren" icon={Target} className="mb-0" />
 
       <section>
         {playoffData.isLoading ? (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Sparkles } from 'lucide-react';
+import { Plus, RefreshCw, Sparkles, CalendarDays } from 'lucide-react';
+import { SectionIcon } from '@/components/layout';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,10 @@ const PollManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Beschikbaarheidspolls</h2>
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-brand-dark">
+            <SectionIcon icon={CalendarDays} />
+            Beschikbaarheidspolls
+          </h2>
           <p className="text-sm text-muted-foreground">
             Beheer maandelijkse polls voor scheidsrechters
           </p>

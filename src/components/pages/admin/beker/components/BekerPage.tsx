@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
 import { AppModal } from "@/components/modals/base/app-modal";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive, Award } from "lucide-react";
+import { PageHeader } from "@/components/layout";
 import ArchiveCupModal from "@/components/modals/admin/ArchiveCupModal";
 
 import BekerDateSelector from "./BekerDateSelector";
@@ -306,17 +307,16 @@ const BekerPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-slide-up">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Trophy className="h-5 w-5 sm:h-6 sm:w-6" />
-            Beker
-          </h2>
-          <p className="text-muted-foreground">Beheer het bekertoernooi - aanmaken, verwijderen en overzicht</p>
-        </div>
+        <PageHeader
+          className="mb-0 min-w-0 flex-1"
+          title="Beker"
+          subtitle="Beheer het bekertoernooi — aanmaken, verwijderen en overzicht"
+          icon={Award}
+        />
         <Button
           variant="outline"
           onClick={() => setShowArchiveModal(true)}
-          className="border-brand-300 text-brand-800 hover:bg-brand-50"
+          className="w-full shrink-0 border-amber-400/70 text-amber-950 hover:bg-amber-50 hover:text-amber-950 sm:w-auto"
         >
           <Archive className="w-4 h-4 mr-2" />
           Beker archiveren

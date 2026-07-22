@@ -16,6 +16,7 @@ import {
   SECTION_COLLAPSIBLE_SURFACE,
   SECTION_COLLAPSIBLE_TRIGGER,
 } from "@/components/layout/section-collapsible-styles";
+import { SectionIcon } from "@/components/layout/section-icon";
 import { cn } from "@/lib/utils";
 
 interface SectionCollapsibleCardProps {
@@ -36,12 +37,12 @@ interface SectionCollapsibleCardProps {
 
 function SectionHeaderContent({
   title,
-  icon: Icon,
+  icon,
   badge,
 }: Pick<SectionCollapsibleCardProps, "title" | "icon" | "badge">) {
   return (
     <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
-      {Icon && <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+      {icon ? <SectionIcon icon={icon} variant="compact" /> : null}
       <span className="truncate">{title}</span>
       {badge}
     </span>

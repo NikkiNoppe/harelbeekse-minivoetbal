@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { SectionIcon } from '@/components/layout';
 import { AvailabilityPollCard } from '../components/AvailabilityPollCard';
 import type { ScheduleCluster } from '@/services/scheidsrechter/monthScheduleService';
 import type { AvailabilityInput } from '@/services/scheidsrechter/types';
@@ -53,7 +54,7 @@ export function AvailabilityPollSection({
       <section className="space-y-3">
         {!embedded && (
           <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-            <CalendarDays className="h-5 w-5 text-primary" />
+            <SectionIcon icon={CalendarDays} />
             Beschikbaarheid doorgeven
           </h2>
         )}
@@ -90,7 +91,7 @@ export function AvailabilityPollSection({
       <div className="space-y-1">
         {!embedded ? (
           <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--color-700)]">
-            <CalendarDays className="h-5 w-5 text-primary" />
+            <SectionIcon icon={CalendarDays} />
             Beschikbaarheid doorgeven
           </h2>
         ) : (

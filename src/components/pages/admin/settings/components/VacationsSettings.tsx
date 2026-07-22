@@ -17,6 +17,7 @@ import type { VacationPeriod } from '@/services/competitionDataService';
 import SlotUnavailabilitySettings from '@/components/pages/admin/settings/components/SlotUnavailabilitySettings';
 import { PUBLIC_CARD_CLASS, PUBLIC_PAGE_CLASS } from '@/components/layout';
 import { cn } from '@/lib/utils';
+import { SectionIcon } from "@/components/layout";
 
 const VacationsSettings: React.FC = () => {
   const { toast } = useToast();
@@ -169,7 +170,7 @@ const VacationsSettings: React.FC = () => {
           <Card className={cn(PUBLIC_CARD_CLASS)}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-brand-dark">
-                <Umbrella className="h-5 w-5 text-primary" aria-hidden />
+                <SectionIcon icon={Umbrella} />
                 Vakantieperiodes
               </CardTitle>
               <CardDescription>

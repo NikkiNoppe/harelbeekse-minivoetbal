@@ -282,6 +282,7 @@ export const TeamManagerSchorsingenPanel = memo(function TeamManagerSchorsingenP
       <PageHeader
         title={`Schorsingen & Kaarten – ${displayTeamName}`}
         subtitle="Overzicht van schorsingen en kaarten voor jouw team"
+        icon={Shield}
         rightAction={refreshButton}
       />
       <div className="space-y-6">

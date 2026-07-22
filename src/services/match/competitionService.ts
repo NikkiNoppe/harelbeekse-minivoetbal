@@ -49,7 +49,20 @@ export interface CompetitionConfig {
   teams: number[];
   /** Actieve tenant — venues/timeslots uit season_data (Instellingen). */
   organizationId?: number;
+  /** team_id → division.id wanneer format.has_divisions */
+  teamDivisions?: Record<number, number>;
 }
+
+export type DivisionAwareMatch = {
+  home: number;
+  away: number;
+  round: number;
+  matchday: number;
+  /** Unieke sleutel zodat reeksen elkaars speeldagen niet mengen */
+  matchdayKey: string;
+  divisionId: number | null;
+  divisionName: string | null;
+};
 
 export const competitionService = {
   // Herbruikbare functies van cupService
@@ -68,6 +81,47 @@ export const competitionService = {
 
     if (!config.start_date || !config.end_date) {
       return { isValid: false, message: "Start en einddatum zijn verplicht" };
+    }
+
+    if (config.format.has_divisions && (config.format.divisions?.length ?? 0) >= 2) {
+      const divisions = [...(config.format.divisions ?? [])].sort(
+        (a, b) => a.sort_order - b.sort_order,
+      );
+      const assignment = config.teamDivisions ?? {};
+      const unassigned = config.teams.filter((teamId) => assignment[teamId] == null);
+      if (unassigned.length > 0) {
+        return {
+          isValid: false,
+          message: `Wijs alle geselecteerde teams toe aan een reeks (${unassigned.length} nog open).`,
+        };
+      }
+
+      for (const division of divisions) {
+        const count = config.teams.filter((teamId) => assignment[teamId] === division.id).length;
+        if (count > 0 && count < 4) {
+          return {
+            isValid: false,
+            message: `Reeks “${division.name}” heeft ${count} teams; minimaal 4 per reeks vereist.`,
+          };
+        }
+        if (count === 0) {
+          return {
+            isValid: false,
+            message: `Reeks “${division.name}” heeft nog geen teams.`,
+          };
+        }
+      }
+
+      const validDivisionIds = new Set(divisions.map((d) => d.id));
+      for (const teamId of config.teams) {
+        const divisionId = assignment[teamId];
+        if (divisionId == null || !validDivisionIds.has(divisionId)) {
+          return {
+            isValid: false,
+            message: "Elk team moet aan een geldige reeks toegewezen zijn.",
+          };
+        }
+      }
     }
 
     return { isValid: true };
@@ -258,7 +312,7 @@ export const competitionService = {
   },
 
   // Genereer alle wedstrijden voor reguliere competitie met round-robin algoritme
-  generateRegularSeasonMatches(teams: number[], rounds: number): Array<{ home: number; away: number; round: number }> {
+  generateRegularSeasonMatches(teams: number[], rounds: number): Array<{ home: number; away: number; round: number; matchday?: number }> {
     const matches: Array<{ home: number; away: number; round: number; matchday?: number }> = [];
     const n = teams.length;
     const matchdaysPerRound = (n % 2 === 0) ? (n - 1) : n; // bij oneven teams is er per ronde n speeldagen (1 bye)
@@ -273,7 +327,65 @@ export const competitionService = {
       });
     }
     
-    return matches as Array<{ home: number; away: number; round: number }>;
+    return matches;
+  },
+
+  /**
+   * Round-robin per reeks (of één pool zonder reeksen).
+   * matchdayKey voorkomt dat speeldag 1 van reeks A en B worden samengevoegd.
+   */
+  generateDivisionAwareRegularMatches(config: CompetitionConfig): DivisionAwareMatch[] {
+    const rounds = config.format.regular_rounds;
+    const useDivisions =
+      Boolean(config.format.has_divisions) &&
+      (config.format.divisions?.length ?? 0) >= 2 &&
+      config.teamDivisions != null;
+
+    if (!useDivisions) {
+      return this.generateRegularSeasonMatches(config.teams, rounds).map((m) => ({
+        home: m.home,
+        away: m.away,
+        round: m.round,
+        matchday: m.matchday ?? 1,
+        matchdayKey: `all-${m.matchday ?? 1}`,
+        divisionId: null,
+        divisionName: null,
+      }));
+    }
+
+    const divisions = [...(config.format.divisions ?? [])].sort(
+      (a, b) => a.sort_order - b.sort_order,
+    );
+    const assignment = config.teamDivisions ?? {};
+    const result: DivisionAwareMatch[] = [];
+
+    for (const division of divisions) {
+      const teamsInDivision = config.teams.filter(
+        (teamId) => assignment[teamId] === division.id,
+      );
+      if (teamsInDivision.length < 2) continue;
+
+      const matches = this.generateRegularSeasonMatches(teamsInDivision, rounds);
+      for (const m of matches) {
+        const matchday = m.matchday ?? 1;
+        result.push({
+          home: m.home,
+          away: m.away,
+          round: m.round,
+          matchday,
+          matchdayKey: `${division.id}-${matchday}`,
+          divisionId: division.id,
+          divisionName: division.name,
+        });
+      }
+    }
+
+    return result;
+  },
+
+  formatSpeeldagLabel(match: Pick<DivisionAwareMatch, "matchday" | "divisionName">): string {
+    const base = `Speeldag ${match.matchday}`;
+    return match.divisionName ? `${match.divisionName} – ${base}` : base;
   },
 
   // Round-robin algoritme: Circle Method (ondersteunt even en oneven aantal teams via BYE)
@@ -326,7 +438,14 @@ export const competitionService = {
 
   // Verbeterde distributie met seasonal fairness tracking
   async distributeMatchesOverWeeks(
-    matches: Array<{ home: number; away: number; round: number; matchday?: number }>,
+    matches: Array<{
+      home: number;
+      away: number;
+      round: number;
+      matchday?: number;
+      matchdayKey?: string;
+      divisionId?: number | null;
+    }>,
     playingWeeks: string[],
     options?: {
       teamPreferences?: Map<number, TeamPreferencesNormalized>;
@@ -335,8 +454,8 @@ export const competitionService = {
       seasonalFairness?: TeamSeasonalFairness[]; // New: seasonal fairness data
       organizationId?: number;
     }
-  ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
-    const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
+  ): Promise<Array<{ match: { home: number; away: number; round: number; matchday?: number; matchdayKey?: string; divisionId?: number | null; divisionName?: string | null }; week: number; slot: number }>> {
+    const distributedMatches: Array<{ match: typeof matches[number]; week: number; slot: number }> = [];
     const matchesPerWeek = 7; // 7 speelmomenten per week
     const slotCtx = await loadSlotPlanningContext(options?.organizationId);
     const totalMatches = matches.length;
@@ -348,6 +467,17 @@ export const competitionService = {
     matches.forEach((m) => { allTeamsSet.add(m.home); allTeamsSet.add(m.away); });
     const totalTeamsCount = allTeamsSet.size;
     const matchesPerMatchday = Math.max(1, Math.floor(totalTeamsCount / 2));
+
+    // Teams per reeks (of één pool) — validatie mag niet alle reeksen mengen
+    const poolTeamsByKey = new Map<string, Set<number>>();
+    matches.forEach((m) => {
+      const key = m.matchdayKey ?? `all-${m.matchday ?? 1}`;
+      const poolKey = key.includes("-") ? key.slice(0, key.lastIndexOf("-")) : "all";
+      const set = poolTeamsByKey.get(poolKey) ?? new Set<number>();
+      set.add(m.home);
+      set.add(m.away);
+      poolTeamsByKey.set(poolKey, set);
+    });
     
     // Track teams per week om conflicten te voorkomen
     const teamsPerWeek: Map<number, Set<number>> = new Map();
@@ -359,19 +489,19 @@ export const competitionService = {
       slotsPerWeek.set(week, 0);
     }
     
-    // Groepeer wedstrijden per speeldag (van round-robin algoritme)
-    const matchesByMatchday = new Map<number, Array<{ home: number; away: number; round: number }>>();
+    // Groepeer wedstrijden per speeldag-sleutel (reeks + speeldag) zodat reeksen niet mengen
+    const matchesByMatchday = new Map<string, Array<typeof matches[number]>>();
     
     matches.forEach((match, index) => {
-      // Gebruik de matchday van het round-robin algoritme, of bereken het dynamisch
       const matchday = match.matchday || Math.floor(index / matchesPerMatchday) + 1;
-      if (!matchesByMatchday.has(matchday)) {
-        matchesByMatchday.set(matchday, []);
+      const key = match.matchdayKey ?? `all-${matchday}`;
+      if (!matchesByMatchday.has(key)) {
+        matchesByMatchday.set(key, []);
       }
-      matchesByMatchday.get(matchday)!.push(match);
+      matchesByMatchday.get(key)!.push(match);
     });
     
-    console.log(`🏆 Competitie structuur: ${matchesByMatchday.size} speeldagen`);
+    console.log(`🏆 Competitie structuur: ${matchesByMatchday.size} speeldagen (incl. reeksen)`);
     
     // Helper: score volgens opgegeven regels per team
     const scoreTeamForSlot = async (
@@ -386,36 +516,44 @@ export const competitionService = {
     // Verdeel elke speeldag over beschikbare weken, respecting team conflicts
     let currentWeek = 0;
     
-    // Sort matchdays to process them in order
-    const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) => a - b);
+    // Sort matchdays to process them in order (numeric-friendly for "1-3" vs "1-10")
+    const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    );
     
-    for (const matchday of sortedMatchdays) {
-      const matchdayMatches = matchesByMatchday.get(matchday)!;
-      console.log(`📅 Speeldag ${matchday}: ${matchdayMatches.length} wedstrijden`);
+    for (const matchdayKey of sortedMatchdays) {
+      const matchdayMatches = matchesByMatchday.get(matchdayKey)!;
+      console.log(`📅 Speeldag ${matchdayKey}: ${matchdayMatches.length} wedstrijden`);
       
-      // Valideer dat elk team exact 1x voorkomt op deze speeldag
+      // Valideer dat elk team in deze pool exact 1x voorkomt op deze speeldag
       const teamsInMatchday = new Set<number>();
       matchdayMatches.forEach(match => {
         teamsInMatchday.add(match.home);
         teamsInMatchday.add(match.away);
       });
+
+      const poolKey = matchdayKey.includes("-")
+        ? matchdayKey.slice(0, matchdayKey.lastIndexOf("-"))
+        : "all";
+      const poolTeams = poolTeamsByKey.get(poolKey) ?? allTeamsSet;
+      const poolSize = poolTeams.size;
       
       // Verwacht: bij even aantal teams spelen alle teams; bij oneven aantal teams is er 1 bye (dus -1)
-      const expectedTeamsThisMatchday = totalTeamsCount % 2 === 0 ? totalTeamsCount : totalTeamsCount - 1;
+      const expectedTeamsThisMatchday = poolSize % 2 === 0 ? poolSize : poolSize - 1;
       if (teamsInMatchday.size !== expectedTeamsThisMatchday) {
         const teamsList = Array.from(teamsInMatchday).sort((a, b) => a - b);
-        const missingTeams = Array.from(allTeamsSet).filter(t => !teamsInMatchday.has(t)).sort((a, b) => a - b);
-        if (totalTeamsCount % 2 === 1) {
+        const missingTeams = Array.from(poolTeams).filter(t => !teamsInMatchday.has(t)).sort((a, b) => a - b);
+        if (poolSize % 2 === 1) {
           // Oneven: 1 bye toegestaan → enkel waarschuwing
-          console.warn(`⚠️ VALIDATIE WAARSCHUWING - Speeldag ${matchday}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams (bye toegestaan).`);
+          console.warn(`⚠️ VALIDATIE WAARSCHUWING - Speeldag ${matchdayKey}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams (bye toegestaan).`);
           console.warn(`Teams in speeldag:`, teamsList);
           if (missingTeams.length > 0) console.warn(`Ontbrekende teams (bye):`, missingTeams);
         } else {
           // Even: dit hoort exact te kloppen → error
-          console.error(`❌ VALIDATIE FOUT - Speeldag ${matchday}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams.`);
+          console.error(`❌ VALIDATIE FOUT - Speeldag ${matchdayKey}: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams.`);
           console.error(`Teams in speeldag:`, teamsList);
           console.error(`Ontbrekende teams:`, missingTeams);
-          throw new Error(`Speeldag ${matchday} validatie gefaald: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
+          throw new Error(`Speeldag ${matchdayKey} validatie gefaald: ${teamsInMatchday.size}/${expectedTeamsThisMatchday} teams. Ontbrekende teams: ${missingTeams.join(', ')}`);
         }
       }
       
@@ -473,7 +611,7 @@ export const competitionService = {
           ).join(', ');
           
           throw new Error(
-            `Kan wedstrijd van speeldag ${matchday} (Team ${match.home} vs Team ${match.away}) niet plaatsen. ` +
+            `Kan wedstrijd van speeldag ${matchdayKey} (Team ${match.home} vs Team ${match.away}) niet plaatsen. ` +
             `Alle weken zijn bezet of hebben team conflicten. ` +
             `Week gebruik: ${weekUsage}`
           );
@@ -665,8 +803,8 @@ export const competitionService = {
         return { success: false, message: 'Geen beschikbare speelweken', plan: [] };
       }
 
-      // Generate regular matches (round-robin)
-      const regularMatches = this.generateRegularSeasonMatches(config.teams, config.format.regular_rounds);
+      // Generate regular matches (round-robin per reeks indien van toepassing)
+      const regularMatches = this.generateDivisionAwareRegularMatches(config);
 
       // Load preferences and venues
       const seasonData = await seasonService.getSeasonData(config.organizationId);
@@ -689,27 +827,22 @@ export const competitionService = {
       const slotCtx = await loadSlotPlanningContext(config.organizationId);
       const matchesPerWeek = 7;
       const teamsPerWeek: Map<number, Set<number>> = new Map();
-      const weekToMatches: Map<number, Array<{ home: number; away: number; matchday: number }>> = new Map();
+      const weekToMatches: Map<number, Array<DivisionAwareMatch>> = new Map();
       for (let w = 0; w < playingWeeks.length; w++) {
         teamsPerWeek.set(w, new Set());
         weekToMatches.set(w, []);
       }
 
-      const allTeamsSet = new Set<number>();
-      regularMatches.forEach(m => { allTeamsSet.add(m.home); allTeamsSet.add(m.away); });
-      const matchesPerMatchday = Math.max(1, Math.floor(allTeamsSet.size / 2));
-
-      const matchesByMatchday = new Map<number, Array<{ home: number; away: number; matchday: number }>>();
-      regularMatches.forEach((m, idx) => {
-        const matchday = m.matchday || Math.floor(idx / matchesPerMatchday) + 1;
-        const arr = matchesByMatchday.get(matchday) || [];
-        arr.push({ home: m.home, away: m.away, matchday });
-        matchesByMatchday.set(matchday, arr);
+      const matchesByMatchday = new Map<string, DivisionAwareMatch[]>();
+      regularMatches.forEach((m) => {
+        const arr = matchesByMatchday.get(m.matchdayKey) || [];
+        arr.push(m);
+        matchesByMatchday.set(m.matchdayKey, arr);
       });
 
       let currentWeek = 0;
-      const matchdayToWeek: Map<number, number> = new Map();
-      const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) => a - b);
+      const matchdayToWeek: Map<string, number> = new Map();
+      const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       for (const md of sortedMatchdays) {
         const mdMatches = matchesByMatchday.get(md)!;
         for (const m of mdMatches) {
@@ -725,7 +858,7 @@ export const competitionService = {
             placed = true; break;
           }
           if (!placed) {
-            return { success: false, message: `Kan wedstrijd ${m.home}-${m.away} (speeldag ${md}) niet plannen binnen beschikbare weken`, plan: [] };
+            return { success: false, message: `Kan wedstrijd ${m.home}-${m.away} (${this.formatSpeeldagLabel(m)}) niet plannen binnen beschikbare weken`, plan: [] };
           }
         }
         while (
@@ -762,6 +895,7 @@ export const competitionService = {
       const minRaiseWeight = 0.5; // reward raising the minimum team total
       const lowerBound = 10;      // soft lower bound target per team
       const lowerBoundWeight = 0.5;
+      const allTeamsSet = new Set<number>(config.teams);
       const teamTotals = new Map<number, number>();
       Array.from(allTeamsSet).forEach(t => teamTotals.set(t, 0));
       const computeVariance = (totals: Map<number, number>) => {
@@ -1030,7 +1164,7 @@ export const competitionService = {
           const matchTime = timeslot?.start_time || '19:00';
           plan.push({
             unique_number: `REG-${String(counter).padStart(3, '0')}`,
-            speeldag: `Speeldag ${match.matchday}`,
+            speeldag: this.formatSpeeldagLabel(match),
             home_team_id: match.home,
             away_team_id: match.away,
             match_date: matchDate,
@@ -1044,29 +1178,45 @@ export const competitionService = {
         }
       }
 
-      // Voeg BYE-rijen toe bij oneven aantal teams: per speeldag 1 team heeft bye
-      if (allTeamsSet.size % 2 === 1) {
-        const mdList = Array.from(matchesByMatchday.keys()).sort((a, b) => a - b);
-        for (const md of mdList) {
-          const mdMatches = matchesByMatchday.get(md) || [];
-          const present = new Set<number>();
-          mdMatches.forEach(m => { present.add(m.home); present.add(m.away); });
-          const byeTeam = Array.from(allTeamsSet).find(t => !present.has(t));
-          if (typeof byeTeam === 'number') {
-            const assignedWeek = matchdayToWeek.get(md) ?? 0;
-            const baseDate = playingWeeks[assignedWeek];
-            const byeDate = cupService.addDaysToDate(baseDate, 1); // dinsdag
-            plan.push({
-              unique_number: `BYE-${String(md).padStart(3, '0')}`,
-              speeldag: `Speeldag ${md}`,
-              home_team_id: byeTeam,
-              away_team_id: null,
-              match_date: byeDate,
-              match_time: '',
-              venue: '',
-              details: { homeScore: 0, awayScore: 0, combined: 0, maxCombined: 6 }
-            });
-          }
+      // Voeg BYE-rijen toe bij oneven aantal teams: per speeldag/reeks 1 team heeft bye
+      const byeGroups = new Map<string, { teams: Set<number>; sample: DivisionAwareMatch }>();
+      for (const m of regularMatches) {
+        const key = m.matchdayKey;
+        const group = byeGroups.get(key) ?? {
+          teams: new Set<number>(),
+          sample: m,
+        };
+        // Teams in this division only
+        const divisionTeams = regularMatches
+          .filter((x) => x.divisionId === m.divisionId)
+          .flatMap((x) => [x.home, x.away]);
+        divisionTeams.forEach((t) => group.teams.add(t));
+        byeGroups.set(key, group);
+      }
+
+      for (const [md, group] of byeGroups) {
+        if (group.teams.size % 2 === 0) continue;
+        const mdMatches = matchesByMatchday.get(md) || [];
+        const present = new Set<number>();
+        mdMatches.forEach((m) => {
+          present.add(m.home);
+          present.add(m.away);
+        });
+        const byeTeam = Array.from(group.teams).find((t) => !present.has(t));
+        if (typeof byeTeam === "number") {
+          const assignedWeek = matchdayToWeek.get(md) ?? 0;
+          const baseDate = playingWeeks[assignedWeek];
+          const byeDate = cupService.addDaysToDate(baseDate, 1);
+          plan.push({
+            unique_number: `BYE-${md}`.slice(0, 40),
+            speeldag: this.formatSpeeldagLabel(group.sample),
+            home_team_id: byeTeam,
+            away_team_id: null,
+            match_date: byeDate,
+            match_time: "00:00",
+            venue: "BYE",
+            details: { homeScore: 0, awayScore: 0, combined: 0, maxCombined: 0 },
+          });
         }
       }
 
@@ -1099,8 +1249,8 @@ export const competitionService = {
         return { success: false, message: 'Geen beschikbare speelweken', previews: [] };
       }
 
-      // Generate regular matches once
-      const regularMatches = this.generateRegularSeasonMatches(config.teams, config.format.regular_rounds);
+      // Generate regular matches once (per reeks indien van toepassing)
+      const regularMatches = this.generateDivisionAwareRegularMatches(config);
 
       // Load preferences and venues once
       const seasonData = await seasonService.getSeasonData(config.organizationId);
@@ -1109,17 +1259,18 @@ export const competitionService = {
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
       const venues = seasonData.venues || [];
 
-      // Prepare common structures
+      // Prepare common structures (per reeks via matchdayKey)
       const allTeamsSet = new Set<number>();
-      regularMatches.forEach(m => { allTeamsSet.add(m.home); allTeamsSet.add(m.away); });
-      const matchesPerMatchday = Math.max(1, Math.floor(allTeamsSet.size / 2));
+      regularMatches.forEach((m) => {
+        allTeamsSet.add(m.home);
+        allTeamsSet.add(m.away);
+      });
 
-      const matchesByMatchdayBase = new Map<number, Array<{ home: number; away: number; matchday: number }>>();
-      regularMatches.forEach((m, idx) => {
-        const matchday = m.matchday || Math.floor(idx / matchesPerMatchday) + 1;
-        const arr = matchesByMatchdayBase.get(matchday) || [];
-        arr.push({ home: m.home, away: m.away, matchday });
-        matchesByMatchdayBase.set(matchday, arr);
+      const matchesByMatchdayBase = new Map<string, DivisionAwareMatch[]>();
+      regularMatches.forEach((m) => {
+        const arr = matchesByMatchdayBase.get(m.matchdayKey) || [];
+        arr.push(m);
+        matchesByMatchdayBase.set(m.matchdayKey, arr);
       });
 
       // Preload slot planning (veldblokkades + priority slots)
@@ -1131,7 +1282,7 @@ export const competitionService = {
       // Helper for one preview using prepared data
       const generateOnePreview = async () => {
         const teamsPerWeek: Map<number, Set<number>> = new Map();
-        const weekToMatches: Map<number, Array<{ home: number; away: number; matchday: number }>> = new Map();
+        const weekToMatches: Map<number, DivisionAwareMatch[]> = new Map();
         for (let w = 0; w < playingWeeks.length; w++) {
           teamsPerWeek.set(w, new Set());
           weekToMatches.set(w, []);
@@ -1139,8 +1290,10 @@ export const competitionService = {
 
         const matchesByMatchday = new Map(matchesByMatchdayBase);
         let currentWeek = 0;
-        const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) => a - b);
-        const matchdayToWeek: Map<number, number> = new Map();
+        const sortedMatchdays = Array.from(matchesByMatchday.keys()).sort((a, b) =>
+          a.localeCompare(b, undefined, { numeric: true }),
+        );
+        const matchdayToWeek: Map<string, number> = new Map();
 
         for (const md of sortedMatchdays) {
           const mdMatches = matchesByMatchday.get(md)!;
@@ -1260,7 +1413,7 @@ export const competitionService = {
             const matchTime = timeslot?.start_time || '19:00';
             plan.push({
               unique_number: `REG-${String(counter).padStart(3, '0')}`,
-              speeldag: `Speeldag ${match.matchday}`,
+              speeldag: this.formatSpeeldagLabel(match),
               home_team_id: match.home,
               away_team_id: match.away,
               match_date: matchDate,
@@ -1272,29 +1425,43 @@ export const competitionService = {
           }
         }
 
-        // BYE rows (Tuesday date)
-        if (allTeamsSet.size % 2 === 1) {
-          const mdList = Array.from(matchesByMatchdayBase.keys()).sort((a, b) => a - b);
-          for (const md of mdList) {
-            const mdMatches = matchesByMatchdayBase.get(md) || [];
-            const present = new Set<number>();
-            mdMatches.forEach(m => { present.add(m.home); present.add(m.away); });
-            const byeTeam = Array.from(allTeamsSet).find(t => !present.has(t));
-            if (typeof byeTeam === 'number') {
-              const assignedWeek = matchdayToWeek.get(md) ?? 0;
-              const baseDate = playingWeeks[assignedWeek];
-              const byeDate = cupService.addDaysToDate(baseDate, 1);
-              plan.push({
-                unique_number: `BYE-${String(md).padStart(3, '0')}`,
-                speeldag: `Speeldag ${md}`,
-                home_team_id: byeTeam,
-                away_team_id: null,
-                match_date: byeDate,
-                match_time: '',
-                venue: '',
-                details: { homeScore: 0, awayScore: 0, combined: 0, maxCombined: 6 }
-              });
-            }
+        // BYE rows per reeks/speeldag (Tuesday date)
+        const byeGroups = new Map<string, { teams: Set<number>; sample: DivisionAwareMatch }>();
+        for (const m of regularMatches) {
+          const key = m.matchdayKey;
+          const group = byeGroups.get(key) ?? {
+            teams: new Set<number>(),
+            sample: m,
+          };
+          const divisionTeams = regularMatches
+            .filter((x) => x.divisionId === m.divisionId)
+            .flatMap((x) => [x.home, x.away]);
+          divisionTeams.forEach((t) => group.teams.add(t));
+          byeGroups.set(key, group);
+        }
+        for (const [md, group] of byeGroups) {
+          if (group.teams.size % 2 === 0) continue;
+          const mdMatches = matchesByMatchdayBase.get(md) || [];
+          const present = new Set<number>();
+          mdMatches.forEach((m) => {
+            present.add(m.home);
+            present.add(m.away);
+          });
+          const byeTeam = Array.from(group.teams).find((t) => !present.has(t));
+          if (typeof byeTeam === "number") {
+            const assignedWeek = matchdayToWeek.get(md) ?? 0;
+            const baseDate = playingWeeks[assignedWeek];
+            const byeDate = cupService.addDaysToDate(baseDate, 1);
+            plan.push({
+              unique_number: `BYE-${md}`.slice(0, 40),
+              speeldag: this.formatSpeeldagLabel(group.sample),
+              home_team_id: byeTeam,
+              away_team_id: null,
+              match_date: byeDate,
+              match_time: "00:00",
+              venue: "BYE",
+              details: { homeScore: 0, awayScore: 0, combined: 0, maxCombined: 0 },
+            });
           }
         }
 
@@ -1383,8 +1550,8 @@ export const competitionService = {
       console.log('📅 Automatisch gegenereerde speelweken:', playingWeeks);
       console.log(weeksMessage);
 
-      // Bereken reguliere competitie wedstrijden
-      const regularMatches = this.generateRegularSeasonMatches(config.teams, config.format.regular_rounds);
+      // Bereken reguliere competitie wedstrijden (per reeks indien van toepassing)
+      const regularMatches = this.generateDivisionAwareRegularMatches(config);
       const totalRegularMatches = regularMatches.length;
       const weeksNeeded = this.calculateWeeksNeeded(totalRegularMatches, 7);
       
@@ -1464,14 +1631,18 @@ export const competitionService = {
         // Format match datum met tijd (UTC opslag, behoud lokale kloktijd)
         const matchDateTime = localDateTimeToISO(matchDate, timeslot?.start_time || '19:00');
         
-        // Gebruik de correcte speeldag van het round-robin algoritme
+        // Gebruik de correcte speeldag van het round-robin algoritme (+ reeksnaam)
         const matchday = match.matchday || Math.floor((matchCounter - 1) / 8) + 1;
+        const speeldagLabel = this.formatSpeeldagLabel({
+          matchday,
+          divisionName: (match as DivisionAwareMatch).divisionName ?? null,
+        });
         
-        console.log(`🎯 Reguliere wedstrijd ${matchCounter}: Week ${week + 1}, Speeldag ${matchday}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slot + 1}, ${venue} (Team ${match.home} vs Team ${match.away})`);
+        console.log(`🎯 Reguliere wedstrijd ${matchCounter}: Week ${week + 1}, ${speeldagLabel}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slot + 1}, ${venue} (Team ${match.home} vs Team ${match.away})`);
         
         regularSeasonMatches.push(this.createMatchObject(
           `REG-${matchCounter}-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          `Speeldag ${matchday}`, // Gebruik correct speeldag nummer van round-robin
+          speeldagLabel,
           match.home,
           match.away,
           matchDateTime,

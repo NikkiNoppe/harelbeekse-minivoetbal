@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, User } from 'lucide-react';
+import { RefreshCw, Shield } from 'lucide-react';
+import { PageHeader } from '@/components/layout';
 import { useRefereeDashboard } from './hooks/useRefereeDashboard';
 import { AvailabilityPollSection } from './sections/AvailabilityPollSection';
 import { AssignedMatchesSection } from './sections/AssignedMatchesSection';
@@ -32,37 +33,32 @@ export function RefereeDashboard() {
 
   return (
     <div className="scheids-page space-y-6 p-4 sm:p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Scheidsrechter Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1 flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Welkom, {username}
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <PageHeader
+          className="mb-0 min-w-0 flex-1"
+          title="Scheidsrechter Dashboard"
+          subtitle={`Welkom, ${username}`}
+          icon={Shield}
+        />
 
         <Button
           variant="outline"
           size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="self-start sm:self-center"
+          className="min-h-[44px] shrink-0 self-start"
+          aria-label="Vernieuwen"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} aria-hidden />
           Vernieuwen
         </Button>
       </div>
 
-      {/* Personal stats */}
       <RefereeStatsSection
         assignments={assignments}
         isLoading={isLoadingAssignments}
       />
 
-      {/* Sections */}
       <div className="space-y-8">
         <AvailabilityPollSection
           clusters={clusters}

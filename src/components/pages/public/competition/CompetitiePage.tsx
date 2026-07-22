@@ -4,7 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Trophy} from "lucide-react";
 import { Link } from "react-router-dom";
 import ResponsiveStandingsTable from "@/components/tables/ResponsiveStandingsTable";
 import { useCompetitionData, MatchData } from "@/hooks/useCompetitionData";
@@ -378,6 +378,7 @@ const CompetitiePage: React.FC = () => {
     <PublicPage>
       <PageHeader
         title="Competitie"
+        icon={Trophy}
         subtitle={seasonSubtitle}
         className="mb-0"
         rightAction={
