@@ -35,7 +35,7 @@ async function requireSessionFromJwt(
     return null;
   }
 
-  if (options.adminOnly && profile.role !== "admin") {
+  if (options.adminOnly && profile.role !== "admin" && profile.role !== "super_admin") {
     return { ok: false, status: 403, message: "Admin access required" };
   }
 
@@ -74,7 +74,7 @@ export async function requireSession(
   }
 
   const row = data[0] as { user_id: number; role: string };
-  if (options.adminOnly && row.role !== "admin") {
+  if (options.adminOnly && row.role !== "admin" && row.role !== "super_admin") {
     return { ok: false, status: 403, message: "Admin access required" };
   }
 

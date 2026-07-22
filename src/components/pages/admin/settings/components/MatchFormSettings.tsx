@@ -8,8 +8,8 @@ import { FileText, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
-import {
 import { SectionIcon } from "@/components/layout";
+import {
   insertApplicationSettingForSession,
   listApplicationSettingsForSession,
   updateApplicationSettingForSession,

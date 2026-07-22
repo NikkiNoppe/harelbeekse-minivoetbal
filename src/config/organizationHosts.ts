@@ -232,9 +232,10 @@ export function resolvePostAuthTenantHomePath(
 }
 
 /**
- * Externe tenant-site wanneer de gebruiker op een gedeeld platform-domein zit
- * maar de organisatie een eigen publieke hostname heeft (en die bekend is in de mapping).
- * Gereserveerd voor wanneer dedicated tenant-domeinen live zijn.
+ * Externe tenant-site wanneer de gebruiker op een ander hostname zit
+ * dan de publieke site van die organisatie (bv. reset-link op Harelbeke-domein
+ * voor een Kuurne-account → doorsturen naar kuurne-site).
+ * Geen externe redirect op localhost / Lovable-preview.
  */
 export function resolvePostAuthTenantExternalUrl(
   organizationSlug: string,
@@ -242,6 +243,10 @@ export function resolvePostAuthTenantExternalUrl(
   homePath = '/algemeen',
   hostname: string = getCurrentHostname(),
 ): string | null {
+  if (isLocalDevHostname(hostname) || isLovablePreviewHostname(hostname)) {
+    return null;
+  }
+
   const currentHost = hostname.replace(/^www\./, '').toLowerCase();
   const currentSlug = resolveHostnameToSlug(hostname);
 
@@ -270,9 +275,24 @@ export function navigateToTenantHomeAfterAuth(options: {
   homePath?: string;
   navigate: (path: string, options?: { replace?: boolean }) => void;
   hostname?: string;
+  /** Publieke site-URL van de tenant (branding.siteUrl) — voor hard redirect naar juiste host */
+  siteUrl?: string;
 }): void {
   const homePath = options.homePath ?? '/algemeen';
   const hostname = options.hostname ?? getCurrentHostname();
+
+  if (options.siteUrl) {
+    const external = resolvePostAuthTenantExternalUrl(
+      options.organizationSlug,
+      options.siteUrl,
+      homePath,
+      hostname,
+    );
+    if (external) {
+      window.location.replace(external);
+      return;
+    }
+  }
 
   options.navigate(
     resolvePostAuthTenantHomePath(options.organizationSlug, homePath, hostname),

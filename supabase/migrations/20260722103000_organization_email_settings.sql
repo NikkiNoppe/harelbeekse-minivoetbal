@@ -15,12 +15,12 @@ WHERE id = 1
     OR COALESCE(branding_settings->'email'->>'fromEmail', '') = ''
   );
 
--- Kuurne: afleiden uit siteUrl indien nog leeg
+-- Kuurne: tijdelijk zelfde geverifieerde From als Harelbeke (later ...@mvvkuurne.be)
 UPDATE public.organizations
 SET branding_settings = branding_settings || jsonb_build_object(
   'email', jsonb_build_object(
-    'fromEmail', 'info@kuurneminivoetbal.nikkinoppe.be',
-    'replyToEmail', 'info@kuurneminivoetbal.nikkinoppe.be'
+    'fromEmail', 'info@harelbekeminivoetbal.be',
+    'replyToEmail', 'info@harelbekeminivoetbal.be'
   )
 )
 WHERE id = 2

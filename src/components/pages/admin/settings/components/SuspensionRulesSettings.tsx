@@ -402,21 +402,19 @@ export const SuspensionRulesSettings: React.FC = () => {
                 Nog geen drempels. Voeg een regel toe.
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-primary/10">
+              <div className="overflow-x-auto -mx-1 px-1">
                 <Table>
                   <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="h-10 text-xs font-medium">Vanaf (geel)</TableHead>
-                      <TableHead className="h-10 text-xs font-medium">Schorsing</TableHead>
-                      <TableHead className="h-10 w-12 text-xs font-medium">
-                        <span className="sr-only">Verwijderen</span>
-                      </TableHead>
+                    <TableRow>
+                      <TableHead className="min-w-[8rem]">Vanaf (gele kaarten)</TableHead>
+                      <TableHead className="min-w-[8rem]">Schorsing (wedstrijden)</TableHead>
+                      <TableHead className="w-[72px] text-center">Acties</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rules.yellow_card_rules.map((rule, index) => (
                       <TableRow key={`yellow-rule-${index}`}>
-                        <TableCell className="py-2">
+                        <TableCell className="align-middle">
                           <Input
                             id={`yellow-count-${index}`}
                             type="number"
@@ -430,11 +428,11 @@ export const SuspensionRulesSettings: React.FC = () => {
                                 parseInt(e.target.value, 10) || 1,
                               )
                             }
-                            className="min-h-[44px] max-w-[7rem]"
+                            className="min-h-[44px] w-full max-w-[9rem]"
                             min={1}
                           />
                         </TableCell>
-                        <TableCell className="py-2">
+                        <TableCell className="align-middle">
                           <Input
                             id={`yellow-suspension-${index}`}
                             type="number"
@@ -448,21 +446,21 @@ export const SuspensionRulesSettings: React.FC = () => {
                                 parseInt(e.target.value, 10) || 0,
                               )
                             }
-                            className="min-h-[44px] max-w-[7rem]"
+                            className="min-h-[44px] w-full max-w-[9rem]"
                             min={0}
                           />
                         </TableCell>
-                        <TableCell className="py-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeYellowCardRule(index)}
-                            className="h-11 w-11 min-h-[44px] min-w-[44px] text-muted-foreground hover:text-destructive"
-                            aria-label={`Drempel bij ${rule.card_count} gele kaarten verwijderen`}
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden />
-                          </Button>
+                        <TableCell className="align-middle text-center">
+                          <div className="flex justify-center">
+                            <Button
+                              type="button"
+                              className="btn btn--icon btn--danger"
+                              onClick={() => removeYellowCardRule(index)}
+                              aria-label={`Drempel bij ${rule.card_count} gele kaarten verwijderen`}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -470,10 +468,6 @@ export const SuspensionRulesSettings: React.FC = () => {
                 </Table>
               </div>
             )}
-
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              Eén set kolomkoppen voor alle drempels — sneller en overzichtelijker.
-            </p>
           </div>
         </div>
 

@@ -92,18 +92,19 @@ export const useUserOperations = (teams: Team[], refreshData: () => Promise<void
             emailResponse?.error ||
             emailResponse?.success === false
           ) {
-            throw new Error(
+            const detail =
               emailError?.message ||
-                emailResponse?.error ||
-                "Welkomstmail mislukt",
-            );
+              emailResponse?.error ||
+              "Welkomstmail mislukt";
+            throw new Error(detail);
           }
         } catch (e) {
           console.warn("Kon welkomstmail niet verzenden:", e);
+          const detail = e instanceof Error ? e.message : "Onbekende fout";
           toast({
             title: "Gebruiker aangemaakt",
             description:
-              "De gebruiker is aangemaakt, maar de uitnodigingsmail kon niet worden verzonden. Probeer later opnieuw of reset het wachtwoord handmatig.",
+              `De gebruiker is aangemaakt, maar de uitnodigingsmail kon niet worden verzonden (${detail}). Probeer later opnieuw of reset het wachtwoord handmatig.`,
             variant: "destructive",
             duration: 15000,
           });

@@ -11,8 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { competitionDataService, type VenueTimeslot } from "@/services/competitionDataService";
-import {
 import { SectionIcon } from "@/components/layout";
+import {
   formatTimeslotPeriod,
   normalizeTimeslotDateRange,
 } from "@/lib/timeslotAvailability";

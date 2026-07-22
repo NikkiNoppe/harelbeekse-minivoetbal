@@ -8,7 +8,7 @@ export interface AuthEmailBranding {
   displayName: string;
   shortName: string;
   siteUrl: string;
-  /** Expliciete basis-URL voor auth-links; leeg = APP_BASE_URL of siteUrl. */
+  /** Expliciete basis-URL voor auth-links; leeg = siteUrl / canonieke tenant-URL. */
   authBaseUrl: string;
   primaryColor: string;
   primaryLight: string;
@@ -311,22 +311,103 @@ export function resolveAuthReplyTo(branding: AuthEmailBranding): string {
   }
 }
 
-function readHostname(url: string): string | null {
+/**
+ * Resend accepteert alleen From-adressen op geverifieerde domeinen.
+ * Tenant-from (bv. info@kuurne…) valt terug op het platformdomein, met org-naam als display;
+ * reply-to blijft het org-contact.
+ */
+export function resolveTransactionalFromAddress(branding: AuthEmailBranding): string {
+  const verifiedDomains = (
+    Deno.env.get("RESEND_VERIFIED_DOMAINS") ?? "harelbekeminivoetbal.be"
+  )
+    .split(",")
+    .map((domain) => domain.trim().toLowerCase())
+    .filter(Boolean);
+
+  const fallbackFrom = (
+    Deno.env.get("RESEND_FALLBACK_FROM_EMAIL") ?? DEFAULT_BRANDING.fromEmail
+  )
+    .trim()
+    .toLowerCase();
+
+  const fromDomain = branding.fromEmail.split("@")[1]?.toLowerCase();
+  if (fromDomain && verifiedDomains.includes(fromDomain)) {
+    return branding.fromAddress;
+  }
+
+  console.warn(
+    `From-domein "${fromDomain ?? "(leeg)"}" niet in RESEND_VERIFIED_DOMAINS; fallback ${fallbackFrom}`,
+  );
+  return `${branding.displayName} <${fallbackFrom}>`;
+}
+
+/** Canonieke publieke sites voor auth-links (invite/reset) — nooit APP_BASE_URL van een andere tenant. */
+const CANONICAL_AUTH_BASE_BY_SLUG: Record<string, string> = {
+  harelbeke: "https://harelbekeminivoetbal.be",
+  kuurne: "https://kuurneminivoetbal.nikkinoppe.be",
+};
+
+const AUTH_HOST_TO_SLUG: Record<string, string> = {
+  "harelbekeminivoetbal.be": "harelbeke",
+  "www.harelbekeminivoetbal.be": "harelbeke",
+  "harelbekeminivoetbal.nikkinoppe.be": "harelbeke",
+  "kuurneminivoetbal.nikkinoppe.be": "kuurne",
+  "mvvkuurne.nikkinoppe.be": "kuurne",
+};
+
+function hostnameFromUrl(url: string): string | null {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
   } catch {
     return null;
   }
 }
 
+function urlBelongsToOrganization(url: string, organizationSlug: string): boolean {
+  const host = hostnameFromUrl(url);
+  if (!host) return false;
+  const hostSlug = AUTH_HOST_TO_SLUG[host];
+  // Onbekende host: toestaan (custom domein later, bv. mvvkuurne.be)
+  if (!hostSlug) return true;
+  return hostSlug === organizationSlug;
+}
+
 export function resolveAuthBaseUrl(branding: AuthEmailBranding): string {
+  const slug = branding.organizationSlug?.trim().toLowerCase() || "";
+
+  // 1) branding.siteUrl als die bij deze tenant hoort
+  if (branding.siteUrl?.trim()) {
+    const site = normalizeUrl(branding.siteUrl);
+    if (!slug || urlBelongsToOrganization(site, slug)) {
+      return site;
+    }
+  }
+
+  // 2) Eerste hostname uit branding (indien bekend)
+  const firstHost = branding.hostnames.find((h) => typeof h === "string" && h.trim());
+  if (firstHost) {
+    const hostUrl = normalizeUrl(`https://${firstHost.replace(/^https?:\/\//, "")}`);
+    if (!slug || urlBelongsToOrganization(hostUrl, slug)) {
+      return hostUrl;
+    }
+  }
+
+  // 3) Canonieke URL per slug (Kuurne ≠ Harelbeke)
+  if (slug && CANONICAL_AUTH_BASE_BY_SLUG[slug]) {
+    return CANONICAL_AUTH_BASE_BY_SLUG[slug];
+  }
+
+  // 4) Expliciete authBaseUrl alleen als die bij de tenant past
   const explicit = branding.authBaseUrl?.trim();
-  if (explicit) return normalizeUrl(explicit);
+  if (explicit && (!slug || urlBelongsToOrganization(explicit, slug))) {
+    return normalizeUrl(explicit);
+  }
 
-  const envBase = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
-  if (envBase) return envBase;
-
-  if (branding.siteUrl?.trim()) return normalizeUrl(branding.siteUrl);
+  // 5) Platform APP_BASE_URL alleen voor Harelbeke / onbekend
+  if (!slug || slug === "harelbeke") {
+    const envBase = Deno.env.get("APP_BASE_URL")?.trim().replace(/\/$/, "");
+    if (envBase) return envBase;
+  }
 
   return DEFAULT_BRANDING.authBaseUrl;
 }
@@ -342,15 +423,7 @@ export function buildAuthResetPasswordUrl(
   url.searchParams.set("email", params.email);
   url.searchParams.set("mode", params.mode);
 
-  const baseHost = readHostname(base);
-  const siteHost = branding.siteUrl ? readHostname(branding.siteUrl) : null;
-
-  if (
-    branding.organizationSlug &&
-    siteHost &&
-    baseHost &&
-    siteHost !== baseHost
-  ) {
+  if (branding.organizationSlug) {
     url.searchParams.set("org", branding.organizationSlug);
   }
 

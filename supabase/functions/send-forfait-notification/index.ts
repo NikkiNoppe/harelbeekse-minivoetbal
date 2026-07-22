@@ -7,6 +7,7 @@ import {
   buildAuthEmailHtml,
   loadAuthEmailBranding,
   resolveAuthReplyTo,
+  resolveTransactionalFromAddress,
 } from "../_shared/auth-email-branding.ts";
 import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
@@ -203,7 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
     const results = await Promise.all(
       validRecipients.map(async (to) => {
         const sendResult = await sendTransactionalEmail({
-          from: branding.fromAddress,
+          from: resolveTransactionalFromAddress(branding),
           replyTo,
           to: [to],
           subject,

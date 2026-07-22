@@ -41,7 +41,7 @@ const ResetPassword = () => {
   const mode = searchParams.get("mode");
   const isSetupMode = mode === "setup";
   const tenantSlug =
-    organizationSlug || getOrgSlugQueryParam() || DEFAULT_ORGANIZATION_SLUG;
+    getOrgSlugQueryParam() || organizationSlug || DEFAULT_ORGANIZATION_SLUG;
 
   const copy = useMemo(() => ({
     title: isSetupMode ? "Wachtwoord instellen" : "Wachtwoord resetten",
@@ -69,8 +69,9 @@ const ResetPassword = () => {
       organizationSlug: tenantSlug,
       homePath: PUBLIC_ROUTES.algemeen,
       navigate,
+      siteUrl: branding.siteUrl,
     });
-  }, [navigate, tenantSlug]);
+  }, [navigate, tenantSlug, branding.siteUrl]);
 
   useEffect(() => {
     if (!token) {

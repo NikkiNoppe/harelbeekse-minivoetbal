@@ -22,6 +22,7 @@ import {
 } from "@/components/pages/admin/competition/DivisionTeamAssigner";
 import { PageHeader, PUBLIC_CARD_CLASS } from "@/components/layout";
 import { cn } from "@/lib/utils";
+import { estimateCompetitionPlanning } from "@/lib/competitionPlanningEstimate";
 
 const AdminCompetitionPage: React.FC = () => {
   const { organizationId, orgQueryEnabled, getSeasonData } = useSeasonDataScope();
@@ -323,7 +324,7 @@ const AdminCompetitionPage: React.FC = () => {
                 </Alert>
               ) : null}
               <div className="grid gap-3 sm:grid-cols-3">
-                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                <Card className={cn(PUBLIC_CARD_CLASS, "border border-primary/30 shadow-sm")}>
                   <CardContent className="p-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Seizoensperiode
@@ -339,7 +340,7 @@ const AdminCompetitionPage: React.FC = () => {
                     </p>
                   </CardContent>
                 </Card>
-                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                <Card className={cn(PUBLIC_CARD_CLASS, "border border-primary/30 shadow-sm")}>
                   <CardContent className="p-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Locaties
@@ -357,7 +358,7 @@ const AdminCompetitionPage: React.FC = () => {
                     ) : null}
                   </CardContent>
                 </Card>
-                <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+                <Card className={cn(PUBLIC_CARD_CLASS, "border border-primary/30 shadow-sm")}>
                   <CardContent className="p-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Tijdstippen
@@ -549,28 +550,40 @@ const AdminCompetitionPage: React.FC = () => {
 
                     const playoffMatches = 0; // Playoffs worden later apart gegenereerd
                     const totalMatches = regularMatches;
-                    const weeksNeeded = Math.ceil(totalMatches / 7);
-                    
+
                     const start = new Date(startDate);
                     const end = new Date(endDate);
                     const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                    const totalWeeks = Math.ceil(totalDays / 7);
-                    
-                    const isFeasible = totalWeeks >= weeksNeeded;
+                    const totalWeeks = Math.max(0, Math.ceil(totalDays / 7));
+
+                    const planning = estimateCompetitionPlanning({
+                      totalMatches,
+                      availableWeeks: totalWeeks,
+                      timeslots,
+                    });
+
+                    const fitsNormally = planning.weekDeficit === 0;
+                    const fitsWithDoublePlay =
+                      !fitsNormally && planning.feasibleWithDoublePlay;
+                    const isFeasible = fitsNormally || fitsWithDoublePlay;
                     const unassignedCount = useDivisions
                       ? selectedTeams.filter((teamId) => teamDivisions[teamId] == null).length
                       : 0;
-                    
+
+                    const dayPairLabel = planning.dayPair.separated
+                      ? `${planning.dayPair.earlyLabel} + ${planning.dayPair.lateLabel}`
+                      : planning.dayPair.earlyLabel;
+
                     return (
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
                           <span>Teams:</span>
                           <span className="font-medium">{selectedTeams.length}</span>
                         </div>
                         {useDivisions ? (
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-3">
                             <span>Reeksen:</span>
-                            <span className="font-medium">
+                            <span className="font-medium text-right">
                               {format.divisions!.length}
                               {unassignedCount > 0
                                 ? ` (${unassignedCount} nog toe te wijzen)`
@@ -578,45 +591,91 @@ const AdminCompetitionPage: React.FC = () => {
                             </span>
                           </div>
                         ) : null}
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
                           <span>Reguliere competitie:</span>
-                          <span className="font-medium">
+                          <span className="font-medium text-right">
                             {useDivisions
                               ? `${rounds} ronde(s) per reeks`
                               : `${rounds} ronde(s) (thuis/uit)`}
                           </span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
                           <span>Reguliere wedstrijden:</span>
                           <span className="font-medium">{regularMatches}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
                           <span>Playoff wedstrijden:</span>
-                          <span className="font-medium">Later apart gegenereerd</span>
+                          <span className="font-medium text-right">Later apart gegenereerd</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
                           <span>Totaal wedstrijden:</span>
                           <span className="font-medium">{totalMatches}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Weken nodig:</span>
-                          <span className="font-medium">{weeksNeeded}</span>
+                        <div className="flex justify-between gap-3">
+                          <span>Slots / week:</span>
+                          <span className="font-medium">{planning.slotsPerWeek}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-3">
+                          <span>Weken nodig (1×/week):</span>
+                          <span className="font-medium">{planning.weeksNeeded}</span>
+                        </div>
+                        <div className="flex justify-between gap-3">
                           <span>Beschikbare weken:</span>
-                          <span className="font-medium">{totalWeeks}</span>
+                          <span className="font-medium">{planning.availableWeeks}</span>
                         </div>
-                        <div className={`flex justify-between font-medium ${isFeasible ? 'text-green-600' : 'text-red-600'}`}>
+                        {fitsWithDoublePlay ? (
+                          <>
+                            <div className="flex justify-between gap-3">
+                              <span>Dubbele speelweken:</span>
+                              <span className="font-medium">~{planning.doublePlayWeeks}</span>
+                            </div>
+                            <div className="flex justify-between gap-3">
+                              <span>Voorkeur dagen:</span>
+                              <span className="font-medium text-right">{dayPairLabel}</span>
+                            </div>
+                          </>
+                        ) : null}
+                        <div
+                          className={`flex justify-between gap-3 font-medium ${
+                            fitsNormally
+                              ? "text-green-700"
+                              : fitsWithDoublePlay
+                                ? "text-amber-700"
+                                : "text-destructive"
+                          }`}
+                        >
                           <span>Status:</span>
-                          <span>{isFeasible ? '✅ Haalbaar' : '❌ Niet haalbaar'}</span>
+                          <span className="text-right">
+                            {fitsNormally
+                              ? "Haalbaar (1× per week)"
+                              : fitsWithDoublePlay
+                                ? "Haalbaar met dubbele speelweken"
+                                : "Niet haalbaar"}
+                          </span>
                         </div>
+                        {fitsWithDoublePlay ? (
+                          <div className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
+                            <p className="font-medium mb-1">Tactiek bij tekort</p>
+                            <p>
+                              Zo’n {planning.overflowMatches} wedstrijd
+                              {planning.overflowMatches === 1 ? "" : "en"} past niet in een
+                              strikt 1×/week-schema. In ~{planning.doublePlayWeeks} week
+                              {planning.doublePlayWeeks === 1 ? "" : "en"} spelen sommige teams
+                              uitzonderlijk 2× — bij voorkeur gespreid op{" "}
+                              <strong>{dayPairLabel}</strong>
+                              {planning.dayPair.separated
+                                ? ", zodat herstel tussen beide momenten maximaal blijft."
+                                : ". Voeg een tweede speeldag toe in Instellingen voor betere spreiding."}
+                            </p>
+                          </div>
+                        ) : null}
                         {!isFeasible && (
                           <div className="text-xs text-muted-foreground mt-2">
                             <p>Suggesties:</p>
                             <ul className="list-disc list-inside space-y-1 mt-1">
-                              <li>Verminder het aantal teams</li>
                               <li>Breid de einddatum uit</li>
-                              <li>Speel meer wedstrijden per week</li>
+                              <li>Verminder het aantal teams of rondes</li>
+                              <li>Voeg extra tijdslots toe (Instellingen → Tijdslots)</li>
                             </ul>
                           </div>
                         )}

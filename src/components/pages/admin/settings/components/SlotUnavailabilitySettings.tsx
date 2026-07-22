@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { AppModal, AppAlertModal, DestructiveConfirmDescription } from '@/components/modals';
@@ -218,10 +218,6 @@ const SlotUnavailabilitySettings: React.FC = () => {
             <SectionIcon icon={MapPin} />
             Veld niet beschikbaar
           </CardTitle>
-          <CardDescription>
-            Blokkeer een concreet speelmoment (datum + locatie + tijdslot). De planner schuift dan
-            automatisch één wedstrijd minder in die week in — bijv. 6 i.p.v. 7 slots.
-          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -278,24 +274,20 @@ const SlotUnavailabilitySettings: React.FC = () => {
                           {block.is_active ? 'Actief' : 'Inactief'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-1">
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px]"
-                            aria-label="Bewerken"
+                            className="btn btn--icon btn--edit"
+                            aria-label="Blokkade bewerken"
                             onClick={() => handleEdit(block)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px] text-destructive"
-                            aria-label="Verwijderen"
+                            className="btn btn--icon btn--danger"
+                            aria-label="Blokkade verwijderen"
                             onClick={() => handleDelete(block)}
                           >
                             <Trash2 className="h-4 w-4" />

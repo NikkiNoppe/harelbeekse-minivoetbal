@@ -7,6 +7,7 @@ import {
   loadAuthEmailBranding,
   resolveAdminMessageSubject,
   resolveAuthReplyTo,
+  resolveTransactionalFromAddress,
 } from "../_shared/auth-email-branding.ts";
 import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
@@ -210,7 +211,7 @@ Deno.serve(async (req) => {
     });
 
     const sendResult = await sendTransactionalEmail({
-      from: branding.fromAddress,
+      from: resolveTransactionalFromAddress(branding),
       replyTo,
       to: [recipient.email],
       subject,

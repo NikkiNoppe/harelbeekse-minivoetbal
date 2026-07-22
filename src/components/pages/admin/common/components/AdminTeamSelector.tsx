@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -17,7 +17,6 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface AdminTeamSelectorProps<T extends { team_id: number; team_name: string }> {
@@ -46,12 +45,6 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
   }: AdminTeamSelectorProps<T>
 ) {
   const [open, setOpen] = useState(false);
-
-  const selectedNames = useMemo(() => (
-    selectedIds
-      .map(id => teams.find(t => t.team_id === id)?.team_name || "")
-      .filter(Boolean)
-  ), [selectedIds, teams]);
 
   const totalCount = teams.length;
   const selectedCount = selectedIds.length;
@@ -139,16 +132,6 @@ function AdminTeamSelector<T extends { team_id: number; team_name: string }>(
             </Command>
           </PopoverContent>
         </Popover>
-
-        {selectedNames.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {selectedNames.map((name, i) => (
-              <Badge key={i} variant="secondary">
-                {name}
-              </Badge>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

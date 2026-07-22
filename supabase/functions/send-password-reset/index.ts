@@ -9,6 +9,7 @@ import {
   formatAuthLinkValidityNl,
   loadAuthEmailBranding,
   resolveAuthReplyTo,
+  resolveTransactionalFromAddress,
 } from "../_shared/auth-email-branding.ts";
 import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
@@ -185,7 +186,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     const sendResult = await sendTransactionalEmail({
-      from: branding.fromAddress,
+      from: resolveTransactionalFromAddress(branding),
       replyTo: resolveAuthReplyTo(branding),
       to: [user.email],
       subject: `${branding.shortName} — wachtwoord resetten`,
@@ -235,7 +236,7 @@ async function sendAdminNotification(
 
   try {
     const sendResult = await sendTransactionalEmail({
-      from: branding.fromAddress,
+      from: resolveTransactionalFromAddress(branding),
       replyTo: resolveAuthReplyTo(branding),
       to: [adminEmail],
       subject: `${branding.shortName} — wachtwoordreset zonder e-mailadres`,

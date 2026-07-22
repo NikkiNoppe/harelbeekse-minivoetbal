@@ -219,24 +219,20 @@ const VacationsSettings: React.FC = () => {
                               {vacation.is_active ? 'Actief' : 'Inactief'}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <div className="flex justify-end gap-1">
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-1">
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="min-h-[44px] min-w-[44px]"
-                                aria-label="Bewerken"
+                                className="btn btn--icon btn--edit"
+                                aria-label="Vakantieperiode bewerken"
                                 onClick={() => handleEdit(vacation)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="min-h-[44px] min-w-[44px] text-destructive"
-                                aria-label="Verwijderen"
+                                className="btn btn--icon btn--danger"
+                                aria-label="Vakantieperiode verwijderen"
                                 onClick={() => handleDelete(vacation)}
                               >
                                 <Trash2 className="h-4 w-4" />
