@@ -20,6 +20,7 @@ import { FinancialMonthlyReportsModal } from "@/components/modals";
 import { monthlyReportsService } from "@/services/financial";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { prefetchTeamFinancialDetail } from "@/components/modals/financial/useTeamFinancialDetailModal";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import type { TeamFinancesSummary } from "@/services/financial/teamCostCategories";
 
 interface Team {
@@ -109,6 +110,7 @@ TeamFinancialAmounts.displayName = "TeamFinancialAmounts";
 
 const AdminFinancialPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { organizationId } = useOrgQueryScope();
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [costListModalOpen, setCostListModalOpen] = useState(false);
@@ -119,7 +121,7 @@ const AdminFinancialPage: React.FC = () => {
     calculateTeamFinances,
     formatCurrency,
     syncStatus,
-    runDailySync,
+    forceResync,
     isListLoading,
     isAmountsLoading,
     isRefreshing,
@@ -142,9 +144,9 @@ const AdminFinancialPage: React.FC = () => {
 
   const prefetchTeam = useCallback(
     (teamId: number) => {
-      void prefetchTeamFinancialDetail(queryClient, teamId);
+      void prefetchTeamFinancialDetail(queryClient, teamId, organizationId);
     },
-    [queryClient],
+    [queryClient, organizationId],
   );
 
   const handleTeamClick = (team: Team) => {
@@ -195,20 +197,6 @@ const AdminFinancialPage: React.FC = () => {
                 <CardTitle className="text-lg">Teams Financieel Overzicht</CardTitle>
               </div>
               <div className="flex gap-2 flex-shrink-0 w-full flex-wrap max-w-full">
-                <button
-                  type="button"
-                  onClick={() => void runDailySync()}
-                  disabled={syncStatus === "syncing"}
-                  className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full min-h-[44px] disabled:opacity-60"
-                  style={{ maxWidth: "100%", width: "100%" }}
-                >
-                  {syncStatus === "syncing" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" aria-hidden />
-                  )}
-                  {syncStatus === "syncing" ? "Sync bezig…" : "Sync wedstrijdkosten"}
-                </button>
                 <button
                   onClick={() => setCostListModalOpen(true)}
                   className="btn btn--outline flex items-center gap-2 flex-1 justify-center min-w-[120px] max-w-full w-full min-h-[44px]"
@@ -271,18 +259,24 @@ const AdminFinancialPage: React.FC = () => {
               </Alert>
             )}
 
-            {(syncStatus === "synced" || syncStatus === "error") && (
+            {(syncStatus === "syncing" || syncStatus === "synced" || syncStatus === "error") && (
               <div
                 role="status"
                 className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
               >
                 <div className="flex items-center gap-2">
+                  {syncStatus === "syncing" && (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                      <span>Wedstrijdkosten synchroniseren op de achtergrond…</span>
+                    </>
+                  )}
                   {syncStatus === "synced" && (
                     <span>Wedstrijdkosten gesynchroniseerd — saldi ververst.</span>
                   )}
                   {syncStatus === "error" && (
                     <span className="text-destructive">
-                      Sync mislukt. Probeer opnieuw via &quot;Sync wedstrijdkosten&quot;.
+                      Achtergrondsync mislukt. Probeer opnieuw.
                     </span>
                   )}
                 </div>
@@ -292,7 +286,7 @@ const AdminFinancialPage: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
-                    onClick={() => void runDailySync()}
+                    onClick={() => void forceResync().then(() => refreshInstantly())}
                   >
                     <RefreshCw className="h-3 w-3" />
                     Opnieuw

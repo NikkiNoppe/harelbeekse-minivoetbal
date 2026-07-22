@@ -20,6 +20,8 @@ export interface VenueTimeslotWithPriority {
   start_time: string;
   end_time: string;
   priority: number;
+  valid_from?: string;
+  valid_until?: string;
 }
 
 // Fallback priority order if database is not available

@@ -1,18 +1,21 @@
 
 import React, { useState } from "react";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Edit, Trash2, Plus, AlertTriangle, Info, X } from "lucide-react";
+import { Settings, Edit, Trash2, Plus, AlertTriangle, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService } from "@/services/financial";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { FinancialAffectedTransactionsModal } from "./financial-affected-transactions-modal";
 
 interface FinancialEnhancedSettingsModalProps {
@@ -23,8 +26,11 @@ interface FinancialEnhancedSettingsModalProps {
 export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [deletingItem, setDeletingItem] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     amount: '',
@@ -41,19 +47,13 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
   });
 
   const { data: costSettings, isLoading } = useQuery({
-    queryKey: ['enhanced-cost-settings'],
-    queryFn: enhancedCostSettingsService.getCostSettings
+    queryKey: withOrgQueryKey(['enhanced-cost-settings'], organizationId),
+    queryFn: enhancedCostSettingsService.getCostSettings,
+    enabled: open && orgQueryEnabled,
   });
 
   const handleSave = async () => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleSave START:`, { formData, editingItem });
-
     if (!formData.name || !formData.amount) {
-      console.log(`[${timestamp}] EnhancedCostSettingsModal - Validation failed:`, { 
-        hasName: !!formData.name, 
-        hasAmount: !!formData.amount 
-      });
       toast({
         title: "Fout",
         description: "Vul alle verplichte velden in",
@@ -62,24 +62,13 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
       return;
     }
 
-    // Check if this is an amount update that will affect existing transactions
-    if (editingItem && parseFloat(formData.amount) !== editingItem.amount) {
-      const confirm = window.confirm(
-        `Let op: Het wijzigen van dit bedrag zal automatisch alle gerelateerde transacties bijwerken. ` +
-        `Dit kan invloed hebben op team balances. Weet je zeker dat je wilt doorgaan?`
-      );
-      if (!confirm) {
-        return;
-      }
-    }
-
+    setIsSubmitting(true);
+    
     const settingData = {
       name: formData.name,
       amount: parseFloat(formData.amount),
       category: formData.category,
     };
-
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Prepared data:`, { settingData });
 
     let result;
     if (editingItem) {
@@ -88,10 +77,9 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
       result = await enhancedCostSettingsService.addCostSetting(settingData);
     }
 
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Operation result:`, { result, isEdit: !!editingItem });
+    setIsSubmitting(false);
 
     if (result.success) {
-      // Show enhanced feedback for automatic transaction updates
       const message = result.affectedTransactions && result.affectedTransactions > 0
         ? `${result.message} ${result.affectedTransactions} transactie(s) zijn automatisch aangepast.`
         : result.message;
@@ -99,10 +87,9 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
       toast({
         title: "Succesvol",
         description: message,
-        duration: result.affectedTransactions && result.affectedTransactions > 0 ? 5000 : 3000 // Longer duration for important updates
+        duration: result.affectedTransactions && result.affectedTransactions > 0 ? 5000 : 3000
       });
       
-      // If there are affected transactions, show the modal
       if (result.affectedTransactions && result.affectedTransactions > 0 && editingItem) {
         setAffectedTransactionsData({
           costSettingId: editingItem.id,
@@ -126,13 +113,12 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - handleDelete START:`, { id });
-
-    const result = await enhancedCostSettingsService.deleteCostSetting(id);
+  const handleDelete = async () => {
+    if (!deletingItem) return;
     
-    console.log(`[${timestamp}] EnhancedCostSettingsModal - Delete result:`, { result, id });
+    setIsSubmitting(true);
+    const result = await enhancedCostSettingsService.deleteCostSetting(deletingItem.id);
+    setIsSubmitting(false);
 
     if (result.success) {
       toast({
@@ -140,6 +126,7 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
         description: result.message
       });
       queryClient.invalidateQueries({ queryKey: ['enhanced-cost-settings'] });
+      setDeletingItem(null);
     } else {
       toast({
         title: "Fout",
@@ -196,17 +183,17 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'match_cost':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-brand-100 text-brand-800 border-brand-200';
       case 'penalty':
-        return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'other':
-        return 'bg-muted text-card-foreground';
+        return 'bg-muted text-card-foreground border-border';
       case 'field_cost':
-        return 'bg-green-50 text-green-700 border-green-200';
+        return 'bg-brand-50 text-brand-dark border-brand-light';
       case 'referee_cost':
-        return 'bg-brand-50 text-brand-700 border-brand-200';
+        return 'bg-brand-100 text-brand-800 border-brand-200';
       default:
-        return 'bg-muted text-card-foreground';
+        return 'bg-muted text-card-foreground border-border';
     }
   };
 
@@ -221,162 +208,195 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
 
   return (
     <>
-      <AppModal
-        open={open}
-        onOpenChange={onOpenChange}
-        size="lg"
-        className="max-w-4xl"
-      >
-        <AppModalHeader>
-          <AppModalTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Uitgebreide Kostenbeheer
-          </AppModalTitle>
-          <p className="app-modal-subtitle sr-only">
-            Beheer alle kostentarieven en boetes. Wijzigingen worden automatisch toegepast op alle gerelateerde transacties.
-          </p>
-        </AppModalHeader>
-        <div className="space-y-6">
-            {/* Database Health Warning */}
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Database Probleem:</strong> Er is een probleem met de audit log tabel. 
-                Als je foutmeldingen krijgt bij het bijwerken van tarieven, voer dan de database migratie uit zoals beschreven in FIX_AUDIT_LOG_ISSUE.md
-              </AlertDescription>
-            </Alert>
+      <AppModal open={open} onOpenChange={onOpenChange} title="Uitgebreide Kostenbeheer" size="lg">
+        <div className="space-y-4">
+          {/* Info Alert */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Automatische updates:</strong> Wanneer je een kostentarief wijzigt, worden alle gerelateerde transacties automatisch aangepast. 
+              Dit zorgt ervoor dat alle team balances correct blijven.
+            </AlertDescription>
+          </Alert>
 
-            {/* Info Alert */}
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Automatische updates:</strong> Wanneer je een kostentarief wijzigt, worden alle gerelateerde transacties automatisch aangepast. 
-                Dit zorgt ervoor dat alle team balances correct blijven.
-              </AlertDescription>
-            </Alert>
-
-            {/* Add/Edit Form */}
-            {showAddForm && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {editingItem ? 'Bewerk Kostentarief' : 'Nieuw Kostentarief'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">Naam</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Bijv. Veldkosten per wedstrijd"
-                        className="modal__input"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="amount">Bedrag (€)</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        step="0.01"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                        placeholder="0.00"
-                        className="modal__input"
-                      />
-                    </div>
+          {/* Add/Edit Form */}
+          {showAddForm && (
+            <Card className="border-primary/20 shadow-lg card-hover">
+              <CardHeader className="p-4">
+                <CardTitle className="text-base font-semibold text-brand-dark">
+                  {editingItem ? 'Bewerk Kostentarief' : 'Nieuw Kostentarief'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-brand-dark">Naam *</Label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Bijv. Veldkosten per wedstrijd"
+                      className="modal__input"
+                      disabled={isSubmitting}
+                    />
                   </div>
-                  <div>
-                    <Label htmlFor="category">Categorie</Label>
-                    <Select 
-                      value={formData.category} 
-                      onValueChange={(value: any) => setFormData({...formData, category: value})}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-brand-dark">Bedrag (€) *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder="0.00"
+                      className="modal__input"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Categorie *</Label>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value: any) => setFormData({...formData, category: value})}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="modal__input min-h-[44px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
+                      <SelectItem value="penalty">Boete</SelectItem>
+                      <SelectItem value="field_cost">Veldkosten</SelectItem>
+                      <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
+                      <SelectItem value="other">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    onClick={handleSave}
+                    className="w-full min-h-[44px]"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Bezig..." : editingItem ? 'Bijwerken' : 'Toevoegen'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={resetForm}
+                    className="w-full min-h-[44px]"
+                    disabled={isSubmitting}
+                  >
+                    Annuleren
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Button
+            onClick={() => setShowAddForm(!showAddForm)}
+            variant="secondary"
+            className="flex items-center justify-center gap-2 w-full min-h-[44px]"
+            disabled={isSubmitting}
+          >
+            <Plus className="h-4 w-4" />
+            {showAddForm ? "Annuleren" : "Nieuw kostentarief"}
+          </Button>
+
+          {/* Settings by Category */}
+          {Object.entries(groupedSettings).map(([category, settings]) => (
+            <Card key={category} className="border-primary/20 shadow-lg card-hover">
+              <CardHeader className="p-4">
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-brand-dark">
+                  <Badge className={cn("border", getCategoryColor(category))}>
+                    {getCategoryLabel(category)}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <ul className="space-y-2">
+                  {settings.map((setting) => (
+                    <li
+                      key={setting.id}
+                      className="rounded-lg border border-primary/20 bg-card p-3 transition-shadow hover:shadow-sm"
                     >
-                      <SelectTrigger className="modal__input">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
-                        <SelectItem value="penalty">Boete</SelectItem>
-                        <SelectItem value="field_cost">Veldkosten</SelectItem>
-                        <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
-                        <SelectItem value="other">Overig</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <AppModalFooter>
-                    <button onClick={handleSave} className="btn btn--primary">
-                      {editingItem ? 'Bijwerken' : 'Toevoegen'}
-                    </button>
-                    <button onClick={resetForm} className="btn btn--secondary">
-                      Annuleren
-                    </button>
-                  </AppModalFooter>
-                </CardContent>
-              </Card>
-            )}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col min-w-0 flex-1 gap-1">
+                          <p className="text-sm font-medium text-brand-dark truncate">{setting.name}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-brand-dark tabular-nums whitespace-nowrap shrink-0">
+                          {formatCurrency(setting.amount)}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleEdit(setting)}
+                            className="min-h-[44px] min-w-[44px] border-primary/20"
+                            disabled={isSubmitting}
+                            aria-label="Bewerk tarief"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeletingItem(setting)}
+                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            disabled={isSubmitting}
+                            aria-label="Verwijder tarief"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ))}
 
-            {/* Settings by Category */}
-            {Object.entries(groupedSettings).map(([category, settings]) => (
-              <Card key={category}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Badge className={getCategoryColor(category)}>
-                      {getCategoryLabel(category)}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table className="table min-w-full">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Naam</TableHead>
-                          <TableHead className="text-right">Bedrag</TableHead>
-                          <TableHead className="text-center">Acties</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {settings.map((setting) => (
-                          <TableRow key={setting.id}>
-                            <TableCell className="font-medium">{setting.name}</TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrency(setting.amount)}
-                            </TableCell>
-                            <TableCell className="flex gap-2 justify-end">
-                              <Button
-                                size="sm"
-                                onClick={() => handleEdit(setting)}
-                                className="btn btn--outline"
-                              >
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleDelete(setting.id)}
-                                className="btn btn--danger"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {isLoading && (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">Kostentarieven laden...</p>
-              </div>
-            )}
-          </div>
+          {isLoading && (
+            <div className="text-center py-8 text-muted-foreground" aria-busy="true">
+              Kostentarieven laden...
+            </div>
+          )}
+        </div>
       </AppModal>
+
+      <AppAlertModal
+        open={!!deletingItem}
+        onOpenChange={(openState) => {
+          if (!openState) setDeletingItem(null);
+        }}
+        title="Kostentarief verwijderen"
+        description={
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je{" "}
+                <span className="font-semibold text-destructive">{deletingItem?.name}</span>{" "}
+                wilt verwijderen?
+              </>
+            }
+            warning="Deze actie kan niet ongedaan worden gemaakt. Alle gerelateerde transacties zullen beïnvloed worden."
+          />
+        }
+        confirmAction={{
+          label: isSubmitting ? "Verwijderen..." : "Verwijderen",
+          onClick: handleDelete,
+          variant: "destructive",
+          disabled: isSubmitting,
+          loading: isSubmitting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setDeletingItem(null),
+          variant: "secondary",
+          disabled: isSubmitting,
+        }}
+      />
 
       <FinancialAffectedTransactionsModal
         open={showAffectedTransactions}

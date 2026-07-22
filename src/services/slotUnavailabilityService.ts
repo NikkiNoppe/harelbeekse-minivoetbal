@@ -1,3 +1,4 @@
+import { isTimeslotValidOnDate } from '@/lib/timeslotAvailability';
 import type { SlotUnavailability } from '@/types/slotUnavailability';
 import type { VenueTimeslotWithPriority } from '@/services/priorityOrderService';
 
@@ -44,8 +45,15 @@ export function getBlockedSlotIndicesForWeek(
   const blocked = new Set<number>();
   slotDetails.forEach((row, index) => {
     const ts = row.timeslot;
-    if (!ts) return;
+    if (!ts) {
+      blocked.add(index);
+      return;
+    }
     const matchDate = getCalendarDateForSlot(weekMonday, ts.day_of_week);
+    if (!isTimeslotValidOnDate(ts, matchDate)) {
+      blocked.add(index);
+      return;
+    }
     if (isSlotUnavailabilityActive(blocks, matchDate, ts.venue_id, ts.timeslot_id)) {
       blocked.add(index);
     }

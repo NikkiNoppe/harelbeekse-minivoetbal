@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FINANCIAL_REVISION_KEY } from "@/hooks/useFinancialData";
 import { useMatchCostSync } from "@/hooks/useMatchCostSync";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import {
   fetchTeamCostsRevision,
   teamCostsRevisionFingerprint,
@@ -41,6 +43,7 @@ function getCurrentSeasonYear() {
 
 export function useFinancialSeasonReportModal(open: boolean) {
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const currentSeasonYear = getCurrentSeasonYear();
   const [selectedSeasonYear, setSelectedSeasonYear] = useState(currentSeasonYear);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -60,9 +63,9 @@ export function useFinancialSeasonReportModal(open: boolean) {
   );
 
   const revisionQuery = useQuery({
-    queryKey: ["team-costs-revision"],
+    queryKey: withOrgQueryKey(["team-costs-revision"], organizationId),
     queryFn: fetchTeamCostsRevision,
-    enabled: open,
+    enabled: open && orgQueryEnabled,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
     retry: 1,
@@ -73,9 +76,9 @@ export function useFinancialSeasonReportModal(open: boolean) {
   });
 
   const { data: availableSeasons, isLoading: isSeasonsLoading, isFetched: isSeasonsFetched } = useQuery({
-    queryKey: ["available-seasons"],
+    queryKey: withOrgQueryKey(["available-seasons"], organizationId),
     queryFn: monthlyReportsService.getAvailableSeasons,
-    enabled: open,
+    enabled: open && orgQueryEnabled,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
@@ -103,12 +106,12 @@ export function useFinancialSeasonReportModal(open: boolean) {
     error,
     refetch: refetchReport,
   } = useQuery({
-    queryKey: ["season-report", selectedSeasonYear, selectedMonth],
+    queryKey: withOrgQueryKey(["season-report", selectedSeasonYear, selectedMonth], organizationId),
     queryFn: async () => {
       const { seasonYear, actualMonth, actualYear } = resolveReportDates(selectedSeasonYear, selectedMonth);
       return monthlyReportsService.getSeasonReport(seasonYear, actualMonth, actualYear);
     },
-    enabled: open && seasonsAvailable,
+    enabled: open && orgQueryEnabled && seasonsAvailable,
     retry: 2,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getEdgeFunctionHeaders } from "@/lib/authSession";
 import { fetchTeamRecipientsForSession } from "@/services/core/userProfileSessionFetch";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { parseContactEmails } from "@/lib/contactEmails";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, Loader2, Copy, MessageCircle } from "lucide-react";
 
@@ -113,14 +114,26 @@ export const ForfaitEmailModal: React.FC<ForfaitEmailModalProps> = ({
           return false;
         });
 
-        contactRows.forEach((row) =>
-          addTeamRecipient(list, seen, {
-            team_id: row.team_id,
-            team_name: row.team_name,
-            email: row.contact_email,
-            username: row.contact_person || "Team contact",
-          })
-        );
+        contactRows.forEach((row) => {
+          const emails = parseContactEmails(row.contact_email).filter(Boolean);
+          if (emails.length === 0) {
+            addTeamRecipient(list, seen, {
+              team_id: row.team_id,
+              team_name: row.team_name,
+              email: row.contact_email,
+              username: row.contact_person || "Team contact",
+            });
+            return;
+          }
+          emails.forEach((email) =>
+            addTeamRecipient(list, seen, {
+              team_id: row.team_id,
+              team_name: row.team_name,
+              email,
+              username: row.contact_person || "Team contact",
+            }),
+          );
+        });
 
         if (!cancelled) setManagers(list);
       } catch (e) {

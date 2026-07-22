@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getRpcSessionArgs } from "@/lib/authSession";
+import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import { invokeSyncMatchCostsForMatch } from "@/services/financial/matchCostService";
 import {
   fetchAvailableRefereesForMatch,
   fetchRefereeAssignmentsForSession,
@@ -12,6 +14,68 @@ import type {
   AvailableReferee,
   RefereeAssignmentStats
 } from "./types";
+
+function matchDateKey(matchDate: string | null | undefined): string {
+  return (matchDate || "").slice(0, 10);
+}
+
+/** Fire-and-forget: scheidskosten bijwerken voor al ingediende wedstrijden. */
+async function syncMatchCostsAfterRefereeChange(matchIds: number[]): Promise<void> {
+  const uniqueIds = [...new Set(matchIds.filter((id) => typeof id === "number" && id > 0))];
+  if (uniqueIds.length === 0) return;
+
+  try {
+    const matches = await fetchAllMatchesForSession();
+    const byId = new Map(matches.map((m) => [m.match_id, m]));
+
+    await Promise.all(
+      uniqueIds.map(async (matchId) => {
+        const match = byId.get(matchId);
+        if (!match?.is_submitted) return;
+        if (match.home_score == null || match.away_score == null) return;
+        if (!match.home_team_id || !match.away_team_id) return;
+
+        const res = await invokeSyncMatchCostsForMatch({
+          matchId,
+          matchDateISO: match.match_date,
+          homeTeamId: match.home_team_id,
+          awayTeamId: match.away_team_id,
+          isSubmitted: true,
+          referee: match.referee,
+        });
+        if (!res.success) {
+          console.warn(
+            `[assignmentService] Match cost sync failed for match ${matchId}:`,
+            res.message,
+          );
+        }
+      }),
+    );
+  } catch (error) {
+    console.warn("[assignmentService] Match cost sync after referee change failed:", error);
+  }
+}
+
+async function resolveSessionMatchIds(seedMatchId: number): Promise<number[]> {
+  try {
+    const matches = await fetchAllMatchesForSession();
+    const seed = matches.find((m) => m.match_id === seedMatchId);
+    if (!seed) return [seedMatchId];
+
+    const dateKey = matchDateKey(seed.match_date);
+    const location = seed.location ?? "";
+    const siblings = matches
+      .filter(
+        (m) =>
+          matchDateKey(m.match_date) === dateKey && (m.location ?? "") === location,
+      )
+      .map((m) => m.match_id);
+
+    return siblings.length > 0 ? siblings : [seedMatchId];
+  } catch {
+    return [seedMatchId];
+  }
+}
 
 export const assignmentService = {
   async assignReferee(
@@ -36,6 +100,7 @@ export const assignmentService = {
         return { success: false, error: result?.error || 'Toewijzing mislukt' };
       }
 
+      void syncMatchCostsAfterRefereeChange([input.match_id]);
       return { success: true };
     } catch (error) {
       console.error('Error in assignReferee:', error);
@@ -67,6 +132,8 @@ export const assignmentService = {
         return { success: false, error: result?.error || 'Toewijzing mislukt' };
       }
 
+      const sessionMatchIds = await resolveSessionMatchIds(matchId);
+      void syncMatchCostsAfterRefereeChange(sessionMatchIds);
       return { success: true, count: result.assignments_created };
     } catch (error) {
       console.error('Error in assignRefereeToSession:', error);
@@ -76,6 +143,7 @@ export const assignmentService = {
 
   async removeSessionAssignment(matchId: number, _userId?: number): Promise<boolean> {
     try {
+      const sessionMatchIds = await resolveSessionMatchIds(matchId);
       const { data, error } = await supabase.rpc('remove_referee_from_session', {
         ...getRpcSessionArgs(),
         p_match_id: matchId,
@@ -87,7 +155,11 @@ export const assignmentService = {
       }
 
       const result = data as { success?: boolean };
-      return result?.success || false;
+      const ok = result?.success || false;
+      if (ok) {
+        void syncMatchCostsAfterRefereeChange(sessionMatchIds);
+      }
+      return ok;
     } catch (error) {
       console.error('Error in removeSessionAssignment:', error);
       return false;
@@ -149,6 +221,10 @@ export const assignmentService = {
 
   async removeAssignment(assignmentId: number, _userId?: number): Promise<boolean> {
     try {
+      const rows = await fetchRefereeAssignmentsForSession();
+      const assignment = rows.find((row) => row.id === assignmentId);
+      const matchId = assignment?.match_id;
+
       const { data, error } = await supabase.rpc('remove_referee_assignment', {
         ...getRpcSessionArgs(),
         p_assignment_id: assignmentId,
@@ -160,7 +236,11 @@ export const assignmentService = {
       }
 
       const result = data as { success?: boolean };
-      return result?.success || false;
+      const ok = result?.success || false;
+      if (ok && matchId) {
+        void syncMatchCostsAfterRefereeChange([matchId]);
+      }
+      return ok;
     } catch (error) {
       console.error('Error in removeAssignment:', error);
       return false;

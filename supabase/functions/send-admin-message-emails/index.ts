@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders as baseCorsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { requireSession } from "../_shared/auth.ts";
 import {
   buildAdminMessageEmailHtml,
   buildAdminMessageEmailText,
@@ -7,15 +8,13 @@ import {
   resolveAdminMessageSubject,
   resolveAuthReplyTo,
 } from "../_shared/auth-email-branding.ts";
+import { sendTransactionalEmail } from "../_shared/resend-connector.ts";
 
 const corsHeaders = {
   ...baseCorsHeaders,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-session-token",
 };
-
-const SENDER_DOMAIN = "notify.harelbekeminivoetbal.be";
-const FROM_DOMAIN = "harelbekeminivoetbal.be";
 
 interface SendAdminMessageRequest {
   title?: string;
@@ -24,61 +23,36 @@ interface SendAdminMessageRequest {
   target_user_ids?: number[];
 }
 
-function generateToken(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function resolveSessionContext(
+async function resolveOrganizationId(
   supabase: ReturnType<typeof createClient>,
   sessionToken: string,
-): Promise<
-  | { ok: true; organizationId: number }
-  | { ok: false; status: number; message: string }
-> {
-  const { data: session, error } = await supabase
-    .from("user_sessions")
-    .select("user_id, acting_organization_id, expires_at")
-    .eq("session_id", sessionToken)
-    .maybeSingle();
+  userId: number,
+): Promise<number | null> {
+  if (userId === -1) {
+    const { data, error } = await supabase
+      .from("user_sessions")
+      .select("acting_organization_id")
+      .eq("session_id", sessionToken)
+      .maybeSingle();
 
-  if (error || !session) {
-    return { ok: false, status: 401, message: "Ongeldige sessie" };
+    if (error || !data?.acting_organization_id) {
+      return null;
+    }
+
+    return data.acting_organization_id as number;
   }
 
-  if (new Date(session.expires_at as string) <= new Date()) {
-    return { ok: false, status: 401, message: "Sessie verlopen" };
-  }
-
-  if (session.user_id === -1) {
-    return {
-      ok: true,
-      organizationId: (session.acting_organization_id as number | null) ?? 1,
-    };
-  }
-
-  const { data: user, error: userError } = await supabase
+  const { data, error } = await supabase
     .from("users")
-    .select("role, organization_id")
-    .eq("user_id", session.user_id)
+    .select("organization_id")
+    .eq("user_id", userId)
     .maybeSingle();
 
-  if (userError || !user) {
-    return { ok: false, status: 401, message: "Gebruiker niet gevonden" };
+  if (error || !data?.organization_id) {
+    return null;
   }
 
-  if (user.role !== "admin") {
-    return { ok: false, status: 403, message: "Alleen admins" };
-  }
-
-  if (!user.organization_id) {
-    return { ok: false, status: 400, message: "Geen actieve organisatie" };
-  }
-
-  return { ok: true, organizationId: user.organization_id as number };
+  return data.organization_id as number;
 }
 
 Deno.serve(async (req) => {
@@ -92,14 +66,6 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !supabaseServiceKey) {
     return new Response(JSON.stringify({ error: "Server configuration error" }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
-  const sessionToken = req.headers.get("x-session-token");
-  if (!sessionToken) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -137,10 +103,18 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const sessionContext = await resolveSessionContext(supabase, sessionToken);
-  if (!sessionContext.ok) {
-    return new Response(JSON.stringify({ error: sessionContext.message }), {
-      status: sessionContext.status,
+  const auth = await requireSession(req, supabase, { adminOnly: true });
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: auth.message }), {
+      status: auth.status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const organizationId = await resolveOrganizationId(supabase, auth.sessionToken, auth.userId);
+  if (!organizationId) {
+    return new Response(JSON.stringify({ error: "Geen actieve organisatie in sessie" }), {
+      status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -148,7 +122,7 @@ Deno.serve(async (req) => {
   let usersQuery = supabase
     .from("users")
     .select("user_id, username, email, role")
-    .eq("organization_id", sessionContext.organizationId)
+    .eq("organization_id", organizationId)
     .not("email", "is", null)
     .neq("email", "");
 
@@ -184,7 +158,9 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         queued: 0,
-        skipped: 0,
+        suppressed: 0,
+        failed: 0,
+        totalRecipients: 0,
         reason: "no_recipients_with_email",
       }),
       {
@@ -194,19 +170,16 @@ Deno.serve(async (req) => {
     );
   }
 
-  const branding = await loadAuthEmailBranding(supabase, sessionContext.organizationId);
+  const branding = await loadAuthEmailBranding(supabase, organizationId);
   const subject = resolveAdminMessageSubject(branding, body.title);
-  const fromAddress = `${branding.displayName} <noreply@${FROM_DOMAIN}>`;
   const replyTo = resolveAuthReplyTo(branding);
 
   let queued = 0;
   let suppressed = 0;
   let failed = 0;
+  const failureMessages: string[] = [];
 
   for (const recipient of uniqueRecipients.values()) {
-    const messageId = crypto.randomUUID();
-    const idempotencyKey = `${messageId}:${recipient.email}`;
-
     const { data: suppressedRow, error: suppressionError } = await supabase
       .from("suppressed_emails")
       .select("id")
@@ -214,43 +187,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (suppressionError) {
-      failed += 1;
-      continue;
-    }
-
-    if (suppressedRow) {
-      suppressed += 1;
-      await supabase.from("email_send_log").insert({
-        message_id: messageId,
-        template_name: "admin-message",
-        recipient_email: recipient.email,
-        status: "suppressed",
+      console.warn("Suppression check failed — continuing send for admin message", {
+        email: recipient.email,
+        error: suppressionError,
       });
-      continue;
-    }
-
-    let unsubscribeToken: string;
-    const { data: existingToken } = await supabase
-      .from("email_unsubscribe_tokens")
-      .select("token, used_at")
-      .eq("email", recipient.email)
-      .maybeSingle();
-
-    if (existingToken && !existingToken.used_at) {
-      unsubscribeToken = existingToken.token as string;
-    } else if (!existingToken) {
-      unsubscribeToken = generateToken();
-      await supabase.from("email_unsubscribe_tokens").upsert(
-        { token: unsubscribeToken, email: recipient.email },
-        { onConflict: "email", ignoreDuplicates: true },
-      );
-      const { data: storedToken } = await supabase
-        .from("email_unsubscribe_tokens")
-        .select("token")
-        .eq("email", recipient.email)
-        .maybeSingle();
-      unsubscribeToken = (storedToken?.token as string) ?? unsubscribeToken;
-    } else {
+    } else if (suppressedRow) {
       suppressed += 1;
       continue;
     }
@@ -268,41 +209,20 @@ Deno.serve(async (req) => {
       recipientName: recipient.username,
     });
 
-    await supabase.from("email_send_log").insert({
-      message_id: messageId,
-      template_name: "admin-message",
-      recipient_email: recipient.email,
-      status: "pending",
+    const sendResult = await sendTransactionalEmail({
+      from: branding.fromAddress,
+      replyTo,
+      to: [recipient.email],
+      subject,
+      html,
+      text,
     });
 
-    const { error: enqueueError } = await supabase.rpc("enqueue_email", {
-      queue_name: "transactional_emails",
-      payload: {
-        message_id: messageId,
-        to: recipient.email,
-        from: fromAddress,
-        reply_to: replyTo,
-        sender_domain: SENDER_DOMAIN,
-        subject,
-        html,
-        text,
-        purpose: "transactional",
-        label: "admin-message",
-        idempotency_key: idempotencyKey,
-        unsubscribe_token: unsubscribeToken,
-        queued_at: new Date().toISOString(),
-      },
-    });
-
-    if (enqueueError) {
+    if (!sendResult.success) {
       failed += 1;
-      await supabase.from("email_send_log").insert({
-        message_id: messageId,
-        template_name: "admin-message",
-        recipient_email: recipient.email,
-        status: "failed",
-        error_message: "Failed to enqueue email",
-      });
+      failureMessages.push(
+        `${recipient.email}: ${sendResult.error ?? "verzenden mislukt"}`,
+      );
       continue;
     }
 
@@ -316,6 +236,7 @@ Deno.serve(async (req) => {
       suppressed,
       failed,
       totalRecipients: uniqueRecipients.size,
+      failureSample: failureMessages.slice(0, 3),
     }),
     {
       status: 200,

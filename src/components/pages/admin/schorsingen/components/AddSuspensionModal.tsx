@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,29 +9,28 @@ import { useQueryClient } from "@tanstack/react-query";
 import { suspensionService } from "@/domains/cards-suspensions";
 import { useTeams } from "@/hooks/useTeams";
 import { usePlayersQuery } from "@/hooks/usePlayersQuery";
-import { AlertCircle } from "lucide-react";
 
 interface AddSuspensionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({ 
-  open, 
-  onOpenChange 
+export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
+  open,
+  onOpenChange,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: teams } = useTeams();
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
-  
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+
   const { data: players } = usePlayersQuery(selectedTeamId ? parseInt(selectedTeamId) : undefined);
 
   const [formData, setFormData] = useState({
-    playerId: '',
-    reason: '',
-    matches: '1',
-    notes: ''
+    playerId: "",
+    reason: "",
+    matches: "1",
+    notes: "",
   });
 
   const handleSubmit = async () => {
@@ -39,7 +38,7 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
       toast({
         title: "Fout",
         description: "Selecteer een speler en geef een reden op.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -49,58 +48,67 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
         parseInt(formData.playerId),
         formData.reason,
         parseInt(formData.matches) || 1,
-        formData.notes || undefined
+        formData.notes || undefined,
       );
 
       toast({
         title: "Schorsing toegevoegd",
-        description: "De schorsing is succesvol toegevoegd."
+        description: "De schorsing is succesvol toegevoegd.",
       });
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['suspensions'] });
-      queryClient.invalidateQueries({ queryKey: ['manualSuspensions'] });
-      queryClient.invalidateQueries({ queryKey: ['playerCards'] });
+      queryClient.invalidateQueries({ queryKey: ["suspensions"] });
+      queryClient.invalidateQueries({ queryKey: ["manualSuspensions"] });
+      queryClient.invalidateQueries({ queryKey: ["playerCards"] });
 
-      // Reset form and close
-      setFormData({ playerId: '', reason: '', matches: '1', notes: '' });
-      setSelectedTeamId('');
+      setFormData({ playerId: "", reason: "", matches: "1", notes: "" });
+      setSelectedTeamId("");
       onOpenChange(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het toevoegen van de schorsing.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const handleClose = () => {
-    setFormData({ playerId: '', reason: '', matches: '1', notes: '' });
-    setSelectedTeamId('');
+    setFormData({ playerId: "", reason: "", matches: "1", notes: "" });
+    setSelectedTeamId("");
     onOpenChange(false);
   };
 
   return (
-    <AppModal open={open} onOpenChange={handleClose} size="md">
-      <AppModalHeader>
-        <AppModalTitle className="flex items-center gap-2">
-          <AlertCircle className="h-5 w-5" />
-          Schorsing Toevoegen
-        </AppModalTitle>
-      </AppModalHeader>
-
-      <div className="space-y-4 py-4">
-        <div>
-          <Label>Team *</Label>
-          <Select 
-            value={selectedTeamId} 
+    <AppModal
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose();
+        else onOpenChange(true);
+      }}
+      title="Schorsing toevoegen"
+      size="md"
+      primaryAction={{
+        label: "Toevoegen",
+        onClick: handleSubmit,
+        variant: "primary",
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: handleClose,
+        variant: "secondary",
+      }}
+    >
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Team *</Label>
+          <Select
+            value={selectedTeamId}
             onValueChange={(value) => {
               setSelectedTeamId(value);
-              setFormData({ ...formData, playerId: '' });
+              setFormData({ ...formData, playerId: "" });
             }}
           >
-            <SelectTrigger className="modal__input">
+            <SelectTrigger className="modal__input min-h-[44px]">
               <SelectValue placeholder="Selecteer team" />
             </SelectTrigger>
             <SelectContent>
@@ -113,15 +121,17 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
           </Select>
         </div>
 
-        <div>
-          <Label>Speler *</Label>
-          <Select 
-            value={formData.playerId} 
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Speler *</Label>
+          <Select
+            value={formData.playerId}
             onValueChange={(value) => setFormData({ ...formData, playerId: value })}
             disabled={!selectedTeamId}
           >
-            <SelectTrigger className="modal__input">
-              <SelectValue placeholder={selectedTeamId ? "Selecteer speler" : "Selecteer eerst een team"} />
+            <SelectTrigger className="modal__input min-h-[44px]">
+              <SelectValue
+                placeholder={selectedTeamId ? "Selecteer speler" : "Selecteer eerst een team"}
+              />
             </SelectTrigger>
             <SelectContent>
               {players?.map((player) => (
@@ -133,30 +143,30 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
           </Select>
         </div>
 
-        <div>
-          <Label>Reden *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Reden *</Label>
           <Input
             value={formData.reason}
             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
             placeholder="Reden voor schorsing"
-            className="modal__input"
+            className="modal__input min-h-[44px]"
           />
         </div>
 
-        <div>
-          <Label>Aantal wedstrijden *</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Aantal wedstrijden *</Label>
           <Input
             type="number"
             min="1"
             max="10"
             value={formData.matches}
             onChange={(e) => setFormData({ ...formData, matches: e.target.value })}
-            className="modal__input"
+            className="modal__input min-h-[44px]"
           />
         </div>
 
-        <div>
-          <Label>Notities</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Notities</Label>
           <Textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -165,15 +175,6 @@ export const AddSuspensionModal: React.FC<AddSuspensionModalProps> = ({
             className="modal__input"
           />
         </div>
-      </div>
-
-      <div className="modal__actions">
-        <button onClick={handleSubmit} className="btn btn--primary">
-          Toevoegen
-        </button>
-        <button onClick={handleClose} className="btn btn--secondary">
-          Annuleren
-        </button>
       </div>
     </AppModal>
   );

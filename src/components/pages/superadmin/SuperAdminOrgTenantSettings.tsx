@@ -15,10 +15,21 @@ export function SuperAdminOrgTenantSettings() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Competitie-opzet, navigatie en visueel thema voor de actieve tenant. Wijzigingen gelden
-        voor deze organisatie op het platform.
+        Visueel thema en e-mailkleuren, navigatie en competitie-opzet voor de actieve tenant.
+        Afzender- en antwoord-adressen stel je in bij Platform beheer → organisatie → E-mail.
       </p>
       <Accordion type="multiple" defaultValue={[]} className="space-y-3">
+        <SectionAccordionItem
+          value="colors"
+          triggerContent={
+            <span className="flex items-center gap-3 text-left min-w-0">
+              <Palette className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              <span className="truncate">Kleuren</span>
+            </span>
+          }
+        >
+          <ThemeColorsSettings />
+        </SectionAccordionItem>
         <SectionAccordionItem
           value="competition-setup"
           triggerContent={
@@ -45,17 +56,6 @@ export function SuperAdminOrgTenantSettings() {
           }
         >
           <TabVisibilitySettingsUpdated />
-        </SectionAccordionItem>
-        <SectionAccordionItem
-          value="colors"
-          triggerContent={
-            <span className="flex items-center gap-3 text-left min-w-0">
-              <Palette className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span className="truncate">Kleuren</span>
-            </span>
-          }
-        >
-          <ThemeColorsSettings />
         </SectionAccordionItem>
       </Accordion>
     </div>

@@ -26,6 +26,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { joinContactEmails, parseContactEmails, validateContactEmails } from "@/lib/contactEmails";
 import { useUpcomingMatches } from "@/hooks/useUpcomingMatches";
 import { useRefereeMatches } from "@/hooks/useRefereeMatches";
 import { formatDateWithDay, formatTimeForDisplay, isoToLocalDateTime } from "@/lib/dateUtils";
@@ -190,17 +191,19 @@ const ProfileTeamDetails: React.FC<{ team: ProfileTeamShape }> = memo(({ team })
               </a>
             </div>
           )}
-          {team.contact_email && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-              <a
-                href={`mailto:${team.contact_email}`}
-                className="truncate break-all hover:text-foreground hover:underline"
-              >
-                {team.contact_email}
-              </a>
-            </div>
-          )}
+          {parseContactEmails(team.contact_email)
+            .filter(Boolean)
+            .map((email) => (
+              <div key={email} className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                <a
+                  href={`mailto:${email}`}
+                  className="truncate break-all hover:text-foreground hover:underline"
+                >
+                  {email}
+                </a>
+              </div>
+            ))}
         </div>
       )}
     </div>
@@ -302,15 +305,25 @@ const UserTeamInfoCard: React.FC<{
 
   const handleSave = async () => {
     if (!team) return;
+
+    const emailError = validateContactEmails(formDataRef.current.contact_email);
+    if (emailError) {
+      toast({
+        title: "Validatie fout",
+        description: emailError,
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSaving(true);
     try {
-      // Use ref to get the latest formData value, as state updates might be batched
       const currentFormData = formDataRef.current;
       
       const updated = await teamService.updateTeam(team.team_id, {
         contact_person: currentFormData.contact_person?.trim() || null,
-        contact_email: currentFormData.contact_email?.trim() || null,
+        contact_email:
+          joinContactEmails(parseContactEmails(currentFormData.contact_email)) || null,
         contact_phone: currentFormData.contact_phone?.trim() || null,
         club_colors: currentFormData.club_colors || null,
       });
@@ -578,17 +591,19 @@ const UserTeamInfoCard: React.FC<{
                     </a>
                   </div>
                 )}
-                {team.contact_email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                    <a
-                      href={`mailto:${team.contact_email}`}
-                      className="truncate break-all hover:text-foreground hover:underline"
-                    >
-                      {team.contact_email}
-                    </a>
-                  </div>
-                )}
+                {parseContactEmails(team.contact_email)
+                  .filter(Boolean)
+                  .map((email) => (
+                    <div key={email} className="flex items-center gap-2 text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                      <a
+                        href={`mailto:${email}`}
+                        className="truncate break-all hover:text-foreground hover:underline"
+                      >
+                        {email}
+                      </a>
+                    </div>
+                  ))}
               </div>
             )
           ) : (

@@ -4,6 +4,8 @@ import {
   fetchTeamTransactionsByTeamId,
   type FinancialTeamTransaction,
 } from "@/services/financial";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 const MIN_LOADING_TIME = 250;
 const MAX_LOADING_TIME = 5000;
@@ -11,14 +13,18 @@ const MAX_LOADING_TIME = 5000;
 function getOverviewTransactionsForTeam(
   queryClient: ReturnType<typeof useQueryClient>,
   teamId: number,
+  organizationId: number | undefined,
 ): FinancialTeamTransaction[] | undefined {
-  const all = queryClient.getQueryData<FinancialTeamTransaction[]>(["all-team-transactions"]);
+  const all = queryClient.getQueryData<FinancialTeamTransaction[]>(
+    withOrgQueryKey(["all-team-transactions"], organizationId),
+  );
   const filtered = all?.filter((t) => t.team_id === teamId);
   return filtered?.length ? filtered : undefined;
 }
 
 export function useTeamFinancialDetailModal(teamId: number | undefined, open: boolean) {
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [minReady, setMinReady] = useState(false);
   const [loadTimeout, setLoadTimeout] = useState(false);
   const loadStartRef = useRef<number | undefined>(undefined);
@@ -26,9 +32,9 @@ export function useTeamFinancialDetailModal(teamId: number | undefined, open: bo
   const maxTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const transactionsQuery = useQuery({
-    queryKey: ["team-transactions", teamId],
+    queryKey: withOrgQueryKey(["team-transactions", teamId], organizationId),
     queryFn: () => fetchTeamTransactionsByTeamId(teamId!),
-    enabled: open && !!teamId,
+    enabled: open && !!teamId && orgQueryEnabled,
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
     retry: 2,
@@ -39,7 +45,7 @@ export function useTeamFinancialDetailModal(teamId: number | undefined, open: bo
     placeholderData: (previous, _prevQuery) => {
       if (previous?.length) return previous;
       if (!teamId) return undefined;
-      return getOverviewTransactionsForTeam(queryClient, teamId);
+      return getOverviewTransactionsForTeam(queryClient, teamId, organizationId);
     },
     networkMode: "online",
   });
@@ -152,14 +158,20 @@ export function useTeamFinancialDetailModal(teamId: number | undefined, open: bo
 export function prefetchTeamFinancialDetail(
   queryClient: ReturnType<typeof useQueryClient>,
   teamId: number,
+  organizationId: number | undefined,
 ) {
-  const cached = queryClient.getQueryData<FinancialTeamTransaction[]>(["team-transactions", teamId]);
+  const queryKey = withOrgQueryKey(["team-transactions", teamId], organizationId);
+  const cached = queryClient.getQueryData<FinancialTeamTransaction[]>(queryKey);
   if (cached?.length) return;
 
-  const placeholder = getOverviewTransactionsForTeam(queryClient, teamId);
+  const placeholder = getOverviewTransactionsForTeam(
+    queryClient,
+    teamId,
+    organizationId,
+  );
 
   return queryClient.prefetchQuery({
-    queryKey: ["team-transactions", teamId],
+    queryKey,
     queryFn: () => fetchTeamTransactionsByTeamId(teamId),
     staleTime: 0,
     ...(placeholder ? { initialData: placeholder } : {}),

@@ -38,9 +38,14 @@ export const OrganizationGate: React.FC<{ children: React.ReactNode }> = ({
 
   if (isOrganizationLoading) {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 p-6 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--color-600)]" aria-hidden />
+      <div
+        className="flex min-h-screen flex-col items-center justify-center gap-3 bg-brand-100 p-6 text-center"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-brand-dark" aria-hidden />
         <p className="text-sm text-muted-foreground">Organisatie laden…</p>
+        <span className="sr-only">Laden…</span>
         {loadTimedOut && (
           <>
             <p className="max-w-sm text-sm text-muted-foreground">
@@ -48,7 +53,7 @@ export const OrganizationGate: React.FC<{ children: React.ReactNode }> = ({
             </p>
             <button
               type="button"
-              className="rounded-md bg-[var(--color-600)] px-4 py-2 text-sm text-white min-h-[44px]"
+              className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white min-h-[44px]"
               onClick={() => {
                 setLoadTimedOut(false);
                 refetchOrganization();
@@ -64,8 +69,8 @@ export const OrganizationGate: React.FC<{ children: React.ReactNode }> = ({
 
   if (isUnknownHostname || organizationError) {
     return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6 text-center">
-        <h1 className="text-xl font-semibold text-[var(--color-700)]">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-brand-100 p-6 text-center">
+        <h1 className="text-xl font-semibold text-brand-dark">
           Site niet gevonden
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
@@ -75,7 +80,7 @@ export const OrganizationGate: React.FC<{ children: React.ReactNode }> = ({
         </p>
         <button
           type="button"
-          className="rounded-md bg-[var(--color-600)] px-4 py-2 text-sm text-white min-h-[44px]"
+          className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white min-h-[44px]"
           onClick={() => refetchOrganization()}
         >
           Opnieuw proberen

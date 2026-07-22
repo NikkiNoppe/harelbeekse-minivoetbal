@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'super_admin_acting_org';
 
+export const SUPER_ADMIN_ACTING_ORG_CHANGED_EVENT = 'super-admin-acting-org-changed';
+
 export interface SuperAdminActingOrg {
   organizationId: number;
   slug: string;
@@ -24,6 +26,9 @@ export function getSuperAdminActingOrg(): SuperAdminActingOrg | null {
 
 export function setSuperAdminActingOrg(org: SuperAdminActingOrg): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(org));
+  window.dispatchEvent(
+    new CustomEvent(SUPER_ADMIN_ACTING_ORG_CHANGED_EVENT, { detail: org }),
+  );
 }
 
 export function clearSuperAdminActingOrg(): void {

@@ -140,6 +140,33 @@ function getTargetDescription(
   return { type: "none", items: [] };
 }
 
+function wasEmailSent(notification: Notification): boolean {
+  const sv = notification.setting_value;
+  return sv.send_email === true || !!sv.email_sent_at || (sv.email_sent_count ?? 0) > 0;
+}
+
+function EmailStatusIndicator({ notification }: { notification: Notification }) {
+  const emailSent = wasEmailSent(notification);
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 text-xs font-medium",
+        emailSent ? "text-emerald-600" : "text-muted-foreground",
+      )}
+      title={emailSent ? "E-mail verstuurd" : "Geen e-mail verstuurd"}
+    >
+      {emailSent ? (
+        <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+      ) : (
+        <XCircle className="h-4 w-4 shrink-0" aria-hidden />
+      )}
+      <span aria-hidden>{emailSent ? "Ja" : "Nee"}</span>
+      <span className="sr-only">E-mail: {emailSent ? "ja" : "nee"}</span>
+    </span>
+  );
+}
+
 const EmptyState = ({ filtered }: { filtered: boolean }) => (
   <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
     <MessageSquare className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
@@ -248,16 +275,10 @@ function NotificationCard({
           </div>
         )}
 
-        {(sv.send_email || sv.email_sent_at) && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span>
-              {sv.email_sent_count
-                ? `${sv.email_sent_count} e-mail${sv.email_sent_count === 1 ? "" : "s"} verstuurd`
-                : "E-mail ingeschakeld"}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          <EmailStatusIndicator notification={notification} />
+        </div>
 
         <div className="flex gap-2">
           <Button
@@ -412,7 +433,6 @@ const NotificationList: React.FC<NotificationListProps> = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[220px]">Bericht</TableHead>
-                      <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Doelgroep</TableHead>
                       <TableHead>Periode</TableHead>
@@ -424,8 +444,6 @@ const NotificationList: React.FC<NotificationListProps> = ({
                       const sv = notification.setting_value;
                       const active = isNotificationActive(notification);
                       const target = getTargetDescription(notification, users);
-                      const typeLabel =
-                        NOTIFICATION_TYPES.find((t) => t.value === sv.type)?.label ?? sv.type;
 
                       return (
                         <TableRow key={notification.id}>
@@ -438,14 +456,6 @@ const NotificationList: React.FC<NotificationListProps> = ({
                             <span className="line-clamp-2 text-sm text-muted-foreground">
                               {sv.message}
                             </span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={getTypeBadgeClass(sv.type)}
-                              variant={sv.type === "info" ? "default" : "secondary"}
-                            >
-                              {typeLabel}
-                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge variant={active ? "default" : "secondary"}>
@@ -472,14 +482,10 @@ const NotificationList: React.FC<NotificationListProps> = ({
                                   </Badge>
                                 )}
                               </div>
-                              {(sv.send_email || sv.email_sent_at) && (
-                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Mail className="h-3.5 w-3.5" aria-hidden />
-                                  {sv.email_sent_count
-                                    ? `${sv.email_sent_count} e-mail${sv.email_sent_count === 1 ? "" : "s"}`
-                                    : "E-mail"}
-                                </span>
-                              )}
+                              <span className="flex items-center gap-1.5 text-muted-foreground">
+                                <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                <EmailStatusIndicator notification={notification} />
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>

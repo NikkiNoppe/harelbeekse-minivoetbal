@@ -1,15 +1,20 @@
 
 import React, { useState } from "react";
-import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
+import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Plus, Edit, Trash2, Euro, X } from "lucide-react";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { Settings, Plus, Edit, Trash2, Euro } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface FinancialCostSettingsModalProps {
   open: boolean;
@@ -25,15 +30,26 @@ const EMPTY_FORM = {
 export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProps> = ({ open, onOpenChange }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [showAddForm, setShowAddForm] = useState(false);
-  // ID of the item being edited inline, or null
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deletingItem, setDeletingItem] = useState<any>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data: costSettings, isLoading } = useQuery({
-    queryKey: ['cost-settings'],
-    queryFn: costSettingsService.getCostSettings
+  const { 
+    data: costSettings, 
+    isLoading,
+    isFetched,
+    error: costSettingsError,
+    refetch: refetchCostSettings 
+  } = useQuery({
+    queryKey: withOrgQueryKey(['cost-settings'], organizationId),
+    queryFn: costSettingsService.getCostSettings,
+    enabled: open && orgQueryEnabled,
+    staleTime: 0,
+    refetchOnMount: "always",
+    retry: 2,
   });
 
   const invalidateAll = () => {
@@ -73,12 +89,16 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const result = await costSettingsService.deleteCostSetting(id);
+  const handleDelete = async () => {
+    if (!deletingItem) return;
+    setIsSaving(true);
+    const result = await costSettingsService.deleteCostSetting(deletingItem.id);
+    setIsSaving(false);
     if (result.success) {
       toast({ title: "Succesvol", description: result.message });
       invalidateAll();
-      if (editingId === id) resetForm();
+      if (editingId === deletingItem.id) resetForm();
+      setDeletingItem(null);
     } else {
       toast({ title: "Fout", description: result.message, variant: "destructive" });
     }
@@ -114,178 +134,272 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
     switch (category) {
       case 'match_cost': return 'Wedstrijdkosten';
       case 'penalty': return 'Boete';
+      case 'field_cost': return 'Veldkosten';
+      case 'referee_cost': return 'Scheidsrechterkosten';
       case 'other': return 'Overig';
       default: return category;
     }
   };
 
-  const groupedSettings = costSettings?.reduce((acc, setting) => {
-    if (!acc[setting.category]) acc[setting.category] = [];
-    acc[setting.category].push(setting);
-    return acc;
-  }, {} as Record<string, any[]>) || {};
-
-  const renderInlineEditForm = () => (
-    <TableRow>
-      <TableCell colSpan={3} className="p-0">
-        <div className="bg-muted/50 border-y border-border p-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Naam *</Label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Naam van het tarief"
-                className="modal__input h-9 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Bedrag (€) *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder="0.00"
-                className="modal__input h-9 text-sm"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pt-1">
-            <button onClick={handleSave} disabled={isSaving} className="btn btn--primary text-sm py-1.5 px-4">
-              {isSaving ? 'Opslaan...' : 'Opslaan'}
-            </button>
-            <button onClick={resetForm} className="btn btn--secondary text-sm py-1.5 px-4">
-              Annuleren
-            </button>
-          </div>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'match_cost': return 'bg-brand-100 text-brand-800 border-brand-200';
+      case 'penalty': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'field_cost': return 'bg-brand-50 text-brand-dark border-brand-light';
+      case 'referee_cost': return 'bg-brand-100 text-brand-800 border-brand-200';
+      case 'other': return 'bg-muted text-card-foreground border-border';
+      default: return 'bg-muted text-card-foreground border-border';
+    }
+  };
 
   return (
-    <AppModal open={open} onOpenChange={onOpenChange} size="lg" className="max-w-4xl">
-      <AppModalHeader>
-        <AppModalTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Kostentarieven Beheer
-        </AppModalTitle>
-        <p className="app-modal-subtitle sr-only">Beheer alle kosten en boetes in het systeem</p>
-      </AppModalHeader>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">Beheer alle kosten en boetes in het systeem</p>
-          <button onClick={handleAddNew} className="btn btn--primary">
+    <>
+      <AppModal open={open} onOpenChange={onOpenChange} title="Kostentarieven Beheer" size="lg">
+        <div className="space-y-4">
+          {/* Add Form */}
+          {showAddForm && (
+            <Card className="border-primary/20 shadow-lg card-hover">
+              <CardContent className="p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Naam *</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Naam van het tarief"
+                    className="modal__input"
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Categorie *</Label>
+                  <Select value={formData.category} onValueChange={(value: any) => setFormData({ ...formData, category: value })} disabled={isSaving}>
+                    <SelectTrigger className="modal__input min-h-[44px]">
+                      <SelectValue placeholder="Selecteer categorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
+                      <SelectItem value="penalty">Boete</SelectItem>
+                      <SelectItem value="field_cost">Veldkosten</SelectItem>
+                      <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
+                      <SelectItem value="other">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Bedrag (€) *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    placeholder="0.00"
+                    className="modal__input"
+                    disabled={isSaving}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <Button
+                    onClick={handleSave}
+                    className="w-full min-h-[44px]"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Bezig..." : editingId ? "Opslaan" : "Toevoegen"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={resetForm}
+                    className="w-full min-h-[44px]"
+                    disabled={isSaving}
+                  >
+                    Annuleren
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Button
+            onClick={handleAddNew}
+            variant="secondary"
+            className="flex items-center justify-center gap-2 w-full min-h-[44px]"
+            disabled={isSaving}
+          >
             <Plus className="h-4 w-4" />
-            {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
-          </button>
-        </div>
+            {showAddForm ? "Annuleren" : "Nieuw tarief"}
+          </Button>
 
-        {/* Add new form (top-level, only for new items) */}
-        {showAddForm && !editingId && (
-          <div className="bg-muted rounded-lg p-4 border border-border">
-            <h3 className="text-lg font-semibold mb-4">Nieuw Tarief Toevoegen</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Naam *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Naam van het tarief"
-                  className="modal__input"
-                />
-              </div>
-              <div>
-                <Label>Categorie *</Label>
-                <Select value={formData.category} onValueChange={(value: any) => setFormData({ ...formData, category: value })}>
-                  <SelectTrigger className="modal__input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
-                    <SelectItem value="penalty">Boete</SelectItem>
-                    <SelectItem value="other">Overig</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Bedrag (€) *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  placeholder="0.00"
-                  className="modal__input"
-                />
-              </div>
-            </div>
-            <div className="modal__actions mt-4">
-              <button onClick={handleSave} disabled={isSaving} className="btn btn--primary">
-                {isSaving ? 'Opslaan...' : 'Toevoegen'}
-              </button>
-              <button onClick={resetForm} className="btn btn--secondary">Annuleren</button>
-            </div>
-          </div>
-        )}
+          {/* Cost Settings List */}
+          <Card className="border-primary/20 shadow-lg card-hover">
+            <CardHeader className="p-4">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-brand-dark">
+                <Settings className="h-4 w-4" />
+                Huidige tarieven
+                {costSettings && (
+                  <Badge variant="secondary" className="text-xs">
+                    {costSettings.length} items
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              {isLoading && !costSettings ? (
+                <div className="text-center py-8 text-muted-foreground" aria-busy="true">
+                  Tarieven laden...
+                </div>
+              ) : costSettingsError && isFetched ? (
+                <div className="text-center py-8 space-y-3">
+                  <p className="text-sm text-destructive">Tarieven konden niet geladen worden.</p>
+                  <Button
+                    variant="outline"
+                    className="min-h-[44px]"
+                    onClick={() => void refetchCostSettings()}
+                  >
+                    Opnieuw proberen
+                  </Button>
+                </div>
+              ) : costSettings && costSettings.length > 0 ? (
+                <ul className="space-y-2">
+                  {costSettings.map((setting) => (
+                    <li
+                      key={setting.id}
+                      className={cn(
+                        "rounded-lg border border-primary/20 bg-card p-3 transition-shadow hover:shadow-sm",
+                        editingId === setting.id && "ring-1 ring-primary/30"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col min-w-0 flex-1 gap-1">
+                          <p className="text-sm font-medium text-brand-dark truncate">{setting.name}</p>
+                          <Badge className={cn("w-fit border", getCategoryColor(setting.category))}>
+                            {getCategoryLabel(setting.category)}
+                          </Badge>
+                        </div>
+                        <span className="text-sm font-semibold text-brand-dark tabular-nums whitespace-nowrap shrink-0">
+                          {setting.amount == null
+                            ? "Variabel"
+                            : formatCurrency(Number(setting.amount))}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => editingId === setting.id ? resetForm() : handleEdit(setting)}
+                            className={cn(
+                              "min-h-[44px] min-w-[44px] border-primary/20",
+                              editingId === setting.id && "bg-brand-50"
+                            )}
+                            disabled={isSaving}
+                            aria-label="Bewerk tarief"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeletingItem(setting)}
+                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            disabled={isSaving}
+                            aria-label="Verwijder tarief"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
 
-        {/* Settings by Category */}
-        {Object.entries(groupedSettings).map(([category, settings]) => (
-          <div key={category} className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Euro className="h-5 w-5" />
-              {getCategoryLabel(category)}
-            </h3>
-
-            <div className="overflow-x-auto">
-              <Table className="table min-w-full">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Naam</TableHead>
-                    <TableHead className="text-right">Bedrag</TableHead>
-                    <TableHead className="text-center">Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {settings.map((setting: any) => (
-                    <React.Fragment key={setting.id}>
-                      <TableRow className={editingId === setting.id ? 'bg-muted/30' : ''}>
-                        <TableCell className="font-medium">{setting.name}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(setting.amount)}
-                        </TableCell>
-                        <TableCell className="flex gap-2 justify-end">
-                          {editingId === setting.id ? (
-                            <button onClick={resetForm} className="btn btn--outline p-2">
-                              <X className="h-3 w-3" />
-                            </button>
-                          ) : (
-                            <button onClick={() => handleEdit(setting)} className="btn btn--outline p-2">
-                              <Edit className="h-3 w-3" />
-                            </button>
-                          )}
-                          <button onClick={() => handleDelete(setting.id)} className="btn btn--danger p-2">
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                      {/* Inline edit form directly under the selected row */}
-                      {editingId === setting.id && renderInlineEditForm()}
-                    </React.Fragment>
+                      {editingId === setting.id && (
+                        <div className="mt-3 pt-3 border-t border-primary/20 space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs font-medium text-brand-dark">Naam</Label>
+                              <Input
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Naam"
+                                className="modal__input min-h-[44px]"
+                                disabled={isSaving}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs font-medium text-brand-dark">Bedrag (€)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={formData.amount}
+                                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                placeholder="0.00"
+                                className="modal__input min-h-[44px]"
+                                disabled={isSaving}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button
+                              onClick={handleSave}
+                              className="flex-1 min-h-[44px]"
+                              disabled={isSaving}
+                            >
+                              {isSaving ? "Bezig..." : "Opslaan"}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={resetForm}
+                              className="flex-1 min-h-[44px]"
+                              disabled={isSaving}
+                            >
+                              Annuleren
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
                   ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        ))}
+                </ul>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nog geen tarieven gedefinieerd
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </AppModal>
 
-        {isLoading && (
-          <div className="flex items-center justify-center h-40">
-            <p className="text-muted-foreground">Kostentarieven laden...</p>
-          </div>
-        )}
-      </div>
-    </AppModal>
+      <AppAlertModal
+        open={!!deletingItem}
+        onOpenChange={(openState) => {
+          if (!openState) setDeletingItem(null);
+        }}
+        title="Tarief verwijderen"
+        description={
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je{" "}
+                <span className="font-semibold text-destructive">{deletingItem?.name}</span>{" "}
+                wilt verwijderen?
+              </>
+            }
+          />
+        }
+        confirmAction={{
+          label: isSaving ? "Verwijderen..." : "Verwijderen",
+          onClick: handleDelete,
+          variant: "destructive",
+          disabled: isSaving,
+          loading: isSaving,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setDeletingItem(null),
+          variant: "secondary",
+          disabled: isSaving,
+        }}
+      />
+    </>
   );
 };

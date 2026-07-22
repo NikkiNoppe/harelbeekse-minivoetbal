@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 
 interface Transaction {
@@ -42,6 +44,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -52,8 +55,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   });
 
   const { data: costSettings } = useQuery({
-    queryKey: ['cost-settings'],
-    queryFn: costSettingsService.getCostSettings
+    queryKey: withOrgQueryKey(['cost-settings'], organizationId),
+    queryFn: costSettingsService.getCostSettings,
+    enabled: open && orgQueryEnabled,
   });
 
   // Initialize form when transaction changes

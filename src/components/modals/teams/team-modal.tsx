@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 // Removed Textarea import as extra notes are no longer used
 import { Checkbox } from "@/components/ui/checkbox";
-import { Palette, X } from "lucide-react";
+import { Palette, Plus, Trash2, X } from "lucide-react";
 import { seasonService } from "@/services";
 import { cn } from "@/lib/utils";
+import { joinContactEmails, parseContactEmails } from "@/lib/contactEmails";
+import { Button } from "@/components/ui/button";
 
 interface TeamModalProps {
   open: boolean;
@@ -71,6 +73,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
   const [colorName, setColorName] = useState('');
   const [colorHex1, setColorHex1] = useState('#000000');
   const [colorHex2, setColorHex2] = useState<string | null>(null);
+  const [contactEmailFields, setContactEmailFields] = useState<string[]>([""]);
 
   // Helper functions for color handling
   const getHexFromColor = useCallback((color: string): string => {
@@ -248,6 +251,41 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editingTeam?.team_id, editingTeam?.contact_person, editingTeam?.contact_email, editingTeam?.contact_phone, editingTeam?.club_colors, editingTeam?.team_name, hideTeamName]);
+
+  useEffect(() => {
+    if (!open) return;
+    const raw = formData?.contact_email ?? editingTeam?.contact_email ?? "";
+    setContactEmailFields(parseContactEmails(raw));
+  }, [open, editingTeam?.contact_email, editingTeam?.team_id, formData?.contact_email]);
+
+  const syncContactEmails = useCallback(
+    (fields: string[]) => {
+      setContactEmailFields(fields);
+      onFormChange("contact_email", joinContactEmails(fields));
+    },
+    [onFormChange],
+  );
+
+  const handleContactEmailChange = useCallback(
+    (index: number, value: string) => {
+      const next = [...contactEmailFields];
+      next[index] = value;
+      syncContactEmails(next);
+    },
+    [contactEmailFields, syncContactEmails],
+  );
+
+  const handleAddContactEmail = useCallback(() => {
+    syncContactEmails([...contactEmailFields, ""]);
+  }, [contactEmailFields, syncContactEmails]);
+
+  const handleRemoveContactEmail = useCallback(
+    (index: number) => {
+      const next = contactEmailFields.filter((_, i) => i !== index);
+      syncContactEmails(next.length > 0 ? next : [""]);
+    },
+    [contactEmailFields, syncContactEmails],
+  );
 
   // Sync colors from formData when modal opens or formData changes
   useEffect(() => {
@@ -444,7 +482,6 @@ export const TeamModal: React.FC<TeamModalProps> = ({
     // Use formData if available, otherwise fall back to editingTeam
     const contactPerson = formData?.contact_person ?? editingTeam?.contact_person ?? '';
     const contactPhone = formData?.contact_phone ?? editingTeam?.contact_phone ?? '';
-    const contactEmail = formData?.contact_email ?? editingTeam?.contact_email ?? '';
     
     return (
       <>
@@ -453,7 +490,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
             <label className="text-brand-dark font-medium">Contactpersoon</label>
             <Input
               placeholder="Naam contactpersoon"
-              className="modal__input"
+              className="modal__input min-h-[44px]"
               value={contactPerson}
               onChange={(e) => handleInputChange('contact_person', e.target.value)}
               disabled={isLoading}
@@ -464,7 +501,7 @@ export const TeamModal: React.FC<TeamModalProps> = ({
             <label className="text-brand-dark font-medium">Telefoon</label>
             <Input
               placeholder="Telefoonnummer"
-              className="modal__input"
+              className="modal__input min-h-[44px]"
               value={contactPhone}
               onChange={(e) => handleInputChange('contact_phone', e.target.value)}
               disabled={isLoading}
@@ -473,18 +510,51 @@ export const TeamModal: React.FC<TeamModalProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-brand-dark font-medium">Email</label>
-          <Input
-            placeholder="Email adres"
-            className="modal__input"
-            value={contactEmail}
-            onChange={(e) => handleInputChange('contact_email', e.target.value)}
+          <label className="text-brand-dark font-medium">E-mail</label>
+          <div className="space-y-2">
+            {contactEmailFields.map((email, index) => (
+              <div key={`contact-email-${index}`} className="flex items-center gap-2">
+                <Input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder={index === 0 ? "E-mailadres" : "Extra e-mailadres"}
+                  className="modal__input !mb-0 h-11 min-h-11 flex-1 min-w-0"
+                  value={email}
+                  onChange={(e) => handleContactEmailChange(index, e.target.value)}
+                  disabled={isLoading}
+                  aria-label={index === 0 ? "E-mailadres" : `Extra e-mailadres ${index + 1}`}
+                />
+                {contactEmailFields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10"
+                    onClick={() => handleRemoveContactEmail(index)}
+                    disabled={isLoading}
+                    aria-label={`Verwijder e-mailadres ${index + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-[44px] w-full border-primary/20"
+            onClick={handleAddContactEmail}
             disabled={isLoading}
-          />
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            E-mailadres toevoegen
+          </Button>
         </div>
       </>
     );
-  }, [formData, editingTeam, handleInputChange, isLoading]);
+  }, [formData, editingTeam, handleInputChange, isLoading, contactEmailFields, handleContactEmailChange, handleAddContactEmail, handleRemoveContactEmail]);
 
   const clubColorsSection = useMemo(() => (
     <div className="space-y-2">
@@ -648,38 +718,21 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
                     "min-h-[48px] touch-manipulation",
                     selected 
-                      ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
+                      ? "border-primary bg-primary/10 shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-primary/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  style={selected ? {
-                    borderColor: 'var(--accent)',
-                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
-                  } : {}}
                 >
                   <div className="relative flex-shrink-0 flex items-center justify-center">
                     <Checkbox
                       id={`day-${day}`}
                       className={cn(
                         "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        "h-5 w-5 min-h-5 min-w-5",
                         selected 
-                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          ? "border-primary bg-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white" 
                           : "border-[var(--color-300)] bg-white"
                       )}
-                      style={selected ? {
-                        borderColor: 'var(--accent)',
-                        backgroundColor: 'var(--accent)',
-                        color: 'white',
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      } : {
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      }}
                       checked={selected}
                       onCheckedChange={(checked) => handlePreferenceChange('days', day, checked as boolean)}
                       disabled={isLoading}
@@ -705,17 +758,13 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                   </div>
                   <span className={cn(
                     "text-sm font-medium flex-1",
-                    selected ? "text-foreground" : "text-foreground"
+                    selected ? "text-brand-dark" : "text-foreground"
                   )}
-                  style={selected ? { color: 'var(--accent)' } : {}}
                   >
                     {day}
                   </span>
                   {selected && (
-                    <div 
-                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: 'var(--accent)' }}
-                    />
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0 bg-primary" />
                   )}
                 </label>
               );
@@ -739,38 +788,21 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "relative flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
                     "min-h-[48px] touch-manipulation",
                     selected 
-                      ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
+                      ? "border-primary bg-primary/10 shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-primary/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  style={selected ? {
-                    borderColor: 'var(--accent)',
-                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
-                  } : {}}
                 >
                   <div className="relative flex-shrink-0 flex items-center justify-center">
                     <Checkbox
                       id={`timeslot-${timeslot.id}`}
                       className={cn(
                         "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        "h-5 w-5 min-h-5 min-w-5",
                         selected 
-                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          ? "border-primary bg-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white" 
                           : "border-[var(--color-300)] bg-white"
                       )}
-                      style={selected ? {
-                        borderColor: 'var(--accent)',
-                        backgroundColor: 'var(--accent)',
-                        color: 'white',
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      } : {
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      }}
                       checked={selected}
                       onCheckedChange={(checked) => handlePreferenceChange('timeslots', timeslot.id, checked as boolean)}
                       disabled={isLoading}
@@ -796,17 +828,13 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                   </div>
                   <span className={cn(
                     "text-sm font-medium flex-1",
-                    selected ? "text-foreground" : "text-foreground"
+                    selected ? "text-brand-dark" : "text-foreground"
                   )}
-                  style={selected ? { color: 'var(--accent)' } : {}}
                   >
                     {timeslot.label}
                   </span>
                   {selected && (
-                    <div 
-                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: 'var(--accent)' }}
-                    />
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0 bg-primary" />
                   )}
                 </label>
               );
@@ -830,38 +858,21 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                     "relative flex items-start gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer",
                     "min-h-[48px] touch-manipulation",
                     selected 
-                      ? "bg-accent/10 border-accent shadow-sm" 
-                      : "bg-white border-[var(--color-200)] hover:border-accent/50 hover:bg-muted",
+                      ? "border-primary bg-primary/10 shadow-sm" 
+                      : "bg-white border-[var(--color-200)] hover:border-primary/50 hover:bg-muted",
                     isLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  style={selected ? {
-                    borderColor: 'var(--accent)',
-                    backgroundColor: 'color-mix(in srgb, var(--accent) 10%, white)'
-                  } : {}}
                 >
                   <div className="relative flex-shrink-0 flex items-center justify-center mt-0.5">
                     <Checkbox
                       id={`venue-${venue.venue_id}`}
                       className={cn(
                         "rounded border-2 transition-all [&>svg]:hidden [&_[data-radix-checkbox-indicator]]:hidden",
+                        "h-5 w-5 min-h-5 min-w-5",
                         selected 
-                          ? "border-accent bg-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent data-[state=checked]:text-white" 
+                          ? "border-primary bg-primary data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-white" 
                           : "border-[var(--color-300)] bg-white"
                       )}
-                      style={selected ? {
-                        borderColor: 'var(--accent)',
-                        backgroundColor: 'var(--accent)',
-                        color: 'white',
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      } : {
-                        width: '20px',
-                        height: '20px',
-                        minWidth: '20px',
-                        minHeight: '20px'
-                      }}
                       checked={selected}
                       onCheckedChange={(checked) => handlePreferenceChange('venues', venue.venue_id, checked as boolean)}
                       disabled={isLoading}
@@ -888,28 +899,22 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                   <div className="flex-1 min-w-0">
                     <span className={cn(
                       "text-sm font-medium block",
-                      selected ? "text-foreground" : "text-foreground"
+                      selected ? "text-brand-dark" : "text-foreground"
                     )}
-                    style={selected ? { color: 'var(--accent)' } : {}}
                     >
                       {venue.name}
                     </span>
                     {venue.address && (
                       <span className={cn(
-                        "text-xs block mt-0.5",
-                        selected ? "text-muted-foreground" : "text-muted-foreground"
+                        "text-xs block mt-0.5 text-muted-foreground"
                       )}
-                      style={selected ? { color: 'var(--accent)', opacity: 0.8 } : {}}
                       >
                         {venue.address}
                       </span>
                     )}
                   </div>
                   {selected && (
-                    <div 
-                      className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: 'var(--accent)' }}
-                    />
+                    <div className="absolute top-1 right-1 w-2 h-2 rounded-full flex-shrink-0 bg-primary" />
                   )}
                 </label>
               );

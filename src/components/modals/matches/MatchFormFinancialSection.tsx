@@ -15,6 +15,7 @@ import type {
   MatchFormSavedPenalty,
   MatchFormTeamOption,
 } from "@/components/modals/matches/matchFormTypes";
+import { isAdminMatchCostName } from "@/services/financial/teamCostCategories";
 
 function MatchCostsLoadingSkeleton() {
   return (
@@ -346,7 +347,10 @@ export function MatchFormFinancialSection({
                       blijven gelden zolang de wedstrijd gespeeld is.
                     </p>
                   ) : (
-                    <p>Forfait actief — standaard wedstrijdkosten vervallen voor deze wedstrijd.</p>
+                    <p>
+                      Forfait actief — veld- en scheidskosten vervallen. Administratiekosten blijven
+                      voor beide teams doorlopen.
+                    </p>
                   )}
                 </div>
               )}
@@ -401,7 +405,9 @@ export function MatchFormFinancialSection({
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {matchCosts.map((cost) => (
+                    {matchCosts.map((cost) => {
+                      const isLockedAdminCost = isAdminMatchCostName(cost.costName);
+                      return (
                       <div
                         key={cost.id}
                         className="flex items-center justify-between gap-3 rounded-lg border bg-white p-3 text-sm shadow-sm transition-all duration-150 hover:shadow-md"
@@ -485,14 +491,30 @@ export function MatchFormFinancialSection({
                           <Button
                             type="button"
                             onClick={() => onDeleteMatchCost(cost.id)}
-                            className="btn btn--icon btn--danger shrink-0"
-                            aria-label="Kost verwijderen"
+                            className={cn(
+                              "btn btn--icon shrink-0 min-h-[44px] min-w-[44px]",
+                              isLockedAdminCost
+                                ? "cursor-not-allowed opacity-40 text-muted-foreground"
+                                : "btn--danger",
+                            )}
+                            disabled={isLockedAdminCost}
+                            aria-label={
+                              isLockedAdminCost
+                                ? "Administratiekosten kunnen niet worden verwijderd"
+                                : "Kost verwijderen"
+                            }
+                            title={
+                              isLockedAdminCost
+                                ? "Administratiekosten blijven altijd staan"
+                                : undefined
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}

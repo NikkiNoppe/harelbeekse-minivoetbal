@@ -40,9 +40,9 @@ const managementActions: ActionItem[] = [
 ];
 
 const organisatieActions: ActionItem[] = [
-  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
-  { key: "blog-management", label: "Blog Beheer", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
+  { key: "blog-management", label: "Blog", icon: <BookOpen size={16} />, path: ADMIN_ROUTES["blog-management"], adminOnly: true },
   { key: "notification", label: "Berichten", icon: <MessageSquare size={16} />, path: ADMIN_ROUTES["notification"], adminOnly: true },
+  { key: "settings", label: "Instellingen", icon: <Settings size={16} />, path: ADMIN_ROUTES.settings, adminOnly: true },
 ];
 
 const systemActions: ActionItem[] = [

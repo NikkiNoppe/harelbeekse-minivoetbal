@@ -89,9 +89,9 @@ export const FINANCIEEL_ITEMS: NavItem[] = [
 
 /** Org-admin: seizoen, regels, blog, berichten, tab-zichtbaarheid (niet platformbreed). */
 export const HEADER_ORGANISATIE_ITEMS: NavItem[] = [
-  { key: "settings", label: "Competitie-instellingen", icon: Settings, adminOnly: true },
-  { key: "blog-management", label: "Blog beheer", icon: BookOpen, adminOnly: true },
+  { key: "blog-management", label: "Blog", icon: BookOpen, adminOnly: true },
   { key: "notification", label: "Berichten", icon: MessageSquare, adminOnly: true },
+  { key: "settings", label: "Instellingen", icon: Settings, adminOnly: true },
 ];
 
 /** SuperAdmin: multi-tenant platform. */
@@ -273,7 +273,7 @@ export function getMobileSheetSections(input: MobileSheetNavInput): MobileSheetS
   if (competitiebeheer.length > 0) {
     sections.push({
       id: "competitiebeheer",
-      title: "Competitiebeheer",
+      title: "Beheer",
       items: competitiebeheer,
       collapsible: competitiebeheer.length > 1,
       defaultOpen: false,

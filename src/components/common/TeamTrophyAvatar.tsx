@@ -63,8 +63,11 @@ const getBackgroundStyle = (clubColors?: string | null): React.CSSProperties | u
   const colors = parseHexColors(clubColors);
   if (colors.length === 0) return undefined;
   if (colors.length === 1) return { backgroundColor: colors[0] };
+  // Solid second color as base so circle anti-aliasing doesn't leak the first
+  // color along the rim of the second half (e.g. cyan fringe on white).
   return {
-    background: `linear-gradient(135deg, ${colors[0]} 0%, ${colors[0]} 50%, ${colors[1]} 50%, ${colors[1]} 100%)`,
+    backgroundColor: colors[1],
+    backgroundImage: `linear-gradient(135deg, ${colors[0]} 50%, transparent 50%)`,
   };
 };
 
@@ -78,7 +81,8 @@ const getTrophyIconClass = (clubColors?: string | null): string => {
 
   const lightCount = colors.filter(isLightHex).length;
   if (lightCount === colors.length) return "text-gray-800";
-  if (lightCount > 0) return "text-gray-900 drop-shadow-sm";
+  // Mixed light/dark (e.g. yellow–black): white reads better on the dark half
+  if (lightCount > 0) return "text-white drop-shadow-sm";
   return "text-white";
 };
 
@@ -102,14 +106,23 @@ export const TeamTrophyAvatar: React.FC<TeamTrophyAvatarProps> = ({
   return (
     <div
       className={cn(
-        "rounded-full flex items-center justify-center font-bold shadow-md overflow-hidden relative flex-shrink-0 border border-black/10",
+        "relative flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full font-bold isolate",
+        // Subtiele rand + inset ring: maskeert gradient anti-aliasing aan de cirkelrand
+        "border border-black/20",
+        "shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_0_0_1px_rgba(0,0,0,0.12)]",
         sizeClasses,
         !clubColors && "bg-primary",
         className,
       )}
-      style={backgroundStyle}
       aria-hidden
     >
+      {backgroundStyle ? (
+        <span
+          className="pointer-events-none absolute inset-[1px] overflow-hidden rounded-full"
+          style={backgroundStyle}
+          aria-hidden
+        />
+      ) : null}
       <Trophy className={cn(iconSize, "relative z-10", iconClass)} />
     </div>
   );

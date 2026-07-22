@@ -8,6 +8,11 @@ import {
   matchSkipAutoMatchCosts,
 } from "./matchCostService";
 
+vi.mock("@/lib/authSession", () => ({
+  getRpcSessionArgs: vi.fn(() => ({ p_session_token: "test-token" })),
+  getEdgeFunctionHeaders: vi.fn(() => ({})),
+}));
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     rpc: vi.fn(),
@@ -15,7 +20,21 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("@/services/core/matchesSessionFetch", () => ({
+  fetchMatchForSession: vi.fn(),
+  fetchAllMatchesForSession: vi.fn(),
+}));
+
+vi.mock("@/services/financial/costsSessionFetch", () => ({
+  fetchCostsForSession: vi.fn(),
+}));
+
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMatchForSession } from "@/services/core/matchesSessionFetch";
+import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
+
+const mockFetchMatchForSession = vi.mocked(fetchMatchForSession);
+const mockFetchCostsForSession = vi.mocked(fetchCostsForSession);
 
 const mockRpc = vi.mocked(supabase.rpc);
 const mockFrom = vi.mocked(supabase.from);
@@ -60,13 +79,18 @@ describe("matchHasForfaitPenalty", () => {
   });
 
   it("valt terug op team_costs query", async () => {
-    mockRpc.mockResolvedValueOnce({ data: null, error: { message: "rpc missing" } });
-    mockFrom.mockReturnValueOnce(
-      chain({
-        data: [{ costs: { name: "Forfait", category: "penalty" } }],
-        error: null,
-      }) as never
-    );
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === "match_has_forfait_penalty") {
+        return Promise.resolve({ data: null, error: { message: "rpc missing" } });
+      }
+      if (fn === "get_team_costs_for_match") {
+        return Promise.resolve({
+          data: [{ cost_name: "Forfait", cost_category: "penalty" }],
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
     await expect(matchHasForfaitPenalty(7)).resolves.toBe(true);
   });
 });
@@ -75,9 +99,7 @@ describe("matchSkipAutoMatchCosts", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("leest skip_auto_match_costs van matches", async () => {
-    mockFrom.mockReturnValueOnce(
-      chain({ data: { skip_auto_match_costs: true }, error: null }) as never
-    );
+    mockFetchMatchForSession.mockResolvedValueOnce({ skip_auto_match_costs: true } as never);
     await expect(matchSkipAutoMatchCosts(99)).resolves.toBe(true);
   });
 });
@@ -116,38 +138,38 @@ describe("findForfaitVerwittigdPenaltyCost", () => {
 });
 
 describe("shouldSyncMatchCostsAfterMatchUpdate", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetchMatchForSession.mockResolvedValue({ skip_auto_match_costs: false } as never);
+  });
 
-  it("blokkeert sync bij forfait-boete", async () => {
+  it("staat sync toe bij forfait op indiening (admin-kosten)", async () => {
     mockRpc.mockResolvedValue({ data: true, error: null });
-    mockFrom.mockReturnValue(
-      chain({ data: { skip_auto_match_costs: false }, error: null }) as never
-    );
-    await expect(shouldSyncMatchCostsAfterMatchUpdate(1, true)).resolves.toBe(false);
+    mockFetchCostsForSession.mockResolvedValue([{ id: 10, name: "Administratiekosten" }] as never);
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === "match_has_forfait_penalty") return Promise.resolve({ data: true, error: null });
+      if (fn === "get_team_costs_for_match") {
+        return Promise.resolve({ data: [{ cost_setting_id: 10 }], error: null });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
+    await expect(shouldSyncMatchCostsAfterMatchUpdate(1, true)).resolves.toBe(true);
   });
 
   it("blokkeert sync bij skip_auto_match_costs", async () => {
-    mockRpc.mockResolvedValue({ data: false, error: null });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "matches") {
-        return chain({ data: { skip_auto_match_costs: true }, error: null }) as never;
-      }
-      return chain({ data: [{ id: 1 }], error: null, count: 2 }) as never;
-    });
+    mockFetchMatchForSession.mockResolvedValue({ skip_auto_match_costs: true } as never);
     await expect(shouldSyncMatchCostsAfterMatchUpdate(1, true)).resolves.toBe(false);
   });
 
   it("staat sync toe bij eerste indiening zonder forfait", async () => {
-    mockRpc.mockResolvedValue({ data: false, error: null });
-    mockFrom.mockImplementation((table: string) => {
-      if (table === "matches") {
-        return chain({ data: { skip_auto_match_costs: false }, error: null }) as never;
+    mockRpc.mockImplementation((fn: string) => {
+      if (fn === "match_has_forfait_penalty") return Promise.resolve({ data: false, error: null });
+      if (fn === "get_team_costs_for_match") {
+        return Promise.resolve({ data: [{ cost_setting_id: 10 }, { cost_setting_id: 10 }], error: null });
       }
-      if (table === "costs") {
-        return chain({ data: [{ id: 10, name: "Veldkosten" }], error: null }) as never;
-      }
-      return chain({ data: null, error: null, count: 2 }) as never;
+      return Promise.resolve({ data: null, error: null });
     });
+    mockFetchCostsForSession.mockResolvedValue([{ id: 10, name: "Veldkosten" }] as never);
     await expect(shouldSyncMatchCostsAfterMatchUpdate(1, true)).resolves.toBe(true);
   });
 });

@@ -7,14 +7,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
 import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive } from "lucide-react";
 import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
+import { ADMIN_ROUTES } from "@/config/routes";
 import { competitionService, CompetitionConfig } from "@/services/match/competitionService";
 import type { CompetitionFormat } from "@/services/competitionDataService";
 import { normalizeCompetitionFormats } from "@/services/competitionDataService";
 import { teamService } from "@/services/core/teamService";
-import { seasonService } from "@/services/seasonService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 const AdminCompetitionPage: React.FC = () => {
+  const { organizationId, orgQueryEnabled, getSeasonData } = useSeasonDataScope();
   const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
@@ -40,10 +43,11 @@ const AdminCompetitionPage: React.FC = () => {
     return map;
   }, [teams]);
 
-  // Load initial data
+  // Load initial data (season_data = Instellingen → Competitie)
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (!orgQueryEnabled || organizationId == null) return;
+    void loadInitialData();
+  }, [orgQueryEnabled, organizationId]);
 
   const loadInitialData = async () => {
     try {
@@ -52,8 +56,7 @@ const AdminCompetitionPage: React.FC = () => {
       const teamsData = await teamService.getAllTeams();
       setTeams(teamsData);
 
-      // Load formats
-      const seasonData = await seasonService.getSeasonData();
+      const seasonData = await getSeasonData();
       setFormats(normalizeCompetitionFormats(seasonData.competition_formats || []));
       setVenues(seasonData.venues || []);
       setTimeslots(seasonData.venue_timeslots || []);
@@ -105,7 +108,8 @@ const AdminCompetitionPage: React.FC = () => {
         format,
         start_date: startDate,
         end_date: endDate,
-        teams: selectedTeams
+        teams: selectedTeams,
+        organizationId: organizationId ?? undefined,
       };
 
       let createResult: { success: boolean; message: string };
@@ -155,7 +159,8 @@ const AdminCompetitionPage: React.FC = () => {
         format,
         start_date: startDate,
         end_date: endDate,
-        teams: selectedTeams
+        teams: selectedTeams,
+        organizationId: organizationId ?? undefined,
       };
       const res = await competitionService.previewCompetition(config);
       if (!res.success || !res.plan || res.plan.length === 0) {
@@ -274,6 +279,21 @@ const AdminCompetitionPage: React.FC = () => {
             {/* Voorziene presets (alleen-lezen) */}
             <div className="space-y-2">
               <Label>Seizoensinstellingen (alleen-lezen)</Label>
+              {(venues.length === 0 || timeslots.length === 0) ? (
+                <Alert className="border-primary/20 bg-brand-50/40">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    Locaties en tijdstippen staan in{" "}
+                    <Link
+                      to={ADMIN_ROUTES.settings}
+                      className="font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      Instellingen → Competitie
+                    </Link>
+                    . Configureer ze daar vóór je een competitie genereert.
+                  </AlertDescription>
+                </Alert>
+              ) : null}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-3 rounded-md border bg-white">
                   <div className="text-xs text-muted-foreground">Seizoensperiode</div>

@@ -137,10 +137,20 @@ const NotificationPage: React.FC = () => {
           });
 
           if (emailResult.queued === 0) {
+            const detailParts: string[] = [];
+            if (emailResult.suppressed > 0) {
+              detailParts.push(`${emailResult.suppressed} onderdrukt`);
+            }
+            if (emailResult.failed > 0) {
+              detailParts.push(`${emailResult.failed} mislukt`);
+            }
+            const sample = emailResult.failureSample?.[0];
             throw new Error(
               emailResult.totalRecipients === 0
                 ? "Geen ontvangers met een e-mailadres gevonden."
-                : "Geen e-mails verstuurd (onderdrukt of mislukt).",
+                : detailParts.length > 0
+                  ? `Geen e-mails verstuurd (${detailParts.join(", ")}).${sample ? ` ${sample}` : ""}`
+                  : "Geen e-mails verstuurd (onderdrukt of mislukt).",
             );
           }
 
@@ -191,8 +201,12 @@ const NotificationPage: React.FC = () => {
           });
         }
 
-        await refreshData();
         handleDialogClose();
+        try {
+          await refreshData();
+        } catch (refreshError) {
+          console.error("Error refreshing notifications after save:", refreshError);
+        }
       } catch (err) {
         console.error("Error saving notification:", err);
         toast({

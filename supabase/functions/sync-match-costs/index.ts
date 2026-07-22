@@ -58,13 +58,20 @@ async function matchHasForfaitPenalty(matchId: number): Promise<boolean> {
   });
 }
 
-async function deleteActiveMatchCostsForMatch(matchId: number): Promise<void> {
+function costNameIsAdminMatchCost(name: string | null | undefined): boolean {
+  const n = (name || '').toLowerCase().trim();
+  return n.includes('administratie') || n.includes('admin');
+}
+
+async function deleteNonAdminMatchCostsForMatch(matchId: number): Promise<void> {
   const { data: mcRows, error: mcErr } = await supabaseServiceRole
     .from('costs')
-    .select('id')
+    .select('id, name')
     .eq('category', 'match_cost');
   if (mcErr) throw new Error(mcErr.message);
-  const ids = (mcRows || []).map((c: { id: number }) => c.id);
+  const ids = (mcRows || [])
+    .filter((c: { name?: string | null }) => !costNameIsAdminMatchCost(c.name))
+    .map((c: { id: number }) => c.id);
   if (ids.length === 0) return;
   await supabaseServiceRole.from('team_costs').delete().eq('match_id', matchId).in('cost_setting_id', ids);
 }
@@ -102,14 +109,64 @@ Deno.serve(async (req) => {
     }
 
     if (await matchHasForfaitPenalty(matchId)) {
-      await deleteActiveMatchCostsForMatch(matchId);
-      console.log('Forfait penalty on match; removed wedstrijdkosten');
+      await deleteNonAdminMatchCostsForMatch(matchId);
+
+      const { data: matchCosts, error: costErr } = await supabaseServiceRole
+        .from('costs')
+        .select('id, name, amount')
+        .eq('category', 'match_cost');
+      if (costErr) throw new Error(`Failed to load cost settings: ${costErr.message}`);
+
+      const costSettings = matchCosts || [];
+      const findCostByType = (type: 'veld' | 'scheids' | 'administratie') => {
+        const searchTerms = type === 'administratie'
+          ? ['administratie', 'admin']
+          : [];
+        return costSettings.find((cs: { name?: string | null }) => {
+          const name = (cs.name || '').toLowerCase();
+          return searchTerms.some((term) => name.includes(term));
+        });
+      };
+
+      const adminCostSetting = findCostByType('administratie');
+      const transactionDate = matchDateISO ? matchDateISO.slice(0, 10) : new Date().toISOString().slice(0, 10);
+      const processedCosts: Record<string, unknown> = {};
+
+      const ensureCostExists = async (teamId: number, costSetting: { id: number; amount?: number | null } | undefined, costType: string) => {
+        if (!costSetting) return;
+        const desired = Number(costSetting.amount ?? 0);
+        const { data: existingRows, error: existErr } = await supabaseServiceRole
+          .from('team_costs')
+          .select('id, amount')
+          .eq('team_id', teamId)
+          .eq('match_id', matchId)
+          .eq('cost_setting_id', costSetting.id)
+          .eq('is_auto_card_penalty', false);
+        if (existErr) throw new Error(`Failed to check existing ${costType} costs: ${existErr.message}`);
+        if ((existingRows || []).length === 0) {
+          const { error: insertErr } = await supabaseServiceRole.from('team_costs').insert({
+            team_id: teamId,
+            cost_setting_id: costSetting.id,
+            amount: desired,
+            transaction_date: transactionDate,
+            match_id: matchId,
+            is_auto_card_penalty: false,
+          });
+          if (insertErr) throw new Error(`Failed to insert ${costType} cost: ${insertErr.message}`);
+          processedCosts[`${costType}_team_${teamId}`] = { inserted: true, amount: desired };
+        }
+      };
+
+      await ensureCostExists(homeTeamId, adminCostSetting, 'admin');
+      await ensureCostExists(awayTeamId, adminCostSetting, 'admin');
+
+      console.log('Forfait penalty on match; kept admin costs only');
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Forfait: geen veld/scheids/admin-wedstrijdkosten (alleen boete)',
+          message: 'Forfait: veld/scheids vervallen; administratiekosten behouden',
           forfait: true,
-          skipped: true,
+          processedCosts,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -117,7 +174,7 @@ Deno.serve(async (req) => {
 
     const { data: skipRow, error: skipErr } = await supabaseServiceRole
       .from('matches')
-      .select('skip_auto_match_costs')
+      .select('skip_auto_match_costs, assigned_referee_id, referee')
       .eq('match_id', matchId)
       .maybeSingle();
     if (!skipErr && skipRow?.skip_auto_match_costs === true) {
@@ -241,9 +298,29 @@ Deno.serve(async (req) => {
     await ensureCostExists(homeTeamId, fieldCostSetting, 'field');
     await ensureCostExists(awayTeamId, fieldCostSetting, 'field');
 
-    // Process referee costs for both teams
-    await ensureCostExists(homeTeamId, refereeCostSetting, 'referee');
-    await ensureCostExists(awayTeamId, refereeCostSetting, 'referee');
+    // Scheidskosten alleen bij toegewezen scheids; anders opruimen
+    const dbRefereeText = typeof skipRow?.referee === 'string' ? skipRow.referee : null;
+    const requestRefereeText = typeof referee === 'string' ? referee : null;
+    const hasReferee =
+      skipRow?.assigned_referee_id != null ||
+      (requestRefereeText != null && requestRefereeText.trim() !== '') ||
+      (dbRefereeText != null && dbRefereeText.trim() !== '');
+
+    if (hasReferee) {
+      await ensureCostExists(homeTeamId, refereeCostSetting, 'referee');
+      await ensureCostExists(awayTeamId, refereeCostSetting, 'referee');
+    } else if (refereeCostSetting) {
+      const { error: delRefErr } = await supabaseServiceRole
+        .from('team_costs')
+        .delete()
+        .eq('match_id', matchId)
+        .eq('cost_setting_id', refereeCostSetting.id);
+      if (delRefErr) {
+        console.error('Failed to remove orphan referee costs:', delRefErr);
+      } else {
+        processedCosts.referee_cleared = true;
+      }
+    }
 
     // Process admin costs for both teams
     await ensureCostExists(homeTeamId, adminCostSetting, 'admin');
@@ -252,7 +329,7 @@ Deno.serve(async (req) => {
     console.log('Match cost sync completed successfully');
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Wedstrijdkosten gesynchroniseerd', processedCosts, referee }),
+      JSON.stringify({ success: true, message: 'Wedstrijdkosten gesynchroniseerd', processedCosts, referee, hasReferee }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

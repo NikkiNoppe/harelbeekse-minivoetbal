@@ -59,8 +59,8 @@ const App = () => (
         <PlayerListLockProvider>
           <BrowserRouter>
             <OrganizationProvider>
-              <OrganizationGate>
-                <ThemeColorsInitializer>
+              <ThemeColorsInitializer>
+                <OrganizationGate>
                   <TabVisibilityProvider>
                     <TooltipProvider>
                       <Toaster />
@@ -289,8 +289,8 @@ const App = () => (
                       </ErrorBoundary>
                     </TooltipProvider>
                   </TabVisibilityProvider>
-                </ThemeColorsInitializer>
-              </OrganizationGate>
+                </OrganizationGate>
+              </ThemeColorsInitializer>
             </OrganizationProvider>
           </BrowserRouter>
         </PlayerListLockProvider>

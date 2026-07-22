@@ -4,6 +4,9 @@ import { fetchAllMatchesForSession, fetchMatchForSession } from "@/services/core
 import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
 import { fetchTeamTransactionsByTeamId } from "@/services/financial/financialTransactionsFetch";
 import { fetchTeamsForSession } from "@/services/core/teamsSessionFetch";
+import { isAdminMatchCostName } from "@/services/financial/teamCostCategories";
+
+export { isAdminMatchCostName };
 
 export interface TeamCostForMatchRow {
   id: number;
@@ -125,9 +128,17 @@ async function needsMatchCostBackfillCore(matchId: number): Promise<boolean> {
   return count < 2;
 }
 
+async function needsAdminMatchCostBackfillCore(matchId: number): Promise<boolean> {
+  const adminCostId = await getActiveAdminMatchCostSettingId();
+  if (!adminCostId) return false;
+  const rows = await fetchTeamCostsForMatch(matchId);
+  const count = rows.filter((r) => r.cost_setting_id === adminCostId).length;
+  return count < 2;
+}
+
 /**
  * Eén plek voor “mag sync-match-costs lopen na een wedstrijd-update?”.
- * Voorkomt terugkerende 6 kosten: bij suppressie-boetes is veldbackfill altijd “tekort” maar sync mag niet.
+ * Bij forfait: enkel admin-kosten syncen (veld/scheids vervallen).
  */
 export async function shouldSyncMatchCostsAfterMatchUpdate(
   matchId: number,
@@ -135,8 +146,17 @@ export async function shouldSyncMatchCostsAfterMatchUpdate(
 ): Promise<boolean> {
   if (!matchId) return false;
   if (await matchSkipAutoMatchCosts(matchId)) return false;
-  if (await matchHasForfaitPenalty(matchId)) return false;
+  if (await matchHasForfaitPenalty(matchId)) {
+    return submissionTransition || (await needsAdminMatchCostBackfillCore(matchId));
+  }
   return submissionTransition || (await needsMatchCostBackfillCore(matchId));
+}
+
+async function getActiveAdminMatchCostSettingId(): Promise<number | null> {
+  const costRows = await fetchCostsForSession("match_cost");
+  if (!costRows.length) return null;
+  const adminRow = costRows.find((cs) => isAdminMatchCostName(cs.name));
+  return adminRow?.id ?? null;
 }
 
 async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
@@ -157,7 +177,9 @@ async function getActiveFieldMatchCostSettingId(): Promise<number | null> {
 export async function needsMatchCostBackfill(matchId: number): Promise<boolean> {
   if (!matchId) return false;
   if (await matchSkipAutoMatchCosts(matchId)) return false;
-  if (await matchHasForfaitPenalty(matchId)) return false;
+  if (await matchHasForfaitPenalty(matchId)) {
+    return needsAdminMatchCostBackfillCore(matchId);
+  }
   return needsMatchCostBackfillCore(matchId);
 }
 
@@ -171,9 +193,6 @@ export async function invokeSyncMatchCostsForMatch(params: {
 }): Promise<{ success: boolean; message?: string }> {
   try {
     if (await matchSkipAutoMatchCosts(params.matchId)) {
-      return { success: true };
-    }
-    if (await matchHasForfaitPenalty(params.matchId)) {
       return { success: true };
     }
     const { data, error } = await supabase.functions.invoke("sync-match-costs", {

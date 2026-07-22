@@ -192,32 +192,12 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
               {showCloseButton && !persistent && (
                 <button
                   onClick={handleCloseClick}
-                  style={{
-                    position: 'absolute',
-                    right: '1rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'rgba(0, 0, 0, 0.05)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '2rem',
-                    height: '2rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 20,
-                    transition: 'background 150ms'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-                  }}
+                  className="absolute right-2 top-1/2 z-20 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-black/5 transition-colors hover:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   aria-label="Sluiten"
                 >
-                  <X size={16} />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full">
+                    <X size={16} />
+                  </span>
                 </button>
               )}
               <h2
@@ -387,7 +367,7 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
             @media (hover: hover) and (pointer: fine) {
               [role="dialog"] button.btn:hover:not(:disabled) {
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(96, 54, 140, 0.2);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
               }
             }
 
@@ -420,27 +400,34 @@ export const AppModal = React.forwardRef<HTMLDivElement, AppModalProps>(
 
 AppModal.displayName = "AppModal";
 
-// Export oude sub-components voor backward compatibility (nu als dummy)
+/**
+ * @deprecated Prefer AppModal `title` + `primaryAction`/`secondaryAction`.
+ * These wrappers only render a plain div/p and do not create sticky chrome.
+ */
 export const AppModalHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   (props, ref) => <div ref={ref} {...props} />
 );
 AppModalHeader.displayName = "AppModalHeader";
 
+/** @deprecated Prefer AppModal `title` prop. */
 export const AppModalTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   (props, ref) => <div ref={ref} {...props} />
 );
 AppModalTitle.displayName = "AppModalTitle";
 
+/** @deprecated Unused by AppModal chrome; prefer body content. */
 export const AppModalSubtitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   (props, ref) => <p ref={ref} {...props} />
 );
 AppModalSubtitle.displayName = "AppModalSubtitle";
 
+/** @deprecated Children of AppModal are already the body. */
 export const AppModalBody = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   (props, ref) => <div ref={ref} {...props} />
 );
 AppModalBody.displayName = "AppModalBody";
 
+/** @deprecated Prefer AppModal `primaryAction` / `secondaryAction`. */
 export const AppModalFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   (props, ref) => <div ref={ref} {...props} />
 );

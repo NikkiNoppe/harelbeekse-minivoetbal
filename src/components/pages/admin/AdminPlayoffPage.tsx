@@ -13,6 +13,7 @@ import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Und
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { playoffService, PlayoffMatch } from "@/services/match/playoffService";
 import { fetchRegularStandings } from "@/services/standings/standingsService";
 import { teamService } from "@/services/core/teamService";
@@ -331,17 +332,20 @@ const AdminPlayoffPage: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (!orgQueryEnabled) return;
+    void loadInitialData();
+  }, [orgQueryEnabled, organizationId]);
 
   const loadInitialData = async () => {
+    if (!orgQueryEnabled || organizationId == null) return;
     try {
       setLoading(true);
       const teamsData = await teamService.getAllTeams();
       setTeams(teamsData);
-      const calculatedStandings = await fetchRegularStandings();
+      const calculatedStandings = await fetchRegularStandings(organizationId);
       setStandings(
         calculatedStandings.map((s) => ({
           team_id: s.team_id,

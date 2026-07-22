@@ -40,6 +40,10 @@ import ReactDOM from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
+import { applyBootOrganizationTheme } from '@/lib/bootTheme'
+
+// Tenant-theme vóór React mount — voorkomt Harelbeke-blauw flash op andere orgs.
+applyBootOrganizationTheme()
 
 // Create a client
 const queryClient = new QueryClient({

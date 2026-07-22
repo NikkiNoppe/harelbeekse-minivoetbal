@@ -1,5 +1,4 @@
 import { seasonService } from '@/services/seasonService';
-import { priorityOrderService } from '@/services/priorityOrderService';
 import {
   filterActiveSlotUnavailability,
   getAvailableSlotIndicesForWeek,
@@ -8,6 +7,7 @@ import {
   type SlotDetailRow,
 } from '@/services/slotUnavailabilityService';
 import type { SlotUnavailability } from '@/types/slotUnavailability';
+import type { VenueTimeslotWithPriority } from '@/services/priorityOrderService';
 
 export interface SlotPlanningContext {
   blocks: SlotUnavailability[];
@@ -20,15 +20,44 @@ export interface SlotPlanningContext {
   getSlotIndexForUsage: (weekMonday: string, slotsUsed: number) => number | null;
 }
 
-export async function loadSlotPlanningContext(totalSlots = 7): Promise<SlotPlanningContext> {
-  const seasonData = await seasonService.getSeasonData();
-  const blocks = filterActiveSlotUnavailability(seasonData.slot_unavailability);
+function normalizeVenueName(name: string): string {
+  return name
+    .replace(/^Sporthal\s+/i, '')
+    .replace('De Dageraad Harelbeke', 'De Dageraad')
+    .replace('De Vlasschaard Bavikhove', 'De Vlasschaard')
+    .trim();
+}
 
-  const slotDetails: SlotDetailRow[] = [];
-  for (let s = 0; s < totalSlots; s++) {
-    const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalSlots);
-    slotDetails.push({ venue, timeslot });
-  }
+function buildSlotDetailsFromSeasonData(seasonData: {
+  venues?: Array<{ venue_id: number; name: string }>;
+  venue_timeslots?: Array<Record<string, unknown>>;
+}): SlotDetailRow[] {
+  const venues = seasonData.venues ?? [];
+  const allTimeslots = [...(seasonData.venue_timeslots ?? [])]
+    .map((slot) => {
+      const venue = venues.find((v) => v.venue_id === slot.venue_id);
+      const venueName = String(slot.venue_name ?? venue?.name ?? 'Onbekend');
+      return {
+        ...slot,
+        venue_name: venueName,
+        priority: typeof slot.priority === 'number' ? slot.priority : 999,
+      } as VenueTimeslotWithPriority;
+    })
+    .sort((a, b) => a.priority - b.priority);
+
+  return allTimeslots.map((ts) => ({
+    venue: normalizeVenueName(ts.venue_name),
+    timeslot: ts,
+  }));
+}
+
+export async function loadSlotPlanningContext(
+  organizationId?: number,
+): Promise<SlotPlanningContext> {
+  const seasonData = await seasonService.getSeasonData(organizationId);
+  const blocks = filterActiveSlotUnavailability(seasonData.slot_unavailability);
+  const slotDetails = buildSlotDetailsFromSeasonData(seasonData);
+  const totalSlots = Math.max(slotDetails.length, 1);
 
   return {
     blocks,

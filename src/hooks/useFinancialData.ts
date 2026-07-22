@@ -100,7 +100,7 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
   const enableSync = options?.enableSync ?? true;
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();
-  const { syncStatus, forceResync, invalidateFinancialQueries } = useMatchCostSync(
+  const { syncStatus, forceResync, runBackgroundSync, invalidateFinancialQueries } = useMatchCostSync(
     enableSync,
     undefined,
     { autoRun: false },
@@ -194,6 +194,14 @@ export const useFinancialData = (options?: { enableSync?: boolean }) => {
     if (!enableSync || syncStatus !== "synced") return;
     void refreshInstantly();
   }, [enableSync, syncStatus, refreshInstantly]);
+
+  useEffect(() => {
+    if (!enableSync || !transactionsQuery.isFetched || !hasTransactions) return;
+    const timeoutId = window.setTimeout(() => {
+      void runBackgroundSync(false);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [enableSync, transactionsQuery.isFetched, hasTransactions, runBackgroundSync]);
 
   const teamFinancesById = useMemo(() => {
     const map = new Map<number, TeamFinancesSummary>();

@@ -68,15 +68,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               variant="secondary"
               onClick={handleForgotPassword}
               disabled={isLoading}
-              className="btn btn--secondary"
-              style={{
-                width: '100%',
-                minHeight: '48px',
-                fontSize: '1rem',
-                fontWeight: '500',
-                borderRadius: 'var(--radius)',
-                transition: 'all 150ms ease-in-out'
-              }}
+              className="btn btn--secondary w-full min-h-12 text-base font-medium"
             >
               Wachtwoord vergeten?
             </Button>
@@ -84,18 +76,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               type="submit" 
               loading={isLoading}
               disabled={isLoading}
-              className="btn btn--primary"
-              style={{
-                width: '100%',
-                minHeight: '48px',
-                fontSize: '1rem',
-                fontWeight: '600',
-                borderRadius: 'var(--radius)',
-                transition: 'all 150ms ease-in-out',
-                backgroundColor: 'var(--color-400)',
-                color: 'var(--color-white)',
-                borderColor: 'var(--color-300)'
-              }}
+              className="btn btn--primary w-full min-h-12 text-base font-semibold"
             >
               Inloggen
             </Button>

@@ -259,11 +259,11 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
           {isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <Card key={index} className="border-brand-light">
-                  <CardHeader className="bg-muted p-3">
+                <Card key={index} className="border-primary/20 shadow-lg card-hover">
+                  <CardHeader className="bg-brand-100 p-3">
                     <div className="mx-auto h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
                   </CardHeader>
-                  <CardContent className="bg-white p-3">
+                  <CardContent className="bg-card p-3">
                     <div className="mx-auto h-7 w-24 animate-pulse rounded bg-muted-foreground/20" />
                   </CardContent>
                 </Card>
@@ -279,150 +279,92 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   Vernieuwen…
                 </div>
               )}
-              <Card className="border-brand-light">
-                <CardHeader 
-                  className="bg-muted p-3"
-                  style={{ 
-                    marginTop: 0, 
-                    marginBottom: 0, 
-                    backgroundColor: 'unset', 
-                    background: 'unset',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
+                <CardHeader className="bg-brand-100 p-3">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Users className="h-3 w-3" />
                     Wedstrijden
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-xl font-bold text-brand-dark text-center">
                     {report.totalMatches}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-brand-light">
-                <CardHeader 
-                  className="bg-muted p-3"
-                  style={{ 
-                    marginTop: 0, 
-                    marginBottom: 0, 
-                    backgroundColor: 'unset', 
-                    background: 'unset',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
+                <CardHeader className="bg-brand-100 p-3">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Euro className="h-3 w-3" />
                     Veldkosten
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalFieldCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
                 <CardHeader 
-                  className="bg-muted p-3"
-                  style={{ 
-                    marginTop: 0, 
-                    marginBottom: 0, 
-                    backgroundColor: 'unset', 
-                    background: 'unset',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+                  className="bg-brand-100 p-3"
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Euro className="h-3 w-3" />
                     Scheidsrechters
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalRefereeCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
                 <CardHeader 
-                  className="bg-muted p-3"
-                  style={{ 
-                    marginTop: 0, 
-                    marginBottom: 0, 
-                    backgroundColor: 'unset', 
-                    background: 'unset',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+                  className="bg-brand-100 p-3"
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Euro className="h-3 w-3" />
                     Administratie
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalAdminCosts)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
                 <CardHeader 
-                  className="bg-muted p-3"
-                  style={{ 
-                    marginTop: 0, 
-                    marginBottom: 0, 
-                    backgroundColor: 'unset', 
-                    background: 'unset',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+                  className="bg-brand-100 p-3"
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Euro className="h-3 w-3" />
                     Boetes
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-lg font-bold text-brand-dark text-center">
                     {formatCurrency(report.totalFines)}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-brand-light">
+              <Card className="border-primary/20 shadow-lg card-hover">
                 <CardHeader
-                  className="bg-muted p-3"
-                  style={{
-                    marginTop: 0,
-                    marginBottom: 0,
-                    backgroundColor: "unset",
-                    background: "unset",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className="bg-brand-100 p-3"
                 >
-                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-light">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
                     <Ban className="h-3 w-3" />
                     Forfaits
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="bg-white p-3">
+                <CardContent className="bg-card p-3">
                   <div className="text-xl font-bold text-brand-dark text-center">
                     {report.totalForfaits}
                   </div>
@@ -433,14 +375,14 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Scheidsrechter Betalingen - Improved with expandable match details */}
           {report && !isInitialLoad && report.refereeCosts.length > 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-brand-light">
+            <Card className="border-primary/20 shadow-lg card-hover">
               <CardHeader className="bg-brand-100">
-                <CardTitle className="text-brand-light flex items-center gap-2">
+                <CardTitle className="text-brand-dark flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Scheidsrechter Betalingen
                 </CardTitle>
               </CardHeader>
-              <CardContent className="bg-white p-0">
+              <CardContent className="bg-card p-0">
                 {/* Mobile: Collapsible cards */}
                 <div className="block space-y-3 p-3">
                   {report.refereeCosts.map((referee, index) => (
@@ -506,7 +448,7 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                         <TableHead className="text-right text-brand-dark">Te Betalen Bedrag</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="bg-white">
+                    <TableBody className="bg-card">
                       {report.refereeCosts.map((referee, index) => (
                         <React.Fragment key={index}>
                           <TableRow 
@@ -578,13 +520,13 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Boetes — compact: totaal per periode + detail per regel */}
           {report && !isInitialLoad && report.fines && report.fines.length > 0 && (
-            <Card className="border-brand-light">
+            <Card className="border-primary/20 shadow-lg card-hover">
               <CardHeader className="bg-brand-100 py-3">
-                <CardTitle className="text-brand-light text-sm font-semibold">
+                <CardTitle className="text-brand-dark text-sm font-semibold">
                   {selectedMonth != null ? "Boetes (maand)" : "Boetes (seizoen)"}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="divide-y divide-border bg-white p-0">
+              <CardContent className="divide-y divide-border bg-card p-0">
                 {report.fines.map((bucket, index) => (
                   <div key={index} className="space-y-2 px-3 py-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
@@ -643,13 +585,13 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Veldkosten — compact: totaal per periode + welke wedstrijden / welke ploeg */}
           {report && !isInitialLoad && report.fieldCosts && report.fieldCosts.length > 0 && (
-            <Card className="border-brand-light">
+            <Card className="border-primary/20 shadow-lg card-hover">
               <CardHeader className="bg-brand-100 py-3">
-                <CardTitle className="text-brand-light text-sm font-semibold">
+                <CardTitle className="text-brand-dark text-sm font-semibold">
                   {selectedMonth != null ? "Veldkosten (maand)" : "Veldkosten (seizoen)"}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="divide-y divide-border bg-white p-0">
+              <CardContent className="divide-y divide-border bg-card p-0">
                 {report.fieldCosts.map((bucket, index) => (
                   <div key={index} className="space-y-2 px-3 py-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
@@ -704,8 +646,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Error state */}
           {error && (
-            <Card className="border-brand-light">
-              <CardContent className="text-center py-8 bg-white">
+            <Card className="border-primary/20 shadow-lg card-hover">
+              <CardContent className="text-center py-8 bg-card">
                 <p className="text-brand-dark mb-2">Er is een fout opgetreden bij het laden van het rapport.</p>
                 <p className="text-sm text-brand-dark opacity-70">{(error as Error).message}</p>
               </CardContent>
@@ -714,8 +656,8 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Show message when no data but seasons are available */}
           {report && !isInitialLoad && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-brand-light">
-              <CardContent className="text-center py-8 bg-white">
+            <Card className="border-primary/20 shadow-lg card-hover">
+              <CardContent className="text-center py-8 bg-card">
                 <p className="text-brand-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>
                 <p className="text-sm text-brand-dark opacity-70">
                   Selecteer een andere maand of bekijk het hele seizoen.

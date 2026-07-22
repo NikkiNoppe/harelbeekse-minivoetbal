@@ -11,13 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { AppAlertModal, AppModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { useOrgQueryScope } from "@/hooks/useOrganization";
 import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import {
-  competitionDataService,
   createDefaultDivisions,
   createDivision,
   normalizeCompetitionFormat,
+  normalizeCompetitionFormats,
   type CompetitionDivision,
   type CompetitionFormat,
 } from "@/services/competitionDataService";
@@ -48,8 +47,13 @@ function formatDivisionSummary(format: CompetitionFormat): string {
 
 const CompetitionFormatsSettings: React.FC = () => {
   const { toast } = useToast();
-  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
-  const { getSeasonData, saveSeasonData } = useSeasonDataScope();
+  const {
+    organizationId,
+    orgQueryEnabled,
+    getSeasonData,
+    saveSeasonData,
+    clearSeasonDataCache,
+  } = useSeasonDataScope();
   const [formats, setFormats] = useState<CompetitionFormat[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -65,10 +69,8 @@ const CompetitionFormatsSettings: React.FC = () => {
   const loadFormats = async () => {
     setIsLoading(true);
     try {
-      const nextFormats = await competitionDataService.getCompetitionFormats(
-        organizationId ?? undefined,
-      );
-      setFormats(nextFormats);
+      const data = await getSeasonData();
+      setFormats(normalizeCompetitionFormats(data.competition_formats || []));
     } catch (error) {
       console.error("Error loading competition formats:", error);
       toast({
@@ -243,6 +245,7 @@ const CompetitionFormatsSettings: React.FC = () => {
         });
         setIsEditOpen(false);
         setEditingItem(null);
+        clearSeasonDataCache();
         await loadFormats();
       } else {
         toast({
@@ -277,6 +280,7 @@ const CompetitionFormatsSettings: React.FC = () => {
         });
         setIsDeleteOpen(false);
         setDeleteItem(null);
+        clearSeasonDataCache();
         await loadFormats();
       } else {
         toast({

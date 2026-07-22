@@ -1,6 +1,7 @@
 import React from "react";
 import { Mail, Phone, User } from "lucide-react";
 import type { MatchTeamContactRow } from "@/services/match/matchTeamsContactSessionFetch";
+import { parseContactEmails } from "@/lib/contactEmails";
 
 export function hasMatchTeamContact(contact: MatchTeamContactRow | null | undefined): boolean {
   return !!(contact?.contact_person || contact?.contact_phone || contact?.contact_email);
@@ -15,6 +16,8 @@ export function MatchFormTeamContactDetails({
   contact,
   className,
 }: MatchFormTeamContactDetailsProps) {
+  const emails = parseContactEmails(contact?.contact_email).filter(Boolean);
+
   if (!hasMatchTeamContact(contact)) {
     return (
       <p className="text-center text-xs text-muted-foreground">Contactgegevens niet beschikbaar</p>
@@ -39,15 +42,16 @@ export function MatchFormTeamContactDetails({
             {contact.contact_phone}
           </a>
         )}
-        {contact?.contact_email && (
+        {emails.map((email) => (
           <a
-            href={`mailto:${contact.contact_email}`}
+            key={email}
+            href={`mailto:${email}`}
             className="inline-flex min-h-[44px] items-center gap-1.5 break-all text-center text-primary underline-offset-4 hover:underline"
           >
             <Mail className="h-4 w-4 shrink-0" aria-hidden />
-            {contact.contact_email}
+            {email}
           </a>
-        )}
+        ))}
       </div>
     </div>
   );

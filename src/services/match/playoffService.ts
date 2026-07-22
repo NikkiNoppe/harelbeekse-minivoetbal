@@ -658,7 +658,7 @@ export const playoffService = {
       }
 
       const matchesPerWeek = 7;
-      const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
+      const slotCtx = await loadSlotPlanningContext();
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const slotsPerWeek: Map<number, number> = new Map();
       for (let w = 0; w < playingWeeks.length; w++) { teamsPerWeek.set(w, new Set()); slotsPerWeek.set(w, 0); }
@@ -675,7 +675,7 @@ export const playoffService = {
         for (let w = 0; w < playingWeeks.length; w++) {
           const weekTeams = teamsPerWeek.get(w)!; const slotsUsed = slotsPerWeek.get(w)!;
           const weekMonday = playingWeeks[w];
-          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          const weekCap = slotCtx.getWeekCapacity(weekMonday);
           if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(m.home) || weekTeams.has(m.away)) continue;
           const slotIndex = slotCtx.getSlotIndexForUsage(weekMonday, slotsUsed);

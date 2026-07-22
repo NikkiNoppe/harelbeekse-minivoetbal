@@ -1,5 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSessionToken } from "@/lib/authSession";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { fetchRefereesForSession } from "@/services/scheidsrechter/scheidsSessionFetch";
 
 export interface Referee {
@@ -39,11 +41,12 @@ interface UseRefereesQueryOptions {
 export const useRefereesQuery = (options: UseRefereesQueryOptions = {}) => {
   const { enabled = true } = options;
   const hasSession = !!getSessionToken();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   return useQuery({
-    queryKey: refereeQueryKeys.list(),
+    queryKey: withOrgQueryKey(refereeQueryKeys.list(), organizationId),
     queryFn: async ({ signal }) => fetchReferees(signal),
-    enabled: enabled && hasSession,
+    enabled: enabled && hasSession && orgQueryEnabled,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 3,

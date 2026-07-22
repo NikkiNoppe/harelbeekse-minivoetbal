@@ -30,6 +30,11 @@ export const usePlayerListLockFallback = () => {
   const [loading, setLoading] = useState(true);
 
   const checkLockStatus = useCallback(async () => {
+    if (organizationId == null) {
+      setLoading(false);
+      return;
+    }
+
     try {
       let settingsLocked = false;
       let settingsLockDate: string | null = null;
@@ -37,7 +42,7 @@ export const usePlayerListLockFallback = () => {
       let seasonEnd: string | null = null;
 
       const { data: rpcLocked, error } = await supabase.rpc("is_player_list_locked", {
-        p_organization_id: organizationId ?? 1,
+        p_organization_id: organizationId,
       });
 
       if (error) {
@@ -49,7 +54,7 @@ export const usePlayerListLockFallback = () => {
 
       const lockRows = await fetchPublicApplicationSettings(
         ["player_list_lock"],
-        organizationId ?? undefined,
+        organizationId,
       );
       const settings = findPublicSetting(lockRows, "player_list_lock", "global_lock");
 
@@ -71,7 +76,7 @@ export const usePlayerListLockFallback = () => {
 
       const seasonRows = await fetchPublicApplicationSettings(
         ["season_data"],
-        organizationId ?? undefined,
+        organizationId,
       );
       const seasonConfig = findPublicSetting(seasonRows, "season_data", "main_config");
       if (seasonConfig?.setting_value) {

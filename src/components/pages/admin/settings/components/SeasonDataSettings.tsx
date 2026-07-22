@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Calendar, CheckCircle2, Loader2, Settings } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSeasonDataScope } from "@/hooks/useSeasonDataScope";
 import { seasonService, type SeasonData } from "@/services";
@@ -13,22 +13,15 @@ import { PUBLIC_CARD_CLASS } from "@/components/layout";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
-function formatSeasonDate(dateString?: string): string {
-  if (!dateString) return "Nog niet ingesteld";
-  const normalized = `${dateString.split("T")[0]}T12:00:00`;
-  const date = new Date(normalized);
-  if (Number.isNaN(date.getTime())) return "Nog niet ingesteld";
-  return date.toLocaleDateString("nl-BE");
-}
+const EMPTY_SEASON: SeasonData = {
+  season_start_date: "",
+  season_end_date: "",
+};
 
 const SeasonDataSettings: React.FC = () => {
   const { toast } = useToast();
   const { orgQueryEnabled, getSeasonData, saveSeasonData } = useSeasonDataScope();
-  const [seasonData, setSeasonData] = useState<SeasonData>({
-    season_start_date: "",
-    season_end_date: "",
-  });
-  const [localSeasonData, setLocalSeasonData] = useState<SeasonData>(seasonData);
+  const [localSeasonData, setLocalSeasonData] = useState<SeasonData>(EMPTY_SEASON);
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -43,7 +36,6 @@ const SeasonDataSettings: React.FC = () => {
     setIsLoading(true);
     try {
       const loaded = await getSeasonData();
-      setSeasonData(loaded);
       setLocalSeasonData(loaded);
       lastSavedFingerprint.current = JSON.stringify({
         season_start_date: loaded.season_start_date || "",
@@ -77,7 +69,6 @@ const SeasonDataSettings: React.FC = () => {
       const result = await saveSeasonData(nextData);
 
       if (result.success) {
-        setSeasonData(nextData);
         setLocalSeasonData(nextData);
         setHasChanges(false);
         setSaveState("saved");
@@ -93,7 +84,7 @@ const SeasonDataSettings: React.FC = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch {
       setSaveState("error");
       toast({
         title: "Fout bij opslaan",
@@ -145,120 +136,80 @@ const SeasonDataSettings: React.FC = () => {
 
   const saveStatusBadge =
     saveState === "saving" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full">
-        <Loader2 className="h-3 w-3 animate-spin" />
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal">
+        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
         Opslaan…
       </Badge>
     ) : saveState === "saved" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full text-green-700">
-        <CheckCircle2 className="h-3 w-3" />
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal text-green-700">
+        <CheckCircle2 className="h-3 w-3" aria-hidden />
         Opgeslagen
       </Badge>
     ) : saveState === "error" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full text-destructive">
-        <AlertCircle className="h-3 w-3" />
-        Controleer datums
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal text-destructive">
+        <AlertCircle className="h-3 w-3" aria-hidden />
+        Ongeldig
       </Badge>
-    ) : hasChanges ? (
-      <Badge variant="secondary" className="rounded-full">
-        Wijzigingen bezig
+    ) : hasChanges && isValid ? (
+      <Badge variant="secondary" className="rounded-full text-xs font-normal">
+        Wordt bewaard…
       </Badge>
-    ) : (
-      <Badge variant="secondary" className="rounded-full">
-        Automatisch bewaren
-      </Badge>
-    );
+    ) : null;
 
   return (
-    <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
-      <CardHeader className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-brand-dark">
-              <Settings className="h-5 w-5 text-primary" />
-              Seizoensdata
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Stel start- en einddatum in. Geldige wijzigingen worden automatisch bewaard.
-            </p>
-          </div>
-          <div className="shrink-0">{saveStatusBadge}</div>
+    <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" aria-hidden />
+            Seizoensdata
+          </CardTitle>
+          {saveStatusBadge}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 pt-0">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Startdatum
-              </p>
-              <p className="mt-2 text-base font-semibold text-brand-dark">
-                {formatSeasonDate(seasonData.season_start_date)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Einddatum
-              </p>
-              <p className="mt-2 text-base font-semibold text-brand-dark">
-                {formatSeasonDate(seasonData.season_end_date)}
-              </p>
-            </div>
+      <CardContent className="space-y-3">
+        <div
+          className="grid gap-3 sm:grid-cols-2"
+          aria-busy={isLoading}
+          aria-label="Seizoensperiode"
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="seasonStart">Startdatum</Label>
+            <Input
+              id="seasonStart"
+              type="date"
+              className="min-h-[44px]"
+              value={localSeasonData.season_start_date}
+              onChange={(e) => handleInputChange("season_start_date", e.target.value)}
+              disabled={isLoading && !hasChanges}
+            />
           </div>
-
-          <div className="rounded-xl border border-border/70 bg-background p-4 sm:p-5">
-            <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-brand-dark">
-                <Calendar className="h-4 w-4 text-primary" />
-                Seizoensperiode
-              </h3>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="seasonStart">Startdatum</Label>
-                  <Input
-                    id="seasonStart"
-                    type="date"
-                    className="min-h-[44px]"
-                    value={localSeasonData.season_start_date}
-                    onChange={(e) => handleInputChange("season_start_date", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="seasonEnd">Einddatum</Label>
-                  <Input
-                    id="seasonEnd"
-                    type="date"
-                    className="min-h-[44px]"
-                    value={localSeasonData.season_end_date}
-                    onChange={(e) => handleInputChange("season_end_date", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {!isValid && hasChanges ? (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{validation.errors.join(", ")}</AlertDescription>
-                </Alert>
-              ) : (
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  De planner en seizoenslocks gebruiken meteen deze periode zodra de datums geldig zijn.
-                </p>
-              )}
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="seasonEnd">Einddatum</Label>
+            <Input
+              id="seasonEnd"
+              type="date"
+              className="min-h-[44px]"
+              value={localSeasonData.season_end_date}
+              onChange={(e) => handleInputChange("season_end_date", e.target.value)}
+              disabled={isLoading && !hasChanges}
+            />
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Seizoensdata worden bijgewerkt…
-          </div>
-        ) : null}
+        {!isValid && hasChanges ? (
+          <Alert variant="destructive" className="py-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">{validation.errors.join(", ")}</AlertDescription>
+          </Alert>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Wijzigingen worden automatisch bewaard. Planner en seizoenslocks gebruiken deze periode.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
 };
 
-export default SeasonDataSettings; 
+export default SeasonDataSettings;

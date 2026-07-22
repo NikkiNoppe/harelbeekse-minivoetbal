@@ -10,6 +10,14 @@ export interface OrganizationExternalLink {
   url: string;
 }
 
+/** Transactionele e-mail per tenant (branding_settings.email). */
+export interface OrganizationEmailSettings {
+  fromEmail: string;
+  replyToEmail: string;
+}
+
+export const DEFAULT_HARELBEKE_INFO_EMAIL = 'info@harelbekeminivoetbal.be';
+
 export interface OrganizationBranding {
   displayName: string;
   shortName: string;
@@ -21,6 +29,48 @@ export interface OrganizationBranding {
   themeColors?: ThemeColors;
   meta?: OrganizationBrandingMeta;
   links?: OrganizationExternalLink[];
+  email?: OrganizationEmailSettings;
+}
+
+export function deriveDefaultInfoEmail(siteUrl: string): string {
+  try {
+    const hostname = new URL(siteUrl.trim()).hostname.replace(/^www\./, '');
+    return hostname ? `info@${hostname}` : DEFAULT_HARELBEKE_INFO_EMAIL;
+  } catch {
+    return DEFAULT_HARELBEKE_INFO_EMAIL;
+  }
+}
+
+export function parseOrganizationEmailSettings(
+  raw: Record<string, unknown> | undefined,
+  options: { siteUrl?: string; organizationSlug?: string } = {},
+): OrganizationEmailSettings {
+  const siteUrl =
+    typeof options.siteUrl === 'string' && options.siteUrl.trim()
+      ? options.siteUrl
+      : DEFAULT_BRANDING.siteUrl;
+  const fallbackFrom =
+    options.organizationSlug === 'harelbeke'
+      ? DEFAULT_HARELBEKE_INFO_EMAIL
+      : deriveDefaultInfoEmail(siteUrl);
+
+  const emailRaw = raw?.email;
+  const emailObj =
+    emailRaw && typeof emailRaw === 'object' && !Array.isArray(emailRaw)
+      ? (emailRaw as Record<string, unknown>)
+      : {};
+
+  const fromEmail =
+    typeof emailObj.fromEmail === 'string' && emailObj.fromEmail.trim()
+      ? emailObj.fromEmail.trim().toLowerCase()
+      : fallbackFrom;
+
+  const replyToEmail =
+    typeof emailObj.replyToEmail === 'string' && emailObj.replyToEmail.trim()
+      ? emailObj.replyToEmail.trim().toLowerCase()
+      : fromEmail;
+
+  return { fromEmail, replyToEmail };
 }
 
 export const DEFAULT_BRANDING: OrganizationBranding = {
@@ -97,5 +147,9 @@ export function parseBrandingSettings(
         meta?.defaultDescription ?? DEFAULT_BRANDING.meta?.defaultDescription,
     },
     links,
+    email: parseOrganizationEmailSettings(raw, {
+      siteUrl:
+        typeof raw.siteUrl === 'string' ? raw.siteUrl : DEFAULT_BRANDING.siteUrl,
+    }),
   };
 }

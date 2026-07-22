@@ -1,10 +1,6 @@
 import React from "react";
 import {
   AppModal,
-  AppModalHeader,
-  AppModalTitle,
-  AppModalBody,
-  AppModalFooter,
 } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 
@@ -85,7 +81,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         variant: "secondary",
       }}
     >
-      <AppModalBody>
+      <div className="space-y-4">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -106,7 +102,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             <label className="text-brand-dark">Voornaam</label>
             <Input
               placeholder="Voornaam van de speler"
-              className="modal__input bg-white placeholder:text-brand-200"
+              className="modal__input bg-white placeholder:text-brand-200 min-h-[44px]"
               value={isEdit ? editingPlayer!.firstName : newPlayer.firstName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, firstName: e.target.value }) : onPlayerChange({ ...newPlayer, firstName: e.target.value })}
             />
@@ -116,7 +112,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             <label className="text-brand-dark">Achternaam</label>
             <Input
               placeholder="Achternaam van de speler"
-              className="modal__input bg-white placeholder:text-brand-200"
+              className="modal__input bg-white placeholder:text-brand-200 min-h-[44px]"
               value={isEdit ? editingPlayer!.lastName : newPlayer.lastName}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, lastName: e.target.value }) : onPlayerChange({ ...newPlayer, lastName: e.target.value })}
             />
@@ -126,13 +122,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             <label className="text-brand-dark">Geboortedatum</label>
             <Input
               type="date"
-              className="modal__input bg-white placeholder:text-brand-200"
+              className="modal__input bg-white placeholder:text-brand-200 min-h-[44px]"
               value={isEdit ? editingPlayer!.birthDate : newPlayer.birthDate}
               onChange={(e) => isEdit && onEditPlayerChange ? onEditPlayerChange({ ...editingPlayer!, birthDate: e.target.value }) : onPlayerChange({ ...newPlayer, birthDate: e.target.value })}
             />
           </div>
         </form>
-      </AppModalBody>
+      </div>
     </AppModal>
   );
 };

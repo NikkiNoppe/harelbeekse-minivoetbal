@@ -1,5 +1,6 @@
 import {
   DEFAULT_ORGANIZATION_SLUG,
+  isKnownOrganizationSlug,
   ORGANIZATION_URL_PARAM,
 } from '@/config/organization';
 
@@ -116,6 +117,36 @@ export function getActiveOrgSlugOverride(options: {
   }
 
   return null;
+}
+
+/**
+ * Sync slug voor eerste paint / theme-bootstrap (geen DB-fetch).
+ * Volgorde: override → hostname → bekende ?org= hint → default.
+ */
+export function resolveBootOrganizationSlug(options?: {
+  hostname?: string;
+  isSuperAdmin?: boolean;
+}): string {
+  const hostname = options?.hostname ?? getCurrentHostname();
+  const override = getActiveOrgSlugOverride({
+    isSuperAdmin: options?.isSuperAdmin ?? false,
+  });
+  if (override) {
+    return override;
+  }
+
+  const hostSlug = resolveHostnameToSlug(hostname);
+  if (hostSlug) {
+    return hostSlug;
+  }
+
+  // Vóór auth (SuperAdmin nog onbekend): ?org=kuurne toch als theme-hint.
+  const querySlug = getOrgSlugQueryParam();
+  if (isKnownOrganizationSlug(querySlug)) {
+    return querySlug;
+  }
+
+  return DEFAULT_ORGANIZATION_SLUG;
 }
 
 export function getCurrentHostname(): string {

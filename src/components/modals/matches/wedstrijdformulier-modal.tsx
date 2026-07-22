@@ -61,6 +61,7 @@ import {
   matchHasForfaitPenalty,
   matchSkipAutoMatchCosts,
 } from "@/services/financial/matchCostService";
+import { isAdminMatchCostName } from "@/services/financial/teamCostCategories";
 
 interface WedstrijdformulierModalProps {
   open: boolean;
@@ -402,6 +403,15 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
   }, [open, isAdmin, refreshSkipAutoMatchCosts, refreshForfaitPenaltyState]);
 
   const handleDeleteMatchCost = useCallback(async (costId: number) => {
+    const cost = matchCosts.find((c) => c.id === costId);
+    if (cost && isAdminMatchCostName(cost.costName)) {
+      toast({
+        title: "Niet toegestaan",
+        description: "Administratiekosten kunnen niet worden verwijderd.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const result = await costSettingsService.deleteTransaction(costId);
       if (result.success) {
@@ -414,7 +424,7 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
       console.error('Error deleting match cost:', error);
       toast({ title: "Fout", description: "Kon kost niet verwijderen.", variant: "destructive" });
     }
-  }, [toast, refreshFinancialState]);
+  }, [toast, refreshFinancialState, matchCosts]);
 
   const handleRestoreAutoMatchCosts = useCallback(async () => {
     setRestoringAutoMatchCosts(true);
@@ -1541,9 +1551,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     "input-login-style text-center text-3xl font-bold h-16",
     "border-2 transition-all",
     homeScoreValid 
-      ? "border-[var(--accent)] bg-[var(--color-50)]" 
+      ? "border-primary bg-brand-50" 
       : "border-[var(--color-300)]",
-    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20",
+    "focus:border-primary focus:ring-2 focus:ring-primary/20",
     "disabled:border-[var(--color-300)] disabled:opacity-100"
   ), [homeScoreValid]);
 
@@ -1551,9 +1561,9 @@ export const WedstrijdformulierModal: React.FC<WedstrijdformulierModalProps> = (
     "input-login-style text-center text-3xl font-bold h-16",
     "border-2 transition-all",
     awayScoreValid 
-      ? "border-[var(--accent)] bg-[var(--color-50)]" 
+      ? "border-primary bg-brand-50" 
       : "border-[var(--color-300)]",
-    "focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] focus:ring-opacity-20",
+    "focus:border-primary focus:ring-2 focus:ring-primary/20",
     "disabled:border-[var(--color-300)] disabled:opacity-100"
   ), [awayScoreValid]);
 

@@ -4,6 +4,7 @@ import { teamService } from "@/services/core/teamService";
 import { fetchTeamForSession } from "@/services/core/teamsSessionFetch";
 import { fetchPlayersForSession } from "@/services/core/playersSessionFetch";
 import { fetchAllMatchesForSession } from "@/services/core/matchesSessionFetch";
+import { joinContactEmails, parseContactEmails, validateContactEmails } from "@/lib/contactEmails";
 
 interface Team {
   team_id: number;
@@ -56,9 +57,10 @@ export const useTeamOperations = (onSuccess: () => void) => {
       return "Teamnaam mag maximaal 50 karakters bevatten";
     }
     
-    // Validate email if provided
-    if (formData.contact_email && !formData.contact_email.includes('@')) {
-      return "Email adres moet een geldig formaat hebben";
+    // Validate email(s) if provided
+    const emailError = validateContactEmails(formData.contact_email);
+    if (emailError) {
+      return emailError;
     }
     
     return null;
@@ -82,7 +84,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
         team_name: formData.name.trim(),
         contact_person: formData.contact_person.trim() || undefined,
         contact_phone: formData.contact_phone.trim() || undefined,
-        contact_email: formData.contact_email.trim() || undefined,
+        contact_email: joinContactEmails(parseContactEmails(formData.contact_email)) || undefined,
         club_colors: formData.club_colors?.trim() || undefined,
         preferred_play_moments: formData.preferred_play_moments as any,
       });
@@ -156,7 +158,7 @@ export const useTeamOperations = (onSuccess: () => void) => {
         team_name: formData.name.trim(),
         contact_person: formData.contact_person?.trim() || undefined,
         contact_phone: formData.contact_phone?.trim() || undefined,
-        contact_email: formData.contact_email?.trim() || undefined,
+        contact_email: joinContactEmails(parseContactEmails(formData.contact_email)) || undefined,
         club_colors: formData.club_colors?.trim() || undefined,
         preferred_play_moments: formData.preferred_play_moments as any,
       });

@@ -19,6 +19,8 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 active:opacity-90",
         ghost: "hover:bg-muted hover:text-foreground active:opacity-90",
         link: "text-primary underline-offset-4 hover:underline active:opacity-90",
+        /** Geen shadcn-kleuren — project `.btn.btn--*` in index.css */
+        unstyled: "",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -65,10 +67,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       },
     };
 
-    // If btn--primary class is present, override variant styling
-    const hasBtnPrimary = className?.includes('btn--primary');
-    const finalClassName = hasBtnPrimary 
-      ? cn(className, size && buttonVariants({ size }))
+    // Project-knoppen (.btn.btn--primary|secondary|danger): alleen layout/size, geen shadcn variant-kleuren
+    const usesProjectBtnClass =
+      typeof className === "string" &&
+      /\bbtn--(?:primary|secondary|danger)\b/.test(className);
+    const finalClassName = usesProjectBtnClass
+      ? cn(className, buttonVariants({ size, variant: "unstyled" }))
       : cn(buttonVariants({ variant, size, className }));
     
     return (

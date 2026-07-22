@@ -31,9 +31,12 @@ export const teamQueryKeys = {
 
 // Fetch all teams (for authenticated admin users - includes contact info)
 export const useTeams = () => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: teamQueryKeys.lists(),
+    queryKey: withOrgQueryKey(teamQueryKeys.lists(), organizationId),
     queryFn: () => teamService.getAllTeams(),
+    enabled: orgQueryEnabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
@@ -52,10 +55,12 @@ export const usePublicTeams = () => {
 
 // Fetch single team (session-RPC; admin or own team for managers)
 export const useTeam = (teamId: number) => {
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   return useQuery({
-    queryKey: teamQueryKeys.detail(teamId),
+    queryKey: withOrgQueryKey(teamQueryKeys.detail(teamId), organizationId),
     queryFn: () => fetchTeamForSession(teamId),
-    enabled: !!teamId && !!getSessionToken(),
+    enabled: !!teamId && !!getSessionToken() && orgQueryEnabled,
     staleTime: 0,
     refetchOnMount: 'always',
   });
@@ -82,7 +87,7 @@ export const useCreateTeam = () => {
       return await teamService.createTeam(teamData);
     },
     onSuccess: () => {
-      // Invalidate and refetch teams
+      // Invalidate and refetch teams (prefix matches org-scoped keys)
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.lists() });
     },
   });
@@ -98,7 +103,7 @@ export const useUpdateTeam = () => {
       return { teamId, data };
     },
     onSuccess: (_, { teamId }) => {
-      // Invalidate specific team and teams list
+      // Invalidate specific team and teams list (prefix matches org-scoped keys)
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.detail(teamId) });
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.lists() });
     },
@@ -115,7 +120,7 @@ export const useDeleteTeam = () => {
       return teamId;
     },
     onSuccess: () => {
-      // Invalidate teams list
+      // Invalidate teams list (prefix matches org-scoped keys)
       queryClient.invalidateQueries({ queryKey: teamQueryKeys.lists() });
     },
   });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { AppModal } from "@/components/modals/base/app-modal";
+import { AppModal, AppAlertModal, DestructiveConfirmDescription } from "@/components/modals/base";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { computeCurrentBalance } from "@/services/financial/teamCostCategories";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { useTeamFinancialDetailModal } from "./useTeamFinancialDetailModal";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 import { Plus, Euro, TrendingDown, TrendingUp, Trash2, Edit2, ChevronDown, Loader2, CalendarIcon, RefreshCw, AlertCircle } from "lucide-react";
 import { formatDateShort, getCurrentDate } from "@/lib/dateUtils";
 import { TransactionEditModal } from "./transaction-edit-modal";
@@ -42,6 +44,7 @@ interface FinancialTeamDetailModalProps {
 export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> = ({ open, onOpenChange, team }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const { calculateTeamFinances, formatCurrency } = useFinancialData({
     enableSync: false,
   });
@@ -68,16 +71,16 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   // State for edit modal
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  
+  // State for delete confirmation modal
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<any>(null);
 
 
   const finances = team ? calculateTeamFinances(team.team_id) : null;
 
   const balanceFromTeamQuery = useMemo(() => {
-    if (
-      !transactionsFetched ||
-      transactionsPlaceholder ||
-      teamTransactions.length === 0
-    ) {
+    if (!transactionsFetched || transactionsPlaceholder) {
       return null;
     }
     return computeCurrentBalance(teamTransactions);
@@ -88,9 +91,9 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
     currentBalance === null && (loadingTransactions || (!finances && !transactionsFetched));
 
   const { data: costSettings, isLoading: loadingCostSettings } = useQuery({
-    queryKey: ['cost-settings'],
+    queryKey: withOrgQueryKey(["cost-settings"], organizationId),
     queryFn: costSettingsService.getCostSettings,
-    enabled: open
+    enabled: open && orgQueryEnabled,
   });
 
   // Reset form when modal closes
@@ -102,6 +105,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       setTransactionDate(new Date());
       setEditModalOpen(false);
       setSelectedTransaction(null);
+      setDeleteModalOpen(false);
+      setTransactionToDelete(null);
     }
   }, [open]);
 
@@ -205,30 +210,26 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
   };
 
   // Handle delete transaction
-  const handleDeleteTransaction = async (transaction: any) => {
-    if (!team) {
+  const handleDeleteTransaction = (transaction: any) => {
+    setTransactionToDelete(transaction);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTransaction = async () => {
+    if (!team || !transactionToDelete) {
       toast({
         title: "Fout",
-        description: "Team niet gevonden",
+        description: "Team of transactie niet gevonden",
         variant: "destructive"
       });
       return;
     }
 
-    const confirmed = window.confirm(
-      `Weet je zeker dat je deze transactie wilt verwijderen?\n\n` +
-      `Bedrag: ${formatCurrency(Math.abs(transaction.amount))}\n` +
-      `Type: ${transaction.description || transaction.cost_settings?.name || 'Onbekend'}\n\n` +
-      `Deze actie kan niet ongedaan gemaakt worden.`
-    );
-    
-    if (!confirmed) return;
-
     setIsSubmitting(true);
 
     try {
-      console.log('Deleting transaction:', transaction.id);
-      const result = await costSettingsService.deleteTransaction(transaction.id);
+      console.log('Deleting transaction:', transactionToDelete.id);
+      const result = await costSettingsService.deleteTransaction(transactionToDelete.id);
 
       if (result.success) {
         toast({
@@ -236,6 +237,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
           description: "De transactie is succesvol verwijderd uit de database."
         });
         await invalidateFinancialTransactionQueries(queryClient, team.team_id);
+        setDeleteModalOpen(false);
+        setTransactionToDelete(null);
       } else {
         toast({
           title: "Fout",
@@ -275,11 +278,11 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       case 'deposit':
         return 'bg-green-100 text-green-800';
       case 'penalty':
-        return 'bg-red-100 text-red-800';
+        return 'bg-destructive/10 text-destructive';
       case 'match_cost':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-50 text-brand-dark';
       case 'adjustment':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-warning/10 text-warning-foreground';
       default:
         return 'bg-muted text-card-foreground';
     }
@@ -392,7 +395,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
       >
         <div className="space-y-4">
           {/* Current Balance Card */}
-          <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-brand-200">
+          <Card className="bg-gradient-to-br from-brand-50 to-brand-100 border-primary/20">
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -416,7 +419,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
           </Card>
 
           {/* Add Transaction Section */}
-          <Card>
+          <Card className="border-primary/20">
             <CardContent className="p-4 space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <h3 className="text-base font-semibold">Transactie Toevoegen</h3>
@@ -478,8 +481,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
 
               {/* Transaction Form */}
               {showAddTransaction && selectedCost && (
-                <Card className="border" style={{ borderColor: 'var(--accent)', borderWidth: '1px' }}>
-                  <CardContent className="!bg-transparent" style={{ padding: '12px', backgroundColor: 'unset' }}>
+                <Card className="border-primary/20">
+                  <CardContent className="p-3">
                     <div className="space-y-3">
                       {/* Selected cost preview */}
                       <div>
@@ -496,7 +499,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                selectedCost.category === 'deposit' ? 'Storting' : 'Overig'}
                             </Badge>
                             {selectedCost.category !== 'deposit' && (
-                              <span className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+                              <span className="text-sm font-semibold text-brand-dark tabular-nums">
                                 {new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(selectedCost.amount)}
                               </span>
                             )}
@@ -591,7 +594,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
           </Card>
 
           {/* Transaction History */}
-          <Card>
+          <Card className="border-primary/20">
             <CardContent className="p-4">
               <h3 className="text-base font-semibold mb-3">Transactie Geschiedenis</h3>
               
@@ -644,24 +647,9 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                     return (
                       <Card 
                         key={group.match_id || `standalone-${group.transactions[0].id}`}
-                        className="border transition-all duration-150 hover:shadow-sm"
-                        style={{
-                          borderColor: 'var(--accent)',
-                          borderWidth: '1px',
-                          borderStyle: 'solid'
-                        }}
+                        className="border-primary/20 transition-all duration-150 hover:shadow-sm"
                       >
-                        <CardContent 
-                          className="!bg-transparent"
-                          style={{ 
-                            paddingTop: '12px', 
-                            paddingBottom: '12px', 
-                            paddingLeft: '12px', 
-                            paddingRight: '12px',
-                            backgroundColor: 'unset',
-                            background: 'unset'
-                          }}
-                        >
+                        <CardContent className="p-3">
                           {/* Compact Match Header */}
                           {isMatchGroup && group.match_info && (() => {
                             // Determine opponent team name
@@ -676,12 +664,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <Badge 
                                   variant="outline" 
-                                  className="text-[10px] px-1.5 py-0.5 shrink-0"
-                                  style={{ 
-                                    backgroundColor: 'var(--accent)', 
-                                    color: 'white',
-                                    borderColor: 'var(--accent)'
-                                  }}
+                                  className="text-[10px] px-1.5 py-0.5 shrink-0 bg-brand-50 text-brand-dark border-brand-200"
                                 >
                                   {opponentTeam || `#${group.match_info.unique_number}`}
                                 </Badge>
@@ -690,8 +673,10 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                 </span>
                               </div>
                               <div 
-                                className="text-base font-semibold whitespace-nowrap shrink-0"
-                                style={{ color: 'var(--accent)' }}
+                                className={cn(
+                                  "text-base font-semibold whitespace-nowrap shrink-0 tabular-nums",
+                                  group.totalAmount >= 0 ? "text-green-600" : "text-brand-dark",
+                                )}
                               >
                                 {group.totalAmount >= 0 ? '+' : ''}{formatCurrency(Math.abs(group.totalAmount))}
                               </div>
@@ -748,8 +733,12 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                 {/* Right: Amount & Actions */}
                                 <div className="flex items-center gap-2 shrink-0">
                                   <div 
-                                    className="text-xs font-semibold whitespace-nowrap"
-                                    style={{ color: 'var(--accent)' }}
+                                    className={cn(
+                                      "text-sm font-semibold whitespace-nowrap tabular-nums",
+                                      transaction.transaction_type === 'deposit'
+                                        ? "text-green-600"
+                                        : "text-brand-dark",
+                                    )}
                                   >
                                     {transaction.transaction_type === 'deposit' ? '+' : '-'}
                                     {formatCurrency(Math.abs(transaction.amount))}
@@ -759,20 +748,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                       variant="outline"
                                       size="icon"
                                       onClick={() => handleEditTransaction(transaction)}
-                                      className={cn(
-                                        "h-7 w-7 border-[var(--color-300)]",
-                                        "bg-white hover:bg-brand-50 hover:border-[var(--color-400)]",
-                                        "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                                        "transition-colors duration-150"
-                                      )}
-                                      style={{ 
-                                        height: '28px',
-                                        width: '28px',
-                                        minHeight: '28px',
-                                        maxHeight: '28px',
-                                        minWidth: '28px',
-                                        maxWidth: '28px'
-                                      }}
+                                      className="min-h-[44px] min-w-[44px] h-7 w-7 border-primary/30 bg-white hover:bg-brand-50 hover:border-primary/50 text-brand-dark hover:text-brand-dark transition-colors duration-150"
                                       disabled={isSubmitting}
                                       aria-label="Bewerk transactie"
                                     >
@@ -782,20 +758,7 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                       variant="outline"
                                       size="icon"
                                       onClick={() => handleDeleteTransaction(transaction)}
-                                      className={cn(
-                                        "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-red-300",
-                                        "hover:bg-red-50 hover:border-red-400",
-                                        "text-red-600 hover:text-red-700",
-                                        "transition-colors duration-150"
-                                      )}
-                                      style={{ 
-                                        height: '28px',
-                                        width: '28px',
-                                        minHeight: '28px',
-                                        maxHeight: '28px',
-                                        minWidth: '28px',
-                                        maxWidth: '28px'
-                                      }}
+                                      className="min-h-[44px] min-w-[44px] h-7 w-7 border-destructive/30 bg-white hover:bg-destructive/10 hover:border-destructive/50 text-destructive hover:text-destructive transition-colors duration-150"
                                       disabled={isSubmitting}
                                       aria-label="Verwijder transactie"
                                     >
@@ -822,6 +785,39 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
         onOpenChange={setEditModalOpen}
         transaction={selectedTransaction}
         teamId={team?.team_id || 0}
+      />
+
+      <AppAlertModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        title="Transactie verwijderen"
+        size="sm"
+        description={
+          <DestructiveConfirmDescription
+            message={
+              <>
+                Weet je zeker dat je deze transactie wilt verwijderen?
+                <br />
+                <br />
+                <strong>Bedrag:</strong> {transactionToDelete && formatCurrency(Math.abs(transactionToDelete.amount))}
+                <br />
+                <strong>Type:</strong> {transactionToDelete && (transactionToDelete.description || transactionToDelete.cost_settings?.name || 'Onbekend')}
+              </>
+            }
+          />
+        }
+        confirmAction={{
+          label: isSubmitting ? "Verwijderen..." : "Ja, verwijderen",
+          onClick: confirmDeleteTransaction,
+          variant: "destructive",
+          disabled: isSubmitting,
+          loading: isSubmitting,
+        }}
+        cancelAction={{
+          label: "Annuleren",
+          onClick: () => setDeleteModalOpen(false),
+          disabled: isSubmitting,
+        }}
       />
     </>
   );

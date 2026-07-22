@@ -141,8 +141,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               orgId = hostOrg.id;
               orgSlug = hostOrg.slug;
             } catch {
-              orgId = 1;
-              orgSlug = 'harelbeke';
+              console.error(
+                'SuperAdmin: organisatie kon niet worden bepaald; acting org niet gezet.',
+              );
+              setAuthContextReady(true);
+              setLoading(false);
+              return;
             }
           }
           const applied = await setSuperAdminActingOrganization(orgId);
@@ -234,8 +238,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             orgId = hostOrg.id;
             orgSlug = hostOrg.slug;
           } catch {
-            orgId = getSuperAdminActingOrg()?.organizationId ?? 1;
-            orgSlug = getSuperAdminActingOrg()?.slug ?? 'harelbeke';
+            const stored = getSuperAdminActingOrg();
+            if (stored?.organizationId == null || !stored.slug) {
+              throw new LoginError(
+                'Organisatie kon niet worden bepaald. Open de juiste site of kies een tenant.',
+                'invalid_credentials',
+              );
+            }
+            orgId = stored.organizationId;
+            orgSlug = stored.slug;
           }
 
           const applied = await setSuperAdminActingOrganization(

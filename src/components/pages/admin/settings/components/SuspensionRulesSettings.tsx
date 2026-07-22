@@ -14,7 +14,6 @@ import {
   CheckCircle2,
   Loader2,
   Plus,
-  RotateCcw,
   ShieldAlert,
   Trash2,
 } from "lucide-react";
@@ -61,19 +60,11 @@ function validateSuspensionRules(rules: SuspensionRules): string | null {
   return null;
 }
 
-function summarizeYellowRules(rules: YellowCardRule[]): string {
-  if (rules.length === 0) return "Geen drempels";
-  const sorted = [...rules].sort((a, b) => a.card_count - b.card_count);
-  const top = sorted[sorted.length - 1];
-  return `${rules.length} drempel${rules.length === 1 ? "" : "s"} · max. ${top.card_count} gele → ${top.suspension_matches} w.`;
-}
-
 export const SuspensionRulesSettings: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { orgQueryEnabled } = useOrgQueryScope();
   const [rules, setRules] = useState<SuspensionRules | null>(null);
-  const [savedRules, setSavedRules] = useState<SuspensionRules | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -89,7 +80,6 @@ export const SuspensionRulesSettings: React.FC = () => {
       setIsLoading(true);
       const suspensionRules = await suspensionRulesService.getSuspensionRules();
       setRules(suspensionRules);
-      setSavedRules(suspensionRules);
       lastSavedFingerprint.current = fingerprintSuspensionRules(suspensionRules);
       setHasChanges(false);
       setSaveState("idle");
@@ -124,7 +114,6 @@ export const SuspensionRulesSettings: React.FC = () => {
       if (!success) throw new Error("Update failed");
 
       setRules(rulesToSave);
-      setSavedRules(rulesToSave);
       lastSavedFingerprint.current = fingerprintSuspensionRules(rulesToSave);
       setHasChanges(false);
       setSaveState("saved");
@@ -217,57 +206,50 @@ export const SuspensionRulesSettings: React.FC = () => {
 
   const saveStatusBadge =
     saveState === "saving" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full">
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal">
         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
         Opslaan…
       </Badge>
     ) : saveState === "saved" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full text-green-700">
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal text-green-700">
         <CheckCircle2 className="h-3 w-3" aria-hidden />
         Opgeslagen
       </Badge>
     ) : saveState === "error" ? (
-      <Badge variant="secondary" className="gap-1 rounded-full text-destructive">
+      <Badge variant="secondary" className="gap-1 rounded-full text-xs font-normal text-destructive">
         <AlertCircle className="h-3 w-3" aria-hidden />
         Opslaan mislukt
       </Badge>
-    ) : hasChanges ? (
-      <Badge variant="secondary" className="rounded-full">
-        Wijzigingen bezig
+    ) : hasChanges && isValid ? (
+      <Badge variant="secondary" className="rounded-full text-xs font-normal">
+        Wordt bewaard…
       </Badge>
-    ) : (
-      <Badge variant="secondary" className="rounded-full">
-        Automatisch bewaren
-      </Badge>
-    );
+    ) : null;
 
   if (isLoading) {
     return (
-      <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
-        <CardHeader className="space-y-3">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-full max-w-lg" />
+      <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+        <CardHeader>
+          <Skeleton className="h-8 w-56" />
         </CardHeader>
         <CardContent className="space-y-4 pt-0">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Skeleton className="h-24 rounded-xl" />
-              <Skeleton className="h-24 rounded-xl" />
-              <Skeleton className="h-24 rounded-xl" />
-            </div>
-            <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  if (!rules || !savedRules) {
+  if (!rules) {
     return (
-      <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
+      <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-brand-dark">
-            <ShieldAlert className="h-5 w-5 text-primary" aria-hidden />
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5" aria-hidden />
             Schorsingsregels
           </CardTitle>
         </CardHeader>
@@ -284,233 +266,183 @@ export const SuspensionRulesSettings: React.FC = () => {
   }
 
   return (
-    <Card className={cn(PUBLIC_CARD_CLASS, "shadow-md")}>
-      <CardHeader className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="space-y-1 min-w-0">
-            <CardTitle className="flex items-center gap-2 text-brand-dark">
-              <ShieldAlert className="h-5 w-5 text-primary" aria-hidden />
-              Schorsingsregels
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Bepaal drempels voor gele en rode kaarten. Na opslaan worden kaarttotalen
-              opnieuw berekend. Geldige wijzigingen worden automatisch bewaard.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <Badge variant="outline" className="rounded-full">
-              {savedRules.yellow_card_rules.length} gele drempel
-              {savedRules.yellow_card_rules.length === 1 ? "" : "s"}
-            </Badge>
-            {saveStatusBadge}
-          </div>
+    <Card className={cn(PUBLIC_CARD_CLASS, "shadow-sm")}>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5" aria-hidden />
+            Schorsingsregels
+          </CardTitle>
+          {saveStatusBadge}
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-0">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Gele kaarten
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-snug text-brand-dark">
-                {summarizeYellowRules(savedRules.yellow_card_rules)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Rechtstreeks rood
-              </p>
-              <p className="mt-2 text-base font-semibold text-brand-dark">
-                {savedRules.red_card_rules.default_suspension_matches} wedstrijd
-                {savedRules.red_card_rules.default_suspension_matches === 1 ? "" : "en"}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-primary/15 bg-brand-50/30 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Einde seizoen
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <RotateCcw className="h-4 w-4 text-muted-foreground" aria-hidden />
-                <p className="text-sm font-semibold text-brand-dark">
-                  {savedRules.reset_rules.reset_at_season_end
-                    ? "Kaarten resetten"
-                    : "Geen reset"}
-                </p>
-              </div>
-            </div>
+      <CardContent className="space-y-5 pt-0">
+        <section className="space-y-3" aria-labelledby="yellow-card-rules-heading">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h3
+              id="yellow-card-rules-heading"
+              className="flex items-center gap-2 text-sm font-semibold text-brand-dark"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />
+              Gele kaarten
+            </h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addYellowCardRule}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" aria-hidden />
+              Drempel toevoegen
+            </Button>
           </div>
 
-          <div className="space-y-4 rounded-xl border border-border/70 bg-background p-4 sm:p-5">
-            <section className="space-y-3" aria-labelledby="yellow-card-rules-heading">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <h3
-                  id="yellow-card-rules-heading"
-                  className="flex items-center gap-2 text-sm font-semibold text-brand-dark"
+          {rules.yellow_card_rules.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-primary/15 px-3 py-2.5 text-sm text-muted-foreground">
+              Nog geen drempels. Voeg een regel toe voor schorsingen bij gele kaarten.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {rules.yellow_card_rules.map((rule, index) => (
+                <div
+                  key={`yellow-rule-${index}`}
+                  className="grid gap-2 rounded-lg border border-primary/10 bg-muted/20 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
                 >
-                  <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />
-                  Gele kaarten
-                </h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addYellowCardRule}
-                  className="min-h-[44px] w-full sm:w-auto"
-                >
-                  <Plus className="mr-2 h-4 w-4" aria-hidden />
-                  Drempel toevoegen
-                </Button>
-              </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`yellow-count-${index}`} className="text-xs">
+                      Vanaf (gele kaarten)
+                    </Label>
+                    <Input
+                      id={`yellow-count-${index}`}
+                      type="number"
+                      value={rule.card_count}
+                      onChange={(e) =>
+                        updateYellowCardRule(
+                          index,
+                          "card_count",
+                          parseInt(e.target.value, 10) || 1,
+                        )
+                      }
+                      className="min-h-[44px]"
+                      min={1}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                {rules.yellow_card_rules.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-primary/15 px-4 py-3 text-xs text-muted-foreground">
-                    Nog geen drempels. Voeg een regel toe om schorsingen bij gele kaarten te
-                    bepalen.
-                  </p>
-                ) : (
-                  rules.yellow_card_rules.map((rule, index) => (
-                    <div
-                      key={`yellow-rule-${index}`}
-                      className="grid gap-3 rounded-lg border border-primary/10 bg-card p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end"
-                    >
-                      <div className="space-y-2">
-                        <Label htmlFor={`yellow-count-${index}`} className="text-xs">
-                          Vanaf (gele kaarten)
-                        </Label>
-                        <Input
-                          id={`yellow-count-${index}`}
-                          type="number"
-                          value={rule.card_count}
-                          onChange={(e) =>
-                            updateYellowCardRule(
-                              index,
-                              "card_count",
-                              parseInt(e.target.value, 10) || 1,
-                            )
-                          }
-                          className="min-h-[44px]"
-                          min={1}
-                        />
-                      </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`yellow-suspension-${index}`} className="text-xs">
+                      Schorsing (wedstrijden)
+                    </Label>
+                    <Input
+                      id={`yellow-suspension-${index}`}
+                      type="number"
+                      value={rule.suspension_matches}
+                      onChange={(e) =>
+                        updateYellowCardRule(
+                          index,
+                          "suspension_matches",
+                          parseInt(e.target.value, 10) || 0,
+                        )
+                      }
+                      className="min-h-[44px]"
+                      min={0}
+                    />
+                  </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor={`yellow-suspension-${index}`} className="text-xs">
-                          Schorsing (wedstrijden)
-                        </Label>
-                        <Input
-                          id={`yellow-suspension-${index}`}
-                          type="number"
-                          value={rule.suspension_matches}
-                          onChange={(e) =>
-                            updateYellowCardRule(
-                              index,
-                              "suspension_matches",
-                              parseInt(e.target.value, 10) || 0,
-                            )
-                          }
-                          className="min-h-[44px]"
-                          min={0}
-                        />
-                      </div>
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removeYellowCardRule(index)}
-                        className="min-h-[44px] min-w-[44px] sm:mb-0"
-                        aria-label={`Drempel bij ${rule.card_count} gele kaarten verwijderen`}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className="space-y-3 rounded-lg border border-primary/10 bg-card p-4" aria-labelledby="red-card-rules-heading">
-              <h3
-                id="red-card-rules-heading"
-                className="flex items-center gap-2 text-sm font-semibold text-brand-dark"
-              >
-                <Ban className="h-4 w-4 text-destructive" aria-hidden />
-                Rechtstreeks rood
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                <div className="space-y-2">
-                  <Label htmlFor="red-default">Standaard schorsing</Label>
-                  <Input
-                    id="red-default"
-                    type="number"
-                    value={rules.red_card_rules.default_suspension_matches}
-                    onChange={(e) =>
-                      updateRules((current) => ({
-                        ...current,
-                        red_card_rules: {
-                          ...current.red_card_rules,
-                          default_suspension_matches: parseInt(e.target.value, 10) || 1,
-                        },
-                      }))
-                    }
-                    className="min-h-[44px]"
-                    min={1}
-                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeYellowCardRule(index)}
+                    className="min-h-[44px] min-w-[44px]"
+                    aria-label={`Drempel bij ${rule.card_count} gele kaarten verwijderen`}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </Button>
                 </div>
-                <p className="pb-1 text-xs leading-relaxed text-muted-foreground sm:max-w-[12rem]">
-                  Geen maximum; afwijkingen beheer je als handmatige schorsing.
-                </p>
-              </div>
-            </section>
+              ))}
+            </div>
+          )}
+        </section>
 
-            <div className="flex items-start justify-between gap-3 rounded-lg border border-primary/10 bg-card px-4 py-3 min-h-[44px]">
-              <div className="space-y-0.5 min-w-0">
-                <Label htmlFor="season-reset" className="text-sm font-medium text-brand-dark">
-                  Reset kaarten aan einde seizoen
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Gele en rode tellers worden gewist bij seizoenseinde.
-                </p>
-              </div>
-              <Switch
-                id="season-reset"
-                checked={rules.reset_rules.reset_at_season_end}
-                onCheckedChange={(checked) =>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <section
+            className="space-y-2 rounded-lg border border-primary/10 p-3"
+            aria-labelledby="red-card-rules-heading"
+          >
+            <h3
+              id="red-card-rules-heading"
+              className="flex items-center gap-2 text-sm font-semibold text-brand-dark"
+            >
+              <Ban className="h-4 w-4 text-destructive" aria-hidden />
+              Rechtstreeks rood
+            </h3>
+            <div className="space-y-1.5">
+              <Label htmlFor="red-default">Standaard schorsing (wedstrijden)</Label>
+              <Input
+                id="red-default"
+                type="number"
+                value={rules.red_card_rules.default_suspension_matches}
+                onChange={(e) =>
                   updateRules((current) => ({
                     ...current,
-                    reset_rules: {
-                      ...current.reset_rules,
-                      reset_at_season_end: checked,
+                    red_card_rules: {
+                      ...current.red_card_rules,
+                      default_suspension_matches: parseInt(e.target.value, 10) || 1,
                     },
                   }))
                 }
-                className="shrink-0"
+                className="min-h-[44px]"
+                min={1}
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              Afwijkingen beheer je als handmatige schorsing.
+            </p>
+          </section>
 
-            {validationError && hasChanges ? (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" aria-hidden />
-                <AlertDescription>{validationError}</AlertDescription>
-              </Alert>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                Aanpasbaar tijdens het seizoen. Wijzigingen worden na een korte pauze automatisch
-                opgeslagen en toegepast op de kaarttotalen.
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/10 p-3 min-h-[44px]">
+            <div className="min-w-0 space-y-0.5">
+              <Label htmlFor="season-reset" className="text-sm font-medium">
+                Reset aan einde seizoen
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Gele en rode tellers wissen bij seizoenseinde.
               </p>
-            )}
+            </div>
+            <Switch
+              id="season-reset"
+              checked={rules.reset_rules.reset_at_season_end}
+              onCheckedChange={(checked) =>
+                updateRules((current) => ({
+                  ...current,
+                  reset_rules: {
+                    ...current.reset_rules,
+                    reset_at_season_end: checked,
+                  },
+                }))
+              }
+              className="shrink-0"
+            />
           </div>
         </div>
+
+        {validationError && hasChanges ? (
+          <Alert variant="destructive" className="py-2">
+            <AlertCircle className="h-4 w-4" aria-hidden />
+            <AlertDescription className="text-sm">{validationError}</AlertDescription>
+          </Alert>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Wijzigingen worden automatisch bewaard en toegepast op de kaarttotalen.
+          </p>
+        )}
 
         {saveState === "saving" ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            Schorsingsregels worden bewaard en opnieuw toegepast…
+            Kaarttotalen worden herberekend…
           </div>
         ) : null}
       </CardContent>

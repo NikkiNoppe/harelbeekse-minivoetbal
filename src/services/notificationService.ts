@@ -156,7 +156,13 @@ export const notificationService = {
     message: string;
     target_roles?: string[];
     target_user_ids?: number[];
-  }): Promise<{ queued: number; suppressed: number; failed: number; totalRecipients: number }> {
+  }): Promise<{
+    queued: number;
+    suppressed: number;
+    failed: number;
+    totalRecipients: number;
+    failureSample?: string[];
+  }> {
     const { data, error } = await supabase.functions.invoke('send-admin-message-emails', {
       body: input,
       headers: getEdgeFunctionHeaders(),
@@ -175,6 +181,7 @@ export const notificationService = {
       suppressed: Number(data?.suppressed ?? 0),
       failed: Number(data?.failed ?? 0),
       totalRecipients: Number(data?.totalRecipients ?? 0),
+      failureSample: Array.isArray(data?.failureSample) ? data.failureSample : undefined,
     };
   },
 

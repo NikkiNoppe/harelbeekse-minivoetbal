@@ -17,6 +17,8 @@ export interface AuthEmailBranding {
   textColor: string;
   mutedColor: string;
   fromAddress: string;
+  fromEmail: string;
+  replyToEmail: string;
 }
 
 /** Uitnodigingslink na nieuwe gebruiker (setup). */
@@ -40,6 +42,8 @@ const DEFAULT_BRANDING: AuthEmailBranding = {
   textColor: "#111827",
   mutedColor: "#6b7280",
   fromAddress: "Harelbeekse Minivoetbal <info@harelbekeminivoetbal.be>",
+  fromEmail: "info@harelbekeminivoetbal.be",
+  replyToEmail: "info@harelbekeminivoetbal.be",
 };
 
 function readString(value: unknown, fallback: string): string {
@@ -100,6 +104,36 @@ export function formatAuthLinkValidityNl(durationMs: number): string {
   return "beperkte tijd";
 }
 
+function deriveDefaultInfoEmail(siteUrl: string, organizationSlug?: string): string {
+  if (organizationSlug === "harelbeke") {
+    return DEFAULT_BRANDING.fromEmail;
+  }
+  try {
+    const hostname = new URL(siteUrl.trim()).hostname.replace(/^www\./, "");
+    return hostname ? `info@${hostname}` : DEFAULT_BRANDING.fromEmail;
+  } catch {
+    return DEFAULT_BRANDING.fromEmail;
+  }
+}
+
+function parseOrganizationEmailSettings(
+  raw: Record<string, unknown> | undefined,
+  options: { siteUrl: string; organizationSlug: string; displayName: string },
+): { fromEmail: string; replyToEmail: string; fromAddress: string } {
+  const emailRaw = raw?.email;
+  const emailObj =
+    emailRaw && typeof emailRaw === "object" && !Array.isArray(emailRaw)
+      ? (emailRaw as Record<string, unknown>)
+      : {};
+
+  const fallbackFrom = deriveDefaultInfoEmail(options.siteUrl, options.organizationSlug);
+  const fromEmail = readString(emailObj.fromEmail, fallbackFrom).toLowerCase();
+  const replyToEmail = readString(emailObj.replyToEmail, fromEmail).toLowerCase();
+  const fromAddress = `${options.displayName} <${fromEmail}>`;
+
+  return { fromEmail, replyToEmail, fromAddress };
+}
+
 export function parseAuthEmailBranding(
   organizationId: number,
   organizationSlug: string,
@@ -125,12 +159,11 @@ export function parseAuthEmailBranding(
   const surfaceColor = readColor(scale, "100", DEFAULT_BRANDING.surfaceColor);
   const borderColor = readColor(scale, "200", DEFAULT_BRANDING.borderColor);
 
-  const verifiedFromDomain =
-    Deno.env.get("AUTH_EMAIL_FROM_DOMAIN")?.trim() || "harelbekeminivoetbal.be";
-
-  const fromAddress =
-    Deno.env.get("AUTH_EMAIL_FROM")?.trim() ||
-    `${displayName} <info@${verifiedFromDomain}>`;
+  const emailSettings = parseOrganizationEmailSettings(raw, {
+    siteUrl,
+    organizationSlug,
+    displayName,
+  });
 
   return {
     organizationId,
@@ -146,7 +179,9 @@ export function parseAuthEmailBranding(
     borderColor,
     textColor: DEFAULT_BRANDING.textColor,
     mutedColor: DEFAULT_BRANDING.mutedColor,
-    fromAddress,
+    fromAddress: emailSettings.fromAddress,
+    fromEmail: emailSettings.fromEmail,
+    replyToEmail: emailSettings.replyToEmail,
   };
 }
 
@@ -264,14 +299,15 @@ export function buildAuthEmailHtml(content: AuthEmailContent): string {
 }
 
 export function resolveAuthReplyTo(branding: AuthEmailBranding): string {
-  const explicit = Deno.env.get("AUTH_EMAIL_REPLY_TO")?.trim();
-  if (explicit) return explicit;
+  if (branding.replyToEmail?.trim()) {
+    return branding.replyToEmail.trim();
+  }
 
   try {
     const domain = new URL(branding.siteUrl).hostname.replace(/^www\./, "");
     return `info@${domain}`;
   } catch {
-    return "info@harelbekeminivoetbal.be";
+    return DEFAULT_BRANDING.replyToEmail;
   }
 }
 

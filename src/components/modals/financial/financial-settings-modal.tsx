@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useMemo } from "react";
-import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { AppAlertModal, DestructiveConfirmDescription } from "@/components/modals";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,35 +11,36 @@ import { cn } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { enhancedCostSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Plus, Edit, Trash2, Euro, X } from "lucide-react";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
+import { Settings, Plus, Edit, Trash2 } from "lucide-react";
 
 interface FinancialSettingsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({ 
-  open, 
-  onOpenChange 
+export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
+  open,
+  onOpenChange,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingItem, setDeletingItem] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Form for adding new items
+
   const [formData, setFormData] = useState({
-    name: '',
-    amount: '',
-    category: 'penalty' as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost'
+    name: "",
+    amount: "",
+    category: "penalty" as "match_cost" | "penalty" | "other" | "field_cost" | "referee_cost",
   });
-  
-  // Inline edit form
-  const [editName, setEditName] = useState('');
-  const [editAmount, setEditAmount] = useState('');
+
+  const [editName, setEditName] = useState("");
+  const [editAmount, setEditAmount] = useState("");
 
   const {
     data: costSettings,
@@ -49,9 +49,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     error: costSettingsError,
     refetch: refetchCostSettings,
   } = useQuery({
-    queryKey: ["cost-settings-management"],
+    queryKey: withOrgQueryKey(["cost-settings-management"], organizationId),
     queryFn: enhancedCostSettingsService.getCostSettings,
-    enabled: open,
+    enabled: open && orgQueryEnabled,
     staleTime: 0,
     refetchOnMount: "always",
     retry: 2,
@@ -59,17 +59,16 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
 
   const resetForm = useCallback(() => {
     setFormData({
-      name: '',
-      amount: '',
-      category: 'penalty'
+      name: "",
+      amount: "",
+      category: "penalty",
     });
     setShowAddForm(false);
     setEditingId(null);
-    setEditName('');
-    setEditAmount('');
+    setEditName("");
+    setEditAmount("");
   }, []);
 
-  // Save for NEW items only
   const handleAddSave = useCallback(async () => {
     if (!formData.name.trim() || !formData.amount) {
       toast({ title: "Fout", description: "Vul alle verplichte velden in", variant: "destructive" });
@@ -89,9 +88,9 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     setIsSubmitting(false);
     if (result.success) {
       toast({ title: "Succesvol", description: result.message });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
-      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings-management"] });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-overview"] });
       void invalidateFinancialTransactionQueries(queryClient);
       resetForm();
     } else {
@@ -99,7 +98,6 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     }
   }, [formData, queryClient, resetForm, toast]);
 
-  // Save for INLINE edit (naam + bedrag)
   const handleEditSave = useCallback(async () => {
     if (editingId === null) return;
     if (!editName.trim() || !editAmount) {
@@ -114,18 +112,18 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     setIsSubmitting(true);
     const result = await enhancedCostSettingsService.updateCostSetting(editingId, {
       name: editName.trim(),
-      amount
+      amount,
     });
     setIsSubmitting(false);
     if (result.success) {
       toast({ title: "Succesvol", description: result.message });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
-      queryClient.invalidateQueries({ queryKey: ['financial-overview'] });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings-management"] });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-overview"] });
       void invalidateFinancialTransactionQueries(queryClient);
       setEditingId(null);
-      setEditName('');
-      setEditAmount('');
+      setEditName("");
+      setEditAmount("");
     } else {
       toast({ title: "Fout", description: result.message, variant: "destructive" });
     }
@@ -137,222 +135,166 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     const result = await enhancedCostSettingsService.deleteCostSetting(deletingItem.id);
     setIsSubmitting(false);
     if (result.success) {
-      toast({
-        title: "Succesvol",
-        description: result.message
-      });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings-management'] });
-      queryClient.invalidateQueries({ queryKey: ['cost-settings'] });
+      toast({ title: "Succesvol", description: result.message });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings-management"] });
+      queryClient.invalidateQueries({ queryKey: ["cost-settings"] });
       void invalidateFinancialTransactionQueries(queryClient);
       setDeletingItem(null);
     } else {
-      toast({
-        title: "Fout",
-        description: result.message,
-        variant: "destructive"
-      });
+      toast({ title: "Fout", description: result.message, variant: "destructive" });
     }
   }, [deletingItem, queryClient, toast]);
 
   const handleEdit = useCallback((item: any) => {
     setEditingId(item.id);
     setEditName(item.name);
-    setEditAmount(item.amount?.toString() || '0');
+    setEditAmount(item.amount?.toString() || "0");
   }, []);
 
-  const formatCurrency = useMemo(() => (amount: number) => {
-    return new Intl.NumberFormat('nl-NL', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
-  }, []);
+  const formatCurrency = useMemo(
+    () => (amount: number) =>
+      new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(amount),
+    [],
+  );
 
-  const getCategoryLabel = useMemo(() => (category: string) => {
-    switch (category) {
-      case 'match_cost': return 'Wedstrijdkosten';
-      case 'penalty': return 'Boete';
-      case 'field_cost': return 'Veldkosten';
-      case 'referee_cost': return 'Scheidsrechterkosten';
-      case 'deposit': return 'Storting';
-      case 'other': return 'Overig';
-      default: return category;
-    }
-  }, []);
+  const getCategoryLabel = useMemo(
+    () => (category: string) => {
+      switch (category) {
+        case "match_cost":
+          return "Wedstrijdkosten";
+        case "penalty":
+          return "Boete";
+        case "field_cost":
+          return "Veldkosten";
+        case "referee_cost":
+          return "Scheidsrechterkosten";
+        case "deposit":
+          return "Storting";
+        case "other":
+          return "Overig";
+        default:
+          return category;
+      }
+    },
+    [],
+  );
 
-  const getCategoryColor = useMemo(() => (category: string) => {
-    switch (category) {
-      case 'match_cost': return 'bg-blue-100 text-blue-800';
-      case 'penalty': return 'bg-red-100 text-red-800';
-      case 'field_cost': return 'bg-green-100 text-green-800';
-      case 'referee_cost': return 'bg-brand-100 text-brand-800';
-      case 'deposit': return '!bg-green-50 !text-green-700 !border-green-200 hover:!bg-green-100 hover:!border-green-300';
-      case 'other': return 'bg-muted text-card-foreground';
-      default: return 'bg-muted text-card-foreground';
-    }
-  }, []);
+  const getCategoryColor = useMemo(
+    () => (category: string) => {
+      switch (category) {
+        case "match_cost":
+          return "bg-brand-100 text-brand-800 border-brand-200";
+        case "penalty":
+          return "bg-destructive/10 text-destructive border-destructive/20";
+        case "field_cost":
+          return "bg-brand-50 text-brand-dark border-brand-light";
+        case "referee_cost":
+          return "bg-brand-100 text-brand-800 border-brand-200";
+        case "deposit":
+          return "bg-green-50 text-green-700 border-green-200";
+        case "other":
+          return "bg-muted text-card-foreground border-border";
+        default:
+          return "bg-muted text-card-foreground border-border";
+      }
+    },
+    [],
+  );
 
   return (
     <>
-      <AppModal
-        open={open}
-        onOpenChange={onOpenChange}
-        size="lg"
-        className="max-w-6xl"
-      >
-        <AppModalHeader
-          style={{
-            marginTop: '0px',
-            marginBottom: '0px',
-            backgroundColor: 'unset',
-            background: 'unset',
-            position: 'relative',
-            padding: '12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h2
-              className="flex items-center gap-2"
-              style={{
-                marginTop: '0px',
-                marginBottom: '0px',
-                backgroundColor: 'unset',
-                background: 'unset',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-                color: 'var(--color-700)'
-              }}
-            >
-              <Euro className="h-5 w-5" />
-              Kostenlijst Beheer
-            </h2>
-            <button
-              onClick={() => onOpenChange(false)}
-              style={{
-                background: 'rgba(0, 0, 0, 0.05)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '2rem',
-                height: '2rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'background 150ms',
-                flexShrink: 0
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
-              }}
-              aria-label="Sluiten"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </AppModalHeader>
+      <AppModal open={open} onOpenChange={onOpenChange} title="Kostenlijst beheer" size="lg">
         <div className="space-y-4">
-          {/* Form Section */}
-          <Card className="border transition-all duration-150 hover:shadow-sm" style={{ borderColor: 'var(--accent)', borderWidth: '1px', borderStyle: 'solid' }}>
-            {showAddForm && (
-              <CardContent 
-                className="!bg-transparent"
-                style={{ 
-                  paddingTop: '12px', 
-                  paddingBottom: '12px', 
-                  paddingLeft: '12px', 
-                  paddingRight: '12px',
-                  backgroundColor: 'unset',
-                  background: 'unset'
-                }}
-              >
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Naam *</Label>
-                    <Input
-                      value={formData.name}
-                      onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Naam van het tarief"
-                      className="modal__input"
-                      disabled={isSubmitting}
-                    />
-                  </div>
+          {showAddForm && (
+            <Card className="border-primary/20 shadow-lg card-hover">
+              <CardContent className="p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Naam *</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Naam van het tarief"
+                    className="modal__input"
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Categorie *</Label>
-                    <Select 
-                      value={formData.category} 
-                      onValueChange={value => setFormData(f => ({ ...f, category: value as 'match_cost' | 'penalty' | 'other' | 'field_cost' | 'referee_cost' }))}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger className="modal__input">
-                        <SelectValue placeholder="Selecteer categorie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
-                        <SelectItem value="penalty">Boete</SelectItem>
-                        <SelectItem value="field_cost">Veldkosten</SelectItem>
-                        <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
-                        <SelectItem value="other">Overig</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Categorie *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData((f) => ({
+                        ...f,
+                        category: value as "match_cost" | "penalty" | "other" | "field_cost" | "referee_cost",
+                      }))
+                    }
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger className="modal__input min-h-[44px]">
+                      <SelectValue placeholder="Selecteer categorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="match_cost">Wedstrijdkosten</SelectItem>
+                      <SelectItem value="penalty">Boete</SelectItem>
+                      <SelectItem value="field_cost">Veldkosten</SelectItem>
+                      <SelectItem value="referee_cost">Scheidsrechterkosten</SelectItem>
+                      <SelectItem value="other">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Bedrag (€) *</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.amount}
-                      onChange={e => setFormData(f => ({ ...f, amount: e.target.value }))}
-                      placeholder="0.00"
-                      className="modal__input"
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-brand-dark">Bedrag (€) *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={(e) => setFormData((f) => ({ ...f, amount: e.target.value }))}
+                    placeholder="0.00"
+                    className="modal__input"
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-                  <div className="flex flex-col gap-2 pt-2">
-                    <button 
-                      onClick={handleAddSave}
-                      className="btn btn--primary w-full"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Bezig...' : 'Toevoegen'}
-                    </button>
-                    <button 
-                      onClick={resetForm}
-                      className="btn btn--secondary w-full"
-                      disabled={isSubmitting}
-                    >
-                      Annuleren
-                    </button>
-                  </div>
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleAddSave}
+                    className="btn btn--primary w-full min-h-[44px]"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Bezig..." : "Toevoegen"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="btn btn--secondary w-full min-h-[44px]"
+                    disabled={isSubmitting}
+                  >
+                    Annuleren
+                  </button>
                 </div>
               </CardContent>
-            )}
-          </Card>
-          
-          {/* Nieuw Tarief Button */}
-          <button 
-            onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
-            className="btn btn--secondary flex items-center justify-center gap-2 w-full"
+            </Card>
+          )}
+
+          <button
+            type="button"
+            onClick={() => (showAddForm ? resetForm() : setShowAddForm(true))}
+            className="btn btn--secondary flex items-center justify-center gap-2 w-full min-h-[44px]"
             disabled={isSubmitting}
           >
             <Plus className="h-4 w-4" />
-            {showAddForm ? 'Annuleren' : 'Nieuw Tarief'}
+            {showAddForm ? "Annuleren" : "Nieuw tarief"}
           </button>
 
-          {/* Settings List */}
-          <Card>
+          <Card className="border-primary/20 shadow-lg card-hover">
             <CardHeader className="p-4">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-brand-dark">
                 <Settings className="h-4 w-4" />
-                Huidige Tarieven
+                Huidige tarieven
                 {costSettings && (
                   <Badge variant="secondary" className="text-xs">
                     {costSettings.length} items
@@ -360,165 +302,130 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-4 pt-0">
               {isLoading && !costSettings ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-8 text-muted-foreground" aria-busy="true">
                   Tarieven laden...
                 </div>
               ) : costSettingsError && isFetched ? (
                 <div className="text-center py-8 space-y-3">
                   <p className="text-sm text-destructive">Tarieven konden niet geladen worden.</p>
-                  <Button type="button" variant="outline" size="sm" onClick={() => void refetchCostSettings()}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[44px]"
+                    onClick={() => void refetchCostSettings()}
+                  >
                     Opnieuw proberen
                   </Button>
                 </div>
               ) : costSettings && costSettings.length > 0 ? (
-                <div className="space-y-1.5">
+                <ul className="space-y-2">
                   {costSettings.map((setting) => (
-                    <React.Fragment key={setting.id}>
-                      <Card 
-                        className={cn(
-                          "border transition-all duration-150 hover:shadow-sm",
-                          editingId === setting.id && "ring-1 ring-primary/30"
-                        )}
-                        style={{
-                          borderColor: 'var(--accent)',
-                          borderWidth: '1px',
-                          borderStyle: 'solid'
-                        }}
-                      >
-                        <CardContent 
-                          className="!bg-transparent"
-                          style={{ 
-                            paddingTop: '12px', 
-                            paddingBottom: '12px', 
-                            paddingLeft: '12px', 
-                            paddingRight: '12px',
-                            backgroundColor: 'unset',
-                            background: 'unset'
-                          }}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <p className="text-sm font-medium truncate">
-                                  {setting.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge className={getCategoryColor(setting.category)}>
-                                    {getCategoryLabel(setting.category)}
-                                  </Badge>
-                                  <span 
-                                    className="text-xs font-semibold whitespace-nowrap"
-                                    style={{ color: 'var(--accent)' }}
-                                  >
-                                    {formatCurrency(setting.amount)}
-                                  </span>
-                                </div>
-                              </div>
+                    <li
+                      key={setting.id}
+                      className={cn(
+                        "rounded-lg border border-primary/20 bg-card p-3 transition-shadow hover:shadow-sm",
+                        editingId === setting.id && "ring-1 ring-primary/30",
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col min-w-0 flex-1 gap-1">
+                          <p className="text-sm font-medium text-brand-dark truncate">{setting.name}</p>
+                          <Badge className={cn("w-fit border", getCategoryColor(setting.category))}>
+                            {getCategoryLabel(setting.category)}
+                          </Badge>
+                        </div>
+                        <span className="text-sm font-semibold text-brand-dark tabular-nums whitespace-nowrap shrink-0">
+                          {setting.amount == null
+                            ? "Variabel"
+                            : formatCurrency(Number(setting.amount))}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() =>
+                              editingId === setting.id ? setEditingId(null) : handleEdit(setting)
+                            }
+                            className={cn(
+                              "min-h-[44px] min-w-[44px] border-primary/20",
+                              editingId === setting.id && "bg-brand-50",
+                            )}
+                            disabled={isSubmitting}
+                            aria-label="Bewerk tarief"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeletingItem(setting)}
+                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            disabled={isSubmitting}
+                            aria-label="Verwijder tarief"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {editingId === setting.id && (
+                        <div className="mt-3 pt-3 border-t border-primary/20 space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs font-medium text-brand-dark">Naam</Label>
+                              <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                placeholder="Naam"
+                                className="modal__input min-h-[44px]"
+                                disabled={isSubmitting}
+                              />
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => editingId === setting.id ? setEditingId(null) : handleEdit(setting)}
-                                className={cn(
-                                  "h-7 w-7 border-[var(--color-300)]",
-                                  "hover:bg-muted hover:border-[var(--color-400)]",
-                                  "text-[var(--color-700)] hover:text-[var(--color-900)]",
-                                  "transition-colors duration-150",
-                                  editingId === setting.id && "bg-accent/50"
-                                )}
-                                style={{ 
-                                  height: '28px',
-                                  width: '28px',
-                                  minHeight: '28px',
-                                  maxHeight: '28px',
-                                  minWidth: '28px',
-                                  maxWidth: '28px'
-                                }}
+                            <div className="space-y-1">
+                              <Label className="text-xs font-medium text-brand-dark">Bedrag (€)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={editAmount}
+                                onChange={(e) => setEditAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="modal__input min-h-[44px]"
                                 disabled={isSubmitting}
-                                aria-label="Bewerk tarief"
-                              >
-                                <Edit size={14} />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => setDeletingItem(setting)}
-                                className={cn(
-                                  "!h-7 !w-7 !min-h-0 !max-h-7 !max-w-7 rounded-md border-destructive/30",
-                                  "hover:bg-destructive/10 hover:border-destructive/50",
-                                  "text-destructive hover:text-destructive",
-                                  "transition-colors duration-150"
-                                )}
-                                style={{ 
-                                  height: '28px',
-                                  width: '28px',
-                                  minHeight: '28px',
-                                  maxHeight: '28px',
-                                  minWidth: '28px',
-                                  maxWidth: '28px'
-                                }}
-                                disabled={isSubmitting}
-                                aria-label="Verwijder tarief"
-                              >
-                                <Trash2 size={14} />
-                              </Button>
+                              />
                             </div>
                           </div>
-
-                          {/* Inline edit form */}
-                          {editingId === setting.id && (
-                            <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs font-medium text-muted-foreground">Naam</Label>
-                                  <Input
-                                    value={editName}
-                                    onChange={e => setEditName(e.target.value)}
-                                    placeholder="Naam"
-                                    className="modal__input h-8 text-sm"
-                                    disabled={isSubmitting}
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs font-medium text-muted-foreground">Bedrag (€)</Label>
-                                  <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={editAmount}
-                                    onChange={e => setEditAmount(e.target.value)}
-                                    placeholder="0.00"
-                                    className="modal__input h-8 text-sm"
-                                    disabled={isSubmitting}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <button 
-                                  onClick={handleEditSave}
-                                  className="btn btn--primary flex-1 text-sm py-1.5"
-                                  disabled={isSubmitting}
-                                >
-                                  {isSubmitting ? 'Bezig...' : 'Opslaan'}
-                                </button>
-                                <button 
-                                  onClick={() => { setEditingId(null); setEditName(''); setEditAmount(''); }}
-                                  className="btn btn--secondary flex-1 text-sm py-1.5"
-                                  disabled={isSubmitting}
-                                >
-                                  Annuleren
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </React.Fragment>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                              type="button"
+                              onClick={handleEditSave}
+                              className="btn btn--primary flex-1 min-h-[44px]"
+                              disabled={isSubmitting}
+                            >
+                              {isSubmitting ? "Bezig..." : "Opslaan"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditName("");
+                                setEditAmount("");
+                              }}
+                              className="btn btn--secondary flex-1 min-h-[44px]"
+                              disabled={isSubmitting}
+                            >
+                              Annuleren
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   Nog geen tarieven gedefinieerd
@@ -531,10 +438,10 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
 
       <AppAlertModal
         open={!!deletingItem}
-        onOpenChange={(open) => {
-          if (!open) setDeletingItem(null);
+        onOpenChange={(openState) => {
+          if (!openState) setDeletingItem(null);
         }}
-        title="Tarief Verwijderen"
+        title="Tarief verwijderen"
         description={
           <DestructiveConfirmDescription
             message={
@@ -547,7 +454,7 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
           />
         }
         confirmAction={{
-          label: isSubmitting ? 'Verwijderen...' : 'Verwijderen',
+          label: isSubmitting ? "Verwijderen..." : "Verwijderen",
           onClick: handleDelete,
           variant: "destructive",
           disabled: isSubmitting,
@@ -563,4 +470,3 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
     </>
   );
 };
-

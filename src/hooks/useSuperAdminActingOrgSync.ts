@@ -42,6 +42,10 @@ export function useSuperAdminActingOrgSync(): void {
       if (applied) {
         setSuperAdminActingOrg({ organizationId: orgId, slug: organization.slug });
         lastSyncedOrgId.current = orgId;
+        // Voorkom cache-lek tussen tenants bij SuperAdmin-switch
+        await queryClient.removeQueries({
+          predicate: (query) => query.queryKey[0] !== 'organization',
+        });
         await queryClient.invalidateQueries({
           predicate: (query) => query.queryKey[0] !== 'organization',
         });

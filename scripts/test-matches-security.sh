@@ -32,7 +32,7 @@ echo "Target: $SUPABASE_URL"
 rpc_code=$(curl -s -o /tmp/pub_teams_detect.json -w "%{http_code}" \
   "$SUPABASE_URL/rest/v1/rpc/get_public_teams" \
   -H "Content-Type: application/json" "${hdr[@]}" \
-  -d '{}')
+  -d '{"p_organization_id":1}')
 session_auth_live=false
 if [[ "$rpc_code" == "200" ]]; then
   session_auth_live=true
@@ -46,7 +46,7 @@ echo ""
 code=$(curl -s -o /tmp/mp.json -w "%{http_code}" \
   "$SUPABASE_URL/rest/v1/rpc/get_public_matches" \
   -H "Content-Type: application/json" "${hdr[@]}" \
-  -d '{}')
+  -d '{"p_organization_id":1}')
 has_rows=false
 if [[ "$code" == "200" ]]; then
   has_rows=$(python3 -c "import json; d=json.load(open('/tmp/mp.json')); print('true' if isinstance(d,list) and len(d)>0 else 'false')" 2>/dev/null || echo false)
@@ -320,7 +320,7 @@ print('false' if isinstance(d,list) and len(d)>0 and 'contact_email' in d[0] els
   code=$(curl -s -o /tmp/pub_settings.json -w "%{http_code}" \
     "$SUPABASE_URL/rest/v1/rpc/get_public_application_settings" \
     -H "Content-Type: application/json" "${hdr[@]}" \
-    -d '{"p_categories":["theme_colors"]}')
+    -d '{"p_categories":["theme_colors"],"p_organization_id":1}')
   pub_settings_ok=false
   if [[ "$code" == "200" ]]; then
     pub_settings_ok=$(python3 -c "

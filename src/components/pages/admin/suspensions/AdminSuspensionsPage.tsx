@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from '@/components/modals';
+import { AppModal } from '@/components/modals';
 import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from '@/components/modals';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,6 +21,8 @@ import { fetchPlayersForSession } from '@/services/core/playersSessionFetch';
 import { fetchAllCards, type CardData } from '@/domains/matches';
 import ResponsiveCardsTable from '@/components/tables/ResponsiveCardsTable';
 import { useUpcomingMatches } from '@/domains/matches';
+import { useOrgQueryScope } from '@/hooks/useOrganization';
+import { withOrgQueryKey } from '@/lib/orgQueryKey';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -52,6 +54,7 @@ interface EditingSuspensionData {
 const AdminSuspensionsPage: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingSuspension, setEditingSuspension] = useState<ManualSuspension | null>(null);
   const [editingActiveSuspension, setEditingActiveSuspension] = useState<EditingSuspensionData | null>(null);
@@ -70,8 +73,9 @@ const AdminSuspensionsPage: React.FC = () => {
   
   // Kaarten uit wedstrijdformulieren (alle gele/rode kaarten)
   const { data: allCards, isLoading: isCardsLoading } = useQuery({
-    queryKey: ['allCardsAdmin'],
-    queryFn: fetchAllCards
+    queryKey: withOrgQueryKey(['allCardsAdmin'], organizationId),
+    queryFn: fetchAllCards,
+    enabled: orgQueryEnabled,
   });
   
   // Groepeer kaarten per speler

@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { AppModal, AppModalHeader, AppModalTitle, AppModalFooter } from "@/components/modals/base/app-modal";
-import { Button } from "@/components/ui/button";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Target, X } from "lucide-react";
+import { Target } from "lucide-react";
 
 interface PenaltyShootoutModalProps {
   open: boolean;
@@ -27,11 +26,17 @@ export const MatchesPenaltyShootoutModal: React.FC<PenaltyShootoutModalProps> = 
   const [penaltyNotes, setPenaltyNotes] = useState<string>("");
   const [error, setError] = useState<string>("");
 
+  const resetForm = () => {
+    setHomePenalties("");
+    setAwayPenalties("");
+    setPenaltyNotes("");
+    setError("");
+  };
+
   const handleSubmit = () => {
     const homeScore = parseInt(homePenalties);
     const awayScore = parseInt(awayPenalties);
 
-    // Validatie
     if (isNaN(homeScore) || isNaN(awayScore)) {
       setError("Vul geldige penalty scores in voor beide teams");
       return;
@@ -54,20 +59,12 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
 🏆 Winnaar: ${winnerName}${penaltyNotes ? `\n\nExtra notities:\n${penaltyNotes}` : ''}`;
     
     onPenaltyResult(winner, homeScore, awayScore, notes);
-    
-    // Reset form
-    setHomePenalties("");
-    setAwayPenalties("");
-    setPenaltyNotes("");
-    setError("");
+    resetForm();
     onOpenChange(false);
   };
 
   const handleCancel = () => {
-    setHomePenalties("");
-    setAwayPenalties("");
-    setPenaltyNotes("");
-    setError("");
+    resetForm();
     onOpenChange(false);
   };
 
@@ -75,104 +72,91 @@ ${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
+      title="Penalty shootout"
       size="lg"
-      className="sm:max-w-2xl min-h-[500px]"
+      primaryAction={{
+        label: "Winnaar bepalen",
+        onClick: handleSubmit,
+        variant: "primary",
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: handleCancel,
+        variant: "secondary",
+      }}
     >
-      <AppModalHeader>
-        <AppModalTitle className="text-2xl font-bold flex items-center gap-3">
-          <Target className="h-6 w-6 text-primary" />
-          Penalty Shootout
-        </AppModalTitle>
-        <p className="app-modal-subtitle text-muted-foreground text-base mt-2">
-          De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn - bepaal deze via penalty's.
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          De wedstrijd staat gelijk na reguliere speeltijd. In bekercompetitie moet er een winnaar zijn — bepaal deze via penalty&apos;s.
         </p>
-      </AppModalHeader>
 
-        <div className="space-y-8 px-2">
-          <Card className="border-2 shadow-md">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl flex items-center gap-3 text-foreground">
-                <Target className="h-5 w-5 text-primary" />
-                Penalty Scores
-              </CardTitle>
-              <p className="text-muted-foreground">Vul het aantal gescoorde penalty's in voor elk team</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label htmlFor="home-penalties" className="text-base font-semibold text-foreground">
-                    {homeTeamName}
-                  </Label>
-                  <Input
-                    id="home-penalties"
-                    type="number"
-                    min="0"
-                    value={homePenalties}
-                    onChange={(e) => setHomePenalties(e.target.value)}
-                    placeholder="0"
-                    className="text-center text-2xl h-14 font-bold border-2 focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <Label htmlFor="away-penalties" className="text-base font-semibold text-foreground">
-                    {awayTeamName}
-                  </Label>
-                  <Input
-                    id="away-penalties"
-                    type="number"
-                    min="0"
-                    value={awayPenalties}
-                    onChange={(e) => setAwayPenalties(e.target.value)}
-                    placeholder="0"
-                    className="text-center text-2xl h-14 font-bold border-2 focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="penalty-notes" className="text-base font-semibold text-foreground">
-                  Extra notities (optioneel)
+        <Card className="border-primary/20 shadow-lg card-hover">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-brand-dark">
+              <Target className="h-5 w-5 text-primary" />
+              Penalty scores
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Vul het aantal gescoorde penalty&apos;s in voor elk team
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="home-penalties" className="text-sm font-semibold text-brand-dark">
+                  {homeTeamName}
                 </Label>
-                <Textarea
-                  id="penalty-notes"
-                  value={penaltyNotes}
-                  onChange={(e) => setPenaltyNotes(e.target.value)}
-                  placeholder="Bijv: Gemiste penalty's, bijzonderheden..."
-                  rows={4}
-                  className="border-2 focus:ring-2 focus:ring-primary resize-none"
+                <Input
+                  id="home-penalties"
+                  type="number"
+                  min="0"
+                  value={homePenalties}
+                  onChange={(e) => setHomePenalties(e.target.value)}
+                  placeholder="0"
+                  className="text-center text-2xl min-h-[44px] h-14 font-bold border-primary/20 focus-visible:ring-primary"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="away-penalties" className="text-sm font-semibold text-brand-dark">
+                  {awayTeamName}
+                </Label>
+                <Input
+                  id="away-penalties"
+                  type="number"
+                  min="0"
+                  value={awayPenalties}
+                  onChange={(e) => setAwayPenalties(e.target.value)}
+                  placeholder="0"
+                  className="text-center text-2xl min-h-[44px] h-14 font-bold border-primary/20 focus-visible:ring-primary"
+                />
+              </div>
+            </div>
 
-              {error && (
-                <div className="text-destructive text-sm bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium">
-                  {error}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            <div className="space-y-2">
+              <Label htmlFor="penalty-notes" className="text-sm font-semibold text-brand-dark">
+                Extra notities (optioneel)
+              </Label>
+              <Textarea
+                id="penalty-notes"
+                value={penaltyNotes}
+                onChange={(e) => setPenaltyNotes(e.target.value)}
+                placeholder="Bijv: Gemiste penalty's, bijzonderheden..."
+                rows={4}
+                className="border-primary/20 focus-visible:ring-primary resize-none"
+              />
+            </div>
 
-          <AppModalFooter>
-            <button 
-              onClick={handleCancel} 
-              className="btn btn--secondary flex-1 h-12 text-base font-medium"
-            >
-              Annuleren
-            </button>
-            <button 
-              onClick={handleSubmit} 
-              className="btn btn--primary flex-1 h-12 text-base font-medium"
-            >
-              Winnaar Bepalen
-            </button>
-          </AppModalFooter>
-        </div>
+            {error && (
+              <div
+                className="text-destructive text-sm bg-destructive/10 p-3 rounded-md border border-destructive/20 font-medium"
+                role="alert"
+              >
+                {error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </AppModal>
   );
 };
-
-
-
-
-
-
-

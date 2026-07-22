@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { AppModal, AppModalHeader, AppModalTitle } from "@/components/modals/base/app-modal";
+import { AppModal } from "@/components/modals/base/app-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { suspensionService, type Suspension } from "@/domains/cards-suspensions";
-import { Edit } from "lucide-react";
 
 interface EditSuspensionModalProps {
   open: boolean;
@@ -204,18 +203,28 @@ export const EditSuspensionModal: React.FC<EditSuspensionModalProps> = ({
   if (!suspension) return null;
 
   return (
-    <AppModal open={open} onOpenChange={handleClose} size="md">
-      <AppModalHeader>
-        <AppModalTitle className="flex items-center gap-2">
-          <Edit className="h-5 w-5" />
-          Schorsing Bewerken
-        </AppModalTitle>
-      </AppModalHeader>
-
-      <div className="space-y-4 py-4">
-        {/* Read-only info */}
-        <div className="rounded-md bg-muted/50 p-3 space-y-1">
-          <p className="text-sm font-medium text-foreground">{suspension.playerName}</p>
+    <AppModal
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose();
+        else onOpenChange(true);
+      }}
+      title="Schorsing bewerken"
+      size="md"
+      primaryAction={{
+        label: "Opslaan",
+        onClick: handleSave,
+        variant: "primary",
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: handleClose,
+        variant: "secondary",
+      }}
+    >
+      <div className="space-y-4">
+        <div className="rounded-md border border-primary/20 bg-muted/50 p-3 space-y-1">
+          <p className="text-sm font-medium text-brand-dark">{suspension.playerName}</p>
           <p className="text-xs text-muted-foreground">{suspension.teamName}</p>
           <p className="text-xs text-muted-foreground">
             Type: {suspension.source === 'manual' ? 'Handmatige schorsing' : 'Automatisch via kaartregels'}
@@ -243,39 +252,43 @@ export const EditSuspensionModal: React.FC<EditSuspensionModalProps> = ({
           )}
         </div>
 
-        <div>
-          <Label>{suspension.source === 'automatic' ? 'Weergave reden' : 'Reden *'}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">
+            {suspension.source === "automatic" ? "Weergave reden" : "Reden *"}
+          </Label>
           <Input
             value={formData.reason}
             onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
             placeholder={
-              suspension.source === 'automatic'
-                ? 'Aangepaste reden (laat gelijk aan basis om enkel regels te tonen)'
-                : 'Reden voor schorsing'
+              suspension.source === "automatic"
+                ? "Aangepaste reden (laat gelijk aan basis om enkel regels te tonen)"
+                : "Reden voor schorsing"
             }
-            className="modal__input"
+            className="modal__input min-h-[44px]"
           />
         </div>
 
-        <div>
-          <Label>Aantal wedstrijden{suspension.source === 'manual' ? ' *' : ''}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">
+            Aantal wedstrijden{suspension.source === "manual" ? " *" : ""}
+          </Label>
           <Input
             type="number"
             min="1"
             max="10"
             value={formData.matches}
             onChange={(e) => setFormData({ ...formData, matches: e.target.value })}
-            className="modal__input"
+            className="modal__input min-h-[44px]"
           />
-          {suspension.source === 'automatic' && (
+          {suspension.source === "automatic" && (
             <p className="text-xs text-muted-foreground mt-1">
               Afwijkend van de regel? Pas het aantal aan; anders gelijk laten aan de basis hierboven.
             </p>
           )}
         </div>
 
-        <div>
-          <Label>Notitie voor teamverantwoordelijke</Label>
+        <div className="space-y-1.5">
+          <Label className="text-brand-dark">Notitie voor teamverantwoordelijke</Label>
           <Textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -284,21 +297,13 @@ export const EditSuspensionModal: React.FC<EditSuspensionModalProps> = ({
             className="modal__input"
           />
         </div>
-      </div>
 
-      <div className="modal__actions">
-        <button onClick={handleSave} className="btn btn--primary">
-          Opslaan
-        </button>
-        <button onClick={handleClose} className="btn btn--secondary">
-          Annuleren
-        </button>
-        {suspension.source === 'manual' ? (
-          <button type="button" onClick={handleDelete} className="btn btn--danger">
+        {suspension.source === "manual" ? (
+          <button type="button" onClick={handleDelete} className="btn btn--danger w-full min-h-[44px]">
             Verwijderen
           </button>
         ) : (
-          <button type="button" onClick={handleDelete} className="btn btn--secondary">
+          <button type="button" onClick={handleDelete} className="btn btn--secondary w-full min-h-[44px]">
             Herstel regels (wis aanpassingen)
           </button>
         )}

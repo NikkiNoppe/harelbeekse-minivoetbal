@@ -114,6 +114,11 @@ export function isRefereeCostTransaction(transaction: TeamCostTransaction): bool
 export function isAdminCostTransaction(transaction: TeamCostTransaction): boolean {
   if (costCategory(transaction) !== "match_cost") return false;
   const label = costLabel(transaction);
+  return isAdminMatchCostName(label);
+}
+
+export function isAdminMatchCostName(name: string | null | undefined): boolean {
+  const label = (name || "").toLowerCase();
   return label.includes("administratie") || label.includes("admin");
 }
 

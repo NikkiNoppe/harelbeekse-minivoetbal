@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/hooks/useOrganization";
-import { DEFAULT_ORGANIZATION_ID } from "@/config/organization";
 import { listApplicationSettingsForSession } from "@/services/core/applicationSettingsSessionFetch";
 import { formatDateShort } from "@/lib/dateUtils";
 import {
@@ -40,11 +39,11 @@ export const PlayerListLockProvider: React.FC<{ children: React.ReactNode }> = (
   const [loading, setLoading] = useState(true);
 
   const checkLockStatus = useCallback(async () => {
-    if (!isOrganizationReady) {
+    if (!isOrganizationReady || organizationId == null) {
       return;
     }
 
-    const orgId = organizationId ?? DEFAULT_ORGANIZATION_ID;
+    const orgId = organizationId;
 
     try {
       let settingsLocked = false;

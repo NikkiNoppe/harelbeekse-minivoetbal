@@ -58,10 +58,15 @@ interface NotificationFormModalProps {
   teams: Team[];
 }
 
-const ROLE_OPTIONS = [
-  { value: 'referee', label: 'Scheidsrechter' },
-  { value: 'player_manager', label: 'Teamverantwoordelijke' }
-];
+const USER_ROLE_OPTIONS = [
+  { value: "admin", label: "Admin" },
+  { value: "player_manager", label: "Teamverantwoordelijke" },
+  { value: "referee", label: "Scheidsrechter" },
+] as const;
+
+function getRoleLabel(role: string): string {
+  return USER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
+}
 
 const DEFAULT_FORM_DATA: FormData = {
   title: '',
@@ -88,6 +93,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     (initialTargetMode === 'roles' || initialTargetMode === 'users') ? initialTargetMode : 'roles'
   );
   const [userSearch, setUserSearch] = useState('');
+  const [roleFilters, setRoleFilters] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when modal opens with new data
@@ -98,18 +104,36 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
         (initialTargetMode === 'roles' || initialTargetMode === 'users') ? initialTargetMode : 'roles'
       );
       setUserSearch('');
+      setRoleFilters([]);
     }
   }, [isOpen, initialData, initialTargetMode]);
 
+  const toggleRoleFilter = useCallback((roleValue: string) => {
+    setRoleFilters((prev) =>
+      prev.includes(roleValue)
+        ? prev.filter((role) => role !== roleValue)
+        : [...prev, roleValue],
+    );
+  }, []);
+
   // Filtered lists
   const filteredUsers = useMemo(() => {
-    if (!userSearch) return users;
-    const search = userSearch.toLowerCase();
-    return users.filter(u => 
-      u.username.toLowerCase().includes(search) || 
-      u.role.toLowerCase().includes(search)
+    let result = users;
+
+    if (roleFilters.length > 0) {
+      result = result.filter((user) => roleFilters.includes(user.role));
+    }
+
+    if (!userSearch.trim()) return result;
+
+    const search = userSearch.trim().toLowerCase();
+    return result.filter(
+      (user) =>
+        user.username.toLowerCase().includes(search) ||
+        getRoleLabel(user.role).toLowerCase().includes(search) ||
+        user.role.toLowerCase().includes(search),
     );
-  }, [users, userSearch]);
+  }, [users, userSearch, roleFilters]);
 
   // Get selected items for chips
   const selectedUsers = useMemo(() => 
@@ -141,21 +165,23 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     return uniqueEmails.size;
   }, [hasTargetSelection, targetMode, selectedUsers, users, formData.target_roles]);
 
-  // Handlers
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitDisabled =
+    isSubmitting ||
+    !formData.message.trim() ||
+    !hasTargetSelection ||
+    (formData.send_email && emailRecipientCount === 0);
 
-    if (!hasTargetSelection) {
-      return;
-    }
+  const handleSave = async (e?: React.FormEvent) => {
+    e?.preventDefault();
 
-    if (formData.send_email && emailRecipientCount === 0) {
+    if (submitDisabled) {
       return;
     }
 
     setIsSubmitting(true);
     try {
       await onSubmit(formData, targetMode);
+      onClose();
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +206,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
   const selectAllUsers = () => {
     setFormData(prev => ({
       ...prev,
-      target_users: users.map(u => u.user_id)
+      target_users: [...new Set([...prev.target_users, ...filteredUsers.map(u => u.user_id)])]
     }));
   };
 
@@ -193,9 +219,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     switch (targetMode) {
       case 'roles':
         if (formData.target_roles.length === 0) return 'Geen rollen geselecteerd';
-        const roleLabels = formData.target_roles.map(r => 
-          ROLE_OPTIONS.find(ro => ro.value === r)?.label || r
-        );
+        const roleLabels = formData.target_roles.map(r => getRoleLabel(r));
         return roleLabels.join(', ');
       case 'users':
         if (formData.target_users.length === 0) return 'Geen gebruikers geselecteerd';
@@ -208,15 +232,26 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
   return (
     <AppModal
       open={isOpen}
-      onOpenChange={onClose}
-      title={isEditing ? 'Bericht Bewerken' : 'Nieuw Bericht'}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={isEditing ? "Bericht bewerken" : "Nieuw bericht"}
       size="lg"
-      variant="default"
+      primaryAction={{
+        label: isSubmitting ? "Opslaan…" : isEditing ? "Bijwerken" : "Aanmaken",
+        onClick: () => void handleSave(),
+        variant: "primary",
+        loading: isSubmitting,
+        disabled: submitDisabled,
+      }}
+      secondaryAction={{
+        label: "Annuleren",
+        onClick: onClose,
+        variant: "secondary",
+        disabled: isSubmitting,
+      }}
     >
-
-        {/* Scrollable Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="px-4 py-4 sm:px-6 sm:py-6 space-y-4 sm:space-y-6">
+        <form id="notification-form" onSubmit={(e) => void handleSave(e)} className="space-y-4 sm:space-y-6">
             
             {/* Section 1: Bericht */}
             <div className="space-y-4 p-4 rounded-xl border border-[var(--color-300)] bg-[var(--color-50)]">
@@ -269,7 +304,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                     <Users className="w-4 h-4 text-[var(--color-500)]" />
                     <div>
                       <span className="font-medium text-[var(--color-600)]">Op basis van rol</span>
-                      <p className="text-xs text-[var(--color-500)]">Scheidsrechter, Teamverantwoordelijke</p>
+                      <p className="text-xs text-[var(--color-500)]">Scheidsrechter, Teamverantwoordelijke, Admin</p>
                     </div>
                   </div>
                 </label>
@@ -293,7 +328,7 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
               {targetMode === 'roles' && (
                 <div className="pl-4 border-l-2 border-[var(--color-400)] space-y-3 mt-3">
                   <div className="flex flex-wrap gap-2">
-                    {ROLE_OPTIONS.map(role => (
+                    {USER_ROLE_OPTIONS.map(role => (
                       <button
                         key={role.value}
                         type="button"
@@ -339,15 +374,46 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                   )}
 
                   {/* Quick Actions */}
-                  <div className="flex gap-2">
-                    <button type="button" className="btn btn--secondary text-xs py-1 px-2" onClick={selectAllUsers}>
-                      Selecteer alle
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className="btn btn--secondary text-xs py-1 px-2 min-h-[44px]" onClick={selectAllUsers}>
+                      Selecteer zichtbare ({filteredUsers.length})
                     </button>
                     {selectedUsers.length > 0 && (
-                      <button type="button" className="btn btn--ghost text-xs py-1 px-2" onClick={clearAllUsers}>
+                      <button type="button" className="btn btn--ghost text-xs py-1 px-2 min-h-[44px]" onClick={clearAllUsers}>
                         Wis selectie
                       </button>
                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-[var(--color-600)]">Filter op rol</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {USER_ROLE_OPTIONS.map((role) => (
+                        <button
+                          key={role.value}
+                          type="button"
+                          onClick={() => toggleRoleFilter(role.value)}
+                          className={cn(
+                            "px-3 py-2 rounded-lg border text-sm font-medium transition-all min-h-[44px]",
+                            roleFilters.includes(role.value)
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-primary/20 bg-card hover:bg-muted text-brand-dark",
+                          )}
+                          aria-pressed={roleFilters.includes(role.value)}
+                        >
+                          {role.label}
+                        </button>
+                      ))}
+                      {roleFilters.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setRoleFilters([])}
+                          className="px-3 py-2 rounded-lg border border-primary/20 text-sm font-medium min-h-[44px] hover:bg-muted text-muted-foreground"
+                        >
+                          Alle rollen
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="relative">
@@ -356,15 +422,15 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                       placeholder="Zoek gebruiker..."
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
-                      className="pl-9 h-10"
+                      className="pl-9 h-11"
                     />
                   </div>
-                  <ScrollArea className="h-32 border border-[var(--color-300)] rounded-lg bg-[var(--color-white)]">
-                    <div className="p-1.5 space-y-0.5">
+                  <ScrollArea className="h-48 sm:h-56 border border-primary/20 rounded-lg bg-card">
+                    <div className="p-2 space-y-0.5">
                       {filteredUsers.map(user => (
                         <label 
                           key={user.user_id} 
-                          className="flex items-center gap-2 min-h-[40px] px-1.5 py-1 rounded hover:bg-[var(--color-100)] cursor-pointer"
+                          className="flex items-center gap-2 min-h-[44px] px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
                         >
                           <Checkbox
                             className="select-box shrink-0"
@@ -379,17 +445,17 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                             }}
                           />
                           <div className="flex flex-col min-w-0 flex-1">
-                            <span className="text-xs font-medium text-[var(--color-700)] truncate">
+                            <span className="text-sm font-medium text-brand-dark truncate">
                               {user.username}
                             </span>
-                            <span className="text-[10px] text-[var(--color-500)] truncate">
-                              {ROLE_OPTIONS.find(r => r.value === user.role)?.label || user.role}
+                            <span className="text-xs text-muted-foreground truncate">
+                              {getRoleLabel(user.role)}
                             </span>
                           </div>
                         </label>
                       ))}
                       {filteredUsers.length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-3">
+                        <p className="text-sm text-muted-foreground text-center py-6">
                           Geen gebruikers gevonden
                         </p>
                       )}
@@ -489,25 +555,6 @@ export const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                   : ""}
               </p>
             </div>
-          </div>
-
-          {/* Sticky Footer */}
-          <div className="modal__actions sticky bottom-0">
-            <button 
-              type="submit" 
-              disabled={isSubmitting || !formData.message || !hasTargetSelection || (formData.send_email && emailRecipientCount === 0)}
-              className="btn btn--primary"
-            >
-              {isSubmitting ? 'Opslaan...' : (isEditing ? 'Bijwerken' : 'Aanmaken')}
-            </button>
-            <button 
-              type="button" 
-              onClick={onClose}
-              className="btn btn--secondary"
-            >
-              Annuleren
-            </button>
-          </div>
         </form>
     </AppModal>
   );

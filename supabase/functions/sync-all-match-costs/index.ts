@@ -29,6 +29,29 @@ function costNameImpliesMatchCostSuppression(name: string | null | undefined): b
   );
 }
 
+async function resolveOrganizationId(
+  sessionToken: string,
+  userId: number,
+): Promise<number | null> {
+  if (userId === -1) {
+    const { data, error } = await supabaseServiceRole
+      .from('user_sessions')
+      .select('acting_organization_id')
+      .eq('session_id', sessionToken)
+      .maybeSingle();
+    if (error || !data?.acting_organization_id) return null;
+    return data.acting_organization_id as number;
+  }
+
+  const { data, error } = await supabaseServiceRole
+    .from('users')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data?.organization_id) return null;
+  return data.organization_id as number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -45,10 +68,19 @@ Deno.serve(async (req) => {
   try {
     console.log('🟢 [sync-all-match-costs] Starting batch sync...');
 
-    // Fetch all matches with scores
+    const organizationId = await resolveOrganizationId(auth.sessionToken, auth.userId);
+    if (organizationId == null) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Geen actieve organisatie gevonden voor deze sessie' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch scored matches for this organization only
     const { data: allMatches, error: matchesErr } = await supabaseServiceRole
       .from('matches')
-      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, referee, skip_auto_match_costs')
+      .select('match_id, home_team_id, away_team_id, match_date, home_score, away_score, is_submitted, is_cup_match, is_playoff_match, assigned_referee_id, referee, skip_auto_match_costs, organization_id')
+      .eq('organization_id', organizationId)
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
       .not('home_team_id', 'is', null)
@@ -63,13 +95,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`✅ Found ${allMatches.length} matches with scores`);
+    console.log(`✅ Found ${allMatches.length} matches with scores for org ${organizationId}`);
 
-    // Fetch active cost settings
+    // Fetch active cost settings for this organization
     const { data: costSettings, error: costErr } = await supabaseServiceRole
       .from('costs')
       .select('id, amount, name, category')
-      .eq('category', 'match_cost');
+      .eq('category', 'match_cost')
+      .eq('organization_id', organizationId);
 
     if (costErr) throw new Error(`Failed to fetch cost settings: ${costErr.message}`);
 
@@ -91,8 +124,6 @@ Deno.serve(async (req) => {
     });
 
     if (!fieldCost) throw new Error('Veldkosten niet gevonden');
-
-    const allMatchCostSettingIds = costSettings.map((c: { id: number }) => c.id);
 
     const matchIds = allMatches.map((m: { match_id: number }) => m.match_id);
     const { data: forfaitPenaltyRows, error: forfaitErr } = await supabaseServiceRole
@@ -130,14 +161,73 @@ Deno.serve(async (req) => {
         match.home_score != null &&
         match.away_score != null;
 
+      const transactionDate = match.match_date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+
       if (forfaitMatchIds.has(match.match_id) && !matchPlayed) {
-        const { error: delErr } = await supabaseServiceRole
-          .from('team_costs')
-          .delete()
-          .eq('match_id', match.match_id)
-          .in('cost_setting_id', allMatchCostSettingIds);
-        if (!delErr) forfaitCount++;
-        else console.error(`❌ Forfait cleanup failed match ${match.match_id}:`, delErr);
+        const nonAdminIds = costSettings
+          .filter((cs: { name?: string | null }) => {
+            const n = (cs.name || '').toLowerCase();
+            return !(n.includes('administratie') || n.includes('admin'));
+          })
+          .map((c: { id: number }) => c.id);
+        if (nonAdminIds.length > 0) {
+          const { error: delErr } = await supabaseServiceRole
+            .from('team_costs')
+            .delete()
+            .eq('match_id', match.match_id)
+            .in('cost_setting_id', nonAdminIds);
+          if (delErr) {
+            console.error(`❌ Forfait cleanup failed match ${match.match_id}:`, delErr);
+            skippedCount++;
+            continue;
+          }
+        }
+
+        // Keep/ensure administratiekosten (aligned with single-match EF + DB trigger)
+        if (adminCost) {
+          const admTarget = Number(adminCost.amount ?? 0);
+          for (const teamId of teamIds) {
+            const { data: existingAdminRows, error: adminExistErr } = await supabaseServiceRole
+              .from('team_costs')
+              .select('id, amount')
+              .eq('match_id', match.match_id)
+              .eq('team_id', teamId)
+              .eq('cost_setting_id', adminCost.id)
+              .eq('is_auto_card_penalty', false);
+            if (adminExistErr) {
+              console.error(`❌ Forfait admin check failed match ${match.match_id}:`, adminExistErr);
+              continue;
+            }
+            if (!existingAdminRows || existingAdminRows.length === 0) {
+              const { error: insertErr } = await supabaseServiceRole.from('team_costs').insert({
+                team_id: teamId,
+                cost_setting_id: adminCost.id,
+                amount: admTarget,
+                transaction_date: transactionDate,
+                match_id: match.match_id,
+                is_auto_card_penalty: false,
+              });
+              if (!insertErr) syncedCount++;
+              else console.error(`❌ Forfait admin insert failed match ${match.match_id}:`, insertErr);
+            } else {
+              const row = existingAdminRows[0];
+              if (normalizedAmount(row.amount) !== admTarget) {
+                const { error: updateErr } = await supabaseServiceRole
+                  .from('team_costs')
+                  .update({ amount: admTarget, transaction_date: transactionDate })
+                  .eq('id', row.id);
+                if (!updateErr) updatedCount++;
+                else console.error(`❌ Forfait admin update failed cost ${row.id}:`, updateErr);
+              }
+              if (existingAdminRows.length > 1) {
+                const idsToDelete = existingAdminRows.slice(1).map((r: { id: number }) => r.id);
+                await supabaseServiceRole.from('team_costs').delete().in('id', idsToDelete);
+              }
+            }
+          }
+        }
+
+        forfaitCount++;
         continue;
       }
 
@@ -146,7 +236,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const transactionDate = match.match_date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
       const refereeText = (match as { referee?: string | null }).referee;
       const hasReferee = match.assigned_referee_id != null || (typeof refereeText === 'string' && refereeText.trim() !== '');
 
@@ -210,6 +299,16 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Remove orphan scheidskosten when no referee
+      if (refereeCost && !hasReferee) {
+        const { error: delRefErr } = await supabaseServiceRole
+          .from('team_costs')
+          .delete()
+          .eq('match_id', match.match_id)
+          .eq('cost_setting_id', refereeCost.id);
+        if (delRefErr) console.error(`❌ Failed to clear referee costs for match ${match.match_id}:`, delRefErr);
+      }
+
       if (costsToInsert.length > 0) {
         const { error: insertErr } = await supabaseServiceRole.from('team_costs').insert(costsToInsert);
         if (!insertErr) { syncedCount += costsToInsert.length; }
@@ -225,10 +324,10 @@ Deno.serve(async (req) => {
       if (costsToInsert.length === 0 && costsToUpdate.length === 0) { skippedCount++; }
     }
 
-    console.log(`✅ Sync complete: ${syncedCount} inserted, ${updatedCount} updated, ${skippedCount} skipped, ${forfaitCount} forfait`);
+    console.log(`✅ Sync complete: ${syncedCount} inserted, ${updatedCount} updated, ${skippedCount} skipped, ${forfaitCount} forfait (org ${organizationId})`);
 
     return new Response(
-      JSON.stringify({ success: true, message: `Synchronisatie voltooid: ${syncedCount} kosten toegevoegd, ${updatedCount} bijgewerkt, ${skippedCount} overgeslagen, ${forfaitCount} forfait`, syncedCount, updatedCount, skippedCount, forfaitCount }),
+      JSON.stringify({ success: true, message: `Synchronisatie voltooid: ${syncedCount} kosten toegevoegd, ${updatedCount} bijgewerkt, ${skippedCount} overgeslagen, ${forfaitCount} forfait`, syncedCount, updatedCount, skippedCount, forfaitCount, organizationId }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

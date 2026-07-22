@@ -20,7 +20,6 @@ import { fetchMatchForSession } from "@/services/core/matchesSessionFetch";
 import { fetchCostsForSession } from "@/services/financial/costsSessionFetch";
 import { fetchTeamCostsForMatch } from "@/services/financial/matchCostService";
 import {
-  matchHasForfaitPenalty,
   matchSkipAutoMatchCosts,
   shouldSyncMatchCostsAfterMatchUpdate,
 } from "@/services/financial/matchCostService";
@@ -259,10 +258,6 @@ const syncMatchCosts = async (
 ): Promise<void> => {
   if (await matchSkipAutoMatchCosts(matchId)) {
     logSideEffect(ctx, 'match_costs', 'info', 'Skipped: handmatig gewiste wedstrijdkosten (skip_auto_match_costs)');
-    return;
-  }
-  if (await matchHasForfaitPenalty(matchId)) {
-    logSideEffect(ctx, 'match_costs', 'info', 'Skipped: forfait penalty on match (no match_cost sync)');
     return;
   }
   const { data, error } = await supabase.functions.invoke('sync-match-costs', {

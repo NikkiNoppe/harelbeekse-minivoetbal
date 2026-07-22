@@ -15,6 +15,7 @@ import {
 import {
   getActiveOrgSlugOverride,
   getCurrentHostname,
+  resolveBootOrganizationSlug,
 } from '@/config/organizationHosts';
 import {
   resolveOrganizationFromHostname,
@@ -24,6 +25,7 @@ import {
 } from '@/services/organization/resolveOrganization';
 import { SuperAdminActingOrgSync } from '@/components/common/SuperAdminActingOrgSync';
 import { setResolvedOrganizationId } from '@/lib/organizationScope';
+import { applyBootOrganizationTheme } from '@/lib/bootTheme';
 
 export interface OrganizationContextValue {
   organization: Organization | undefined;
@@ -54,6 +56,24 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
     () => getActiveOrgSlugOverride({ isSuperAdmin }),
     [location.pathname, location.search, isSuperAdmin],
   );
+
+  const bootOrganizationSlug = useMemo(
+    () =>
+      resolveBootOrganizationSlug({
+        hostname,
+        isSuperAdmin,
+      }),
+    [hostname, location.pathname, location.search, isSuperAdmin],
+  );
+
+  // Theme vóór org-fetch klaar is (voorkomt Harelbeke-blauw flash op Kuurne).
+  useEffect(() => {
+    applyBootOrganizationTheme({
+      hostname,
+      isSuperAdmin,
+      slug: bootOrganizationSlug,
+    });
+  }, [bootOrganizationSlug, hostname, isSuperAdmin]);
 
   const {
     data: organization,
@@ -133,7 +153,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
     () => ({
       organization,
       organizationId: organization?.id,
-      organizationSlug: organization?.slug ?? DEFAULT_ORGANIZATION_SLUG,
+      organizationSlug: organization?.slug ?? bootOrganizationSlug,
       hostname,
       isOrganizationReady,
       isOrganizationLoading:
@@ -146,6 +166,7 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
     }),
     [
       organization,
+      bootOrganizationSlug,
       hostname,
       isOrganizationReady,
       authContextReady,
@@ -172,7 +193,10 @@ export const OrganizationProvider: React.FC<{ children: ReactNode }> = ({
 export const defaultOrganizationContext: OrganizationContextValue = {
   organization: undefined,
   organizationId: undefined,
-  organizationSlug: DEFAULT_ORGANIZATION_SLUG,
+  organizationSlug:
+    typeof window !== 'undefined'
+      ? resolveBootOrganizationSlug()
+      : DEFAULT_ORGANIZATION_SLUG,
   hostname: '',
   isOrganizationReady: false,
   isOrganizationLoading: true,

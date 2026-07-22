@@ -47,6 +47,8 @@ export interface CompetitionConfig {
   start_date: string;
   end_date: string;
   teams: number[];
+  /** Actieve tenant — venues/timeslots uit season_data (Instellingen). */
+  organizationId?: number;
 }
 
 export const competitionService = {
@@ -94,8 +96,8 @@ export const competitionService = {
     return { exists: false };
   },
 
-  async validateSeasonData(): Promise<{ isValid: boolean; message?: string; data?: any }> {
-    const seasonData = await seasonService.getSeasonData();
+  async validateSeasonData(organizationId?: number): Promise<{ isValid: boolean; message?: string; data?: any }> {
+    const seasonData = await seasonService.getSeasonData(organizationId);
     
     const venues = seasonData.venues || [];
     const timeslots = seasonData.venue_timeslots || [];
@@ -121,7 +123,7 @@ export const competitionService = {
   // Genereer automatisch speelweken gebaseerd op seizoen data
   async generatePlayingWeeks(config: CompetitionConfig): Promise<{ weeks: string[]; message: string }> {
     try {
-      const seasonData = await seasonService.getSeasonData();
+      const seasonData = await seasonService.getSeasonData(config.organizationId);
       const vacations = seasonData.vacation_periods || [];
       
       // Haal bekerwedstrijd datums op
@@ -331,11 +333,12 @@ export const competitionService = {
       venues?: any[];
       dayNames?: string[];
       seasonalFairness?: TeamSeasonalFairness[]; // New: seasonal fairness data
+      organizationId?: number;
     }
   ): Promise<Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }>> {
     const distributedMatches: Array<{ match: { home: number; away: number; round: number }; week: number; slot: number }> = [];
     const matchesPerWeek = 7; // 7 speelmomenten per week
-    const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
+    const slotCtx = await loadSlotPlanningContext(options?.organizationId);
     const totalMatches = matches.length;
     
     console.log(`📊 Distributie info: ${totalMatches} wedstrijden, ${playingWeeks.length} weken beschikbaar`);
@@ -431,7 +434,7 @@ export const competitionService = {
           const weekTeams = teamsPerWeek.get(weekIndex)!;
           const slotsUsed = slotsPerWeek.get(weekIndex)!;
           const weekMonday = playingWeeks[weekIndex];
-          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          const weekCap = slotCtx.getWeekCapacity(weekMonday);
           if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(match.home) || weekTeams.has(match.away)) continue;
 
@@ -481,7 +484,11 @@ export const competitionService = {
       distributedMatches.push(...placedMatches);
       
       // Update currentWeek naar de eerste week met ruimte voor de volgende speeldag
-      while (currentWeek < playingWeeks.length && (slotsPerWeek.get(currentWeek) || 0) >= matchesPerWeek) {
+      while (
+        currentWeek < playingWeeks.length &&
+        (slotsPerWeek.get(currentWeek) || 0) >=
+          slotCtx.getWeekCapacity(playingWeeks[currentWeek])
+      ) {
         currentWeek++;
       }
     }
@@ -662,7 +669,7 @@ export const competitionService = {
       const regularMatches = this.generateRegularSeasonMatches(config.teams, config.format.regular_rounds);
 
       // Load preferences and venues
-      const seasonData = await seasonService.getSeasonData();
+      const seasonData = await seasonService.getSeasonData(config.organizationId);
       const allTeamsData = await teamService.getAllTeams();
       const selectedTeamsSet = new Set(config.teams);
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
@@ -679,7 +686,7 @@ export const competitionService = {
       });
 
       // Greedy week assignment without slots (respecting team conflicts and capacity)
-      const slotCtx = await loadSlotPlanningContext();
+      const slotCtx = await loadSlotPlanningContext(config.organizationId);
       const matchesPerWeek = 7;
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const weekToMatches: Map<number, Array<{ home: number; away: number; matchday: number }>> = new Map();
@@ -710,7 +717,7 @@ export const competitionService = {
           for (let w = currentWeek; w < playingWeeks.length; w++) {
             const teamSet = teamsPerWeek.get(w)!;
             const list = weekToMatches.get(w)!;
-            if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w], matchesPerWeek)) continue;
+            if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w])) continue;
             if (teamSet.has(m.home) || teamSet.has(m.away)) continue;
             teamSet.add(m.home); teamSet.add(m.away);
             list.push(m);
@@ -724,7 +731,7 @@ export const competitionService = {
         while (
           currentWeek < playingWeeks.length &&
           weekToMatches.get(currentWeek)!.length >=
-            slotCtx.getWeekCapacity(playingWeeks[currentWeek], matchesPerWeek)
+            slotCtx.getWeekCapacity(playingWeeks[currentWeek])
         ) {
           currentWeek++;
         }
@@ -1096,7 +1103,7 @@ export const competitionService = {
       const regularMatches = this.generateRegularSeasonMatches(config.teams, config.format.regular_rounds);
 
       // Load preferences and venues once
-      const seasonData = await seasonService.getSeasonData();
+      const seasonData = await seasonService.getSeasonData(config.organizationId);
       const allTeamsData = await teamService.getAllTeams();
       const selectedTeamsSet = new Set(config.teams);
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
@@ -1116,7 +1123,7 @@ export const competitionService = {
       });
 
       // Preload slot planning (veldblokkades + priority slots)
-      const slotCtx = await loadSlotPlanningContext();
+      const slotCtx = await loadSlotPlanningContext(config.organizationId);
       const totalAvailableSlots = slotCtx.totalSlots;
       const slotDetails = slotCtx.slotDetails;
       const matchesPerWeekCap = 7;
@@ -1142,7 +1149,7 @@ export const competitionService = {
             for (let w = currentWeek; w < playingWeeks.length; w++) {
               const teamSet = teamsPerWeek.get(w)!;
               const list = weekToMatches.get(w)!;
-              if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w], matchesPerWeekCap)) continue;
+              if (list.length >= slotCtx.getWeekCapacity(playingWeeks[w])) continue;
               if (teamSet.has(m.home) || teamSet.has(m.away)) continue;
               teamSet.add(m.home); teamSet.add(m.away);
               list.push(m);
@@ -1156,7 +1163,7 @@ export const competitionService = {
           while (
             currentWeek < playingWeeks.length &&
             weekToMatches.get(currentWeek)!.length >=
-              slotCtx.getWeekCapacity(playingWeeks[currentWeek], matchesPerWeekCap)
+              slotCtx.getWeekCapacity(playingWeeks[currentWeek])
           ) {
             currentWeek++;
           }
@@ -1362,7 +1369,7 @@ export const competitionService = {
         return { success: false, message: existingCompetition.message! };
       }
 
-      const seasonValidation = await this.validateSeasonData();
+      const seasonValidation = await this.validateSeasonData(config.organizationId);
       if (!seasonValidation.isValid) {
         return { success: false, message: seasonValidation.message! };
       }
@@ -1435,6 +1442,7 @@ export const competitionService = {
         teamPreferences,
         venues: seasonValidation.data?.venues,
         dayNames: seasonValidation.data?.day_names,
+        organizationId: config.organizationId,
       });
       console.log(`📊 Verdeelde reguliere wedstrijden: ${distributedRegularMatches.length}`);
 
@@ -1667,7 +1675,7 @@ export const competitionService = {
 
       // Distributie met 7 slots/week, geen team 2x per week, met voorkeur-scoring
       const matchesPerWeek = 7;
-      const slotCtx = await loadSlotPlanningContext(matchesPerWeek);
+      const slotCtx = await loadSlotPlanningContext(config.organizationId);
       const teamsPerWeek: Map<number, Set<number>> = new Map();
       const slotsPerWeek: Map<number, number> = new Map();
       for (let w = 0; w < playingWeeks.length; w++) {
@@ -1692,7 +1700,7 @@ export const competitionService = {
           const weekTeams = teamsPerWeek.get(w)!;
           const slotsUsed = slotsPerWeek.get(w)!;
           const weekMonday = playingWeeks[w];
-          const weekCap = slotCtx.getWeekCapacity(weekMonday, matchesPerWeek);
+          const weekCap = slotCtx.getWeekCapacity(weekMonday);
           if (slotsUsed >= weekCap) continue;
           if (weekTeams.has(m.home) || weekTeams.has(m.away)) continue;
 

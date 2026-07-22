@@ -9,6 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAllCards, CardData } from "@/services/match";
 import { sortDatesDesc } from "@/lib/dateUtils";
 import ResponsiveCardsTable from "@/components/tables/ResponsiveCardsTable";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+import { withOrgQueryKey } from "@/lib/orgQueryKey";
 
 interface PlayerCardSummary {
   playerId: number;
@@ -26,10 +28,12 @@ const KaartenPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [cardTypeFilter, setCardTypeFilter] = useState("");
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
 
   const { data: allCards, isLoading } = useQuery({
-    queryKey: ['allCards'],
-    queryFn: fetchAllCards
+    queryKey: withOrgQueryKey(['allCards'], organizationId),
+    queryFn: fetchAllCards,
+    enabled: orgQueryEnabled,
   });
 
   // Group cards by player and calculate suspensions

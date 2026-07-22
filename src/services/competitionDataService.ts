@@ -67,6 +67,12 @@ export interface VenueTimeslot {
   day_of_week: number;
   start_time: string;
   end_time: string;
+  priority?: number;
+  venue_name?: string;
+  /** Optioneel: eerste kalenderdag waarop dit slot telt (YYYY-MM-DD). */
+  valid_from?: string;
+  /** Optioneel: laatste kalenderdag waarop dit slot telt (YYYY-MM-DD). */
+  valid_until?: string;
 }
 
 export interface VacationPeriod {
