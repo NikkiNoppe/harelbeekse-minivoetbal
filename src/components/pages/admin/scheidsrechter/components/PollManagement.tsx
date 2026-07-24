@@ -113,13 +113,14 @@ const PollManagement: React.FC = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button
-            variant="outline"
-            size="icon"
+            type="button"
+            variant="unstyled"
+            className="btn btn--icon"
             onClick={fetchPolls}
             disabled={loading}
             aria-label="Vernieuwen"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
           </Button>
 
           <DropdownMenu>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   seasons: string[];
@@ -10,18 +10,26 @@ interface Props {
 const SeasonSelector: React.FC<Props> = ({ seasons, selected, onSelect }) => {
   if (seasons.length === 0) return null;
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+    <div
+      className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1"
+      role="tablist"
+      aria-label="Seizoen kiezen"
+    >
       {seasons.map((s) => {
         const active = s === selected;
         return (
           <button
             key={s}
+            type="button"
+            role="tab"
+            aria-selected={active}
             onClick={() => onSelect(s)}
             className={cn(
-              'flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold border-[1.5px] transition-all',
+              "flex-shrink-0 min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold border-[1.5px] transition-all",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               active
-                ? 'bg-brand-700 text-white border-brand-700 shadow-md'
-                : 'bg-white text-brand-800 border-brand-200 hover:bg-brand-50'
+                ? "bg-brand-700 text-white border-brand-700 shadow-md"
+                : "bg-white text-brand-800 border-brand-200 hover:bg-brand-50",
             )}
           >
             {s}

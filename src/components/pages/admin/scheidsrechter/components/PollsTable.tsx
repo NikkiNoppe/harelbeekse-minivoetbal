@@ -191,8 +191,13 @@ const PollsTable: React.FC<PollsTableProps> = ({
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
+                      <Button
+                        type="button"
+                        variant="unstyled"
+                        className="btn btn--icon"
+                        aria-label="Meer acties"
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">

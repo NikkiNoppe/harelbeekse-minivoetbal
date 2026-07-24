@@ -3,6 +3,7 @@ import { getRpcSessionArgs } from '@/lib/authSession';
 import { DEFAULT_ORGANIZATION_ID } from '@/config/organization';
 import { fetchPublicApplicationSettings } from '@/services/public/publicApplicationSettingsFetch';
 import { fetchPublicMatches, type PublicMatchRow } from '@/services/public/publicScheduleFetch';
+import { deleteApplicationSettingForSession } from '@/services/core/applicationSettingsSessionFetch';
 
 const ARCHIVE_CATEGORY = 'season_archives';
 
@@ -35,6 +36,8 @@ export interface ArchivedStanding {
   goals_against: number;
   goal_diff: number;
   points: number;
+  /** Optioneel: reeksnaam (Eerste klasse, …). Null = één gezamenlijk klassement. */
+  division?: string | null;
 }
 
 export interface ArchivedCupRound {
@@ -248,6 +251,11 @@ export const archiveService = {
 
   async upsertPlayoff(seasonLabel: string, playoff: ArchivedPlayoff): Promise<void> {
     await upsertArchiveField(seasonLabel, 'playoff', playoff);
+  },
+
+  /** Verwijder een volledig seizoenarchief (application_settings-rij). */
+  async deleteArchive(archiveId: number): Promise<void> {
+    await deleteApplicationSettingForSession(archiveId, ARCHIVE_CATEGORY);
   },
 
   /** Pull the current live standings and shape them for archiving. */

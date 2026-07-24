@@ -312,8 +312,8 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                   <p className="text-sm text-destructive">Tarieven konden niet geladen worden.</p>
                   <Button
                     type="button"
-                    variant="outline"
-                    className="min-h-[44px]"
+                    variant="unstyled"
+                    className="btn btn--secondary min-h-[44px]"
                     onClick={() => void refetchCostSettings()}
                   >
                     Opnieuw proberen
@@ -341,33 +341,31 @@ export const FinancialSettingsModal: React.FC<FinancialSettingsModalProps> = ({
                             ? "Variabel"
                             : formatCurrency(Number(setting.amount))}
                         </span>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Button
                             type="button"
-                            variant="outline"
-                            size="icon"
+                            variant="unstyled"
                             onClick={() =>
                               editingId === setting.id ? setEditingId(null) : handleEdit(setting)
                             }
                             className={cn(
-                              "min-h-[44px] min-w-[44px] border-primary/20",
+                              "btn btn--icon btn--edit",
                               editingId === setting.id && "bg-brand-50",
                             )}
                             disabled={isSubmitting}
                             aria-label="Bewerk tarief"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="icon"
+                            variant="unstyled"
                             onClick={() => setDeletingItem(setting)}
-                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            className="btn btn--icon btn--danger"
                             disabled={isSubmitting}
                             aria-label="Verwijder tarief"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
                       </div>

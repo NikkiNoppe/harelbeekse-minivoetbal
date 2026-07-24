@@ -91,8 +91,16 @@ const CupMatchTable: React.FC<{
   theme: typeof CUP_THEME | typeof FINAL_THEME;
   headerLabel: string;
   highlightWinner?: boolean;
-}> = ({ rounds, emptyMessage, theme, headerLabel, highlightWinner = false }) => {
-  if (!rounds.length) {
+  showEmptyShell?: boolean;
+}> = ({
+  rounds,
+  emptyMessage,
+  theme,
+  headerLabel,
+  highlightWinner = false,
+  showEmptyShell = false,
+}) => {
+  if (!rounds.length && !showEmptyShell) {
     return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
   }
 
@@ -102,7 +110,7 @@ const CupMatchTable: React.FC<{
     <div
       className={cn(
         "flex w-full flex-col overflow-hidden rounded-lg border shadow-lg transition-shadow duration-300 card-hover hover:shadow-xl",
-        !compact && "h-full",
+        !compact && rounds.length > 0 && "h-full",
         theme.shellBorder,
       )}
     >
@@ -116,16 +124,22 @@ const CupMatchTable: React.FC<{
       >
         <p className="text-xs font-semibold uppercase tracking-wider text-white">{headerLabel}</p>
       </div>
-      <div className={cn("bg-white", !compact && "flex-1 divide-y", theme.rowDivider)}>
-        {rounds.map((round, index) => (
-          <CupMatchRow
-            key={`${round.label}-${index}`}
-            round={round}
-            highlightWinner={highlightWinner}
-            compact={compact}
-          />
-        ))}
-      </div>
+      {rounds.length > 0 ? (
+        <div className={cn("bg-white", !compact && "flex-1 divide-y", theme.rowDivider)}>
+          {rounds.map((round, index) => (
+            <CupMatchRow
+              key={`${round.label}-${index}`}
+              round={round}
+              highlightWinner={highlightWinner}
+              compact={compact}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white px-4 py-6 text-center">
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -139,6 +153,7 @@ const CupRoundSection: React.FC<{
   theme: typeof CUP_THEME | typeof FINAL_THEME;
   icon: typeof Award | typeof Trophy;
   highlightWinner?: boolean;
+  showEmptyShell?: boolean;
 }> = ({
   title,
   headingId,
@@ -148,26 +163,32 @@ const CupRoundSection: React.FC<{
   theme,
   icon: Icon,
   highlightWinner,
+  showEmptyShell = false,
 }) => {
   const compact = rounds.length === 1;
 
   return (
-  <section role="region" aria-labelledby={headingId} className={cn("flex flex-col", !compact && "h-full")}>
-    <h2
-      id={headingId}
-      className="mb-3 flex items-center gap-2 text-lg font-semibold text-[var(--color-700)]"
+    <section
+      role="region"
+      aria-labelledby={headingId}
+      className={cn("flex flex-col", !compact && rounds.length > 0 && "h-full")}
     >
-      <Icon className={cn("h-5 w-5 shrink-0", theme.icon)} aria-hidden="true" />
-      {title}
-    </h2>
-    <CupMatchTable
-      rounds={rounds}
-      emptyMessage={emptyMessage}
-      theme={theme}
-      headerLabel={headerLabel}
-      highlightWinner={highlightWinner}
-    />
-  </section>
+      <h2
+        id={headingId}
+        className="mb-3 flex items-center gap-2 text-lg font-semibold text-[var(--color-700)]"
+      >
+        <Icon className={cn("h-5 w-5 shrink-0", theme.icon)} aria-hidden="true" />
+        {title}
+      </h2>
+      <CupMatchTable
+        rounds={rounds}
+        emptyMessage={emptyMessage}
+        theme={theme}
+        headerLabel={headerLabel}
+        highlightWinner={highlightWinner}
+        showEmptyShell={showEmptyShell}
+      />
+    </section>
   );
 };
 
@@ -175,24 +196,8 @@ const CupArchiveCard: React.FC<Props> = ({ cup }) => {
   const { semiFinals, final } = resolveCupArchiveRounds(cup);
   const hasSemi = semiFinals.length > 0;
   const hasFinal = !!final;
-  const hasData = hasSemi || hasFinal;
 
-  if (!hasData) {
-    return (
-      <section role="region" aria-labelledby="archive-cup-heading">
-        <h2
-          id="archive-cup-heading"
-          className="mb-3 flex items-center gap-2 text-lg font-semibold text-[var(--color-700)]"
-        >
-          <Award className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-          Beker
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Geen bekerwedstrijden gearchiveerd voor dit seizoen.
-        </p>
-      </section>
-    );
-  }
+  if (!hasSemi && !hasFinal) return null;
 
   return (
     <div
@@ -201,7 +206,7 @@ const CupArchiveCard: React.FC<Props> = ({ cup }) => {
         hasSemi && hasFinal && "md:grid-cols-2",
       )}
     >
-      {hasSemi && (
+      {hasSemi ? (
         <CupRoundSection
           title="Halve finales"
           headingId="archive-cup-semi-heading"
@@ -212,8 +217,8 @@ const CupArchiveCard: React.FC<Props> = ({ cup }) => {
           icon={Award}
           highlightWinner
         />
-      )}
-      {hasFinal && (
+      ) : null}
+      {hasFinal && final ? (
         <CupRoundSection
           title="Finale"
           headingId="archive-cup-final-heading"
@@ -224,7 +229,7 @@ const CupArchiveCard: React.FC<Props> = ({ cup }) => {
           icon={Trophy}
           highlightWinner
         />
-      )}
+      ) : null}
     </div>
   );
 };

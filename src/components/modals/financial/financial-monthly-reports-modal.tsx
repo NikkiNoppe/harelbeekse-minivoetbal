@@ -11,7 +11,7 @@ import {
   SECTION_COLLAPSIBLE_SURFACE,
   SECTION_COLLAPSIBLE_TRIGGER,
 } from "@/components/layout/section-collapsible-styles";
-import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, RefreshCw, Ban } from "lucide-react";
+import { Download, Euro, ChevronDown, ChevronRight, Users, Loader2, Ban, Wallet } from "lucide-react";
 import { useFinancialSeasonReportModal } from "./useFinancialSeasonReportModal";
 
 interface FinancialMonthlyReportsModalProps {
@@ -31,13 +31,10 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
     setSelectedMonth,
     report,
     error,
-    syncStatus,
     isInitialLoad,
     isRefreshing,
     isSeasonsLoading,
     isSeasonsFetched,
-    forceResync,
-    refetchReport,
   } = useFinancialSeasonReportModal(open);
 
   const formatCurrency = (amount: number) => {
@@ -100,13 +97,14 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
   };
   
   const seasonMonths = getSeasonMonths(selectedSeasonYear);
+  const balanceIncludesTopUps = report?.balanceIncludesTopUps === true;
 
   return (
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
       title="Seizoen Kostenrapportage"
-      subtitle="Cijfers uit de database; wedstrijdkosten worden bij openen op de achtergrond bijgewerkt indien nodig."
+      subtitle="Overzicht van kosten en saldi per seizoen."
       size="lg"
       className="max-w-6xl max-h-[80vh] overflow-y-auto"
     >
@@ -199,66 +197,13 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                 }
 
               `}</style>
-
-              <div
-                role="status"
-                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground"
-              >
-                <div className="flex items-center gap-2 min-h-[44px] sm:min-h-0">
-                  {(isRefreshing || syncStatus === "syncing") && (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin opacity-80" aria-hidden />
-                      <span>
-                        {syncStatus === "syncing"
-                          ? "Wedstrijdkosten synchroniseren op de achtergrond…"
-                          : "Rapport vernieuwen…"}
-                      </span>
-                    </>
-                  )}
-                  {syncStatus === "synced" && !isRefreshing && (
-                    <span>Boekingen bijgewerkt — rapport ververst.</span>
-                  )}
-                  {syncStatus === "error" && !isRefreshing && (
-                    <span className="text-destructive">
-                      Sync mislukt. Cijfers kunnen verouderd zijn.
-                    </span>
-                  )}
-                  {syncStatus === "idle" && !isRefreshing && (
-                    <span>Gebaseerd op actuele boekingen in de database.</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
-                    onClick={() => void refetchReport()}
-                    disabled={isRefreshing}
-                  >
-                    <RefreshCw className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`} />
-                    Vernieuwen
-                  </Button>
-                  {syncStatus === "error" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
-                      onClick={() => void forceResync()}
-                    >
-                      Sync
-                    </Button>
-                  )}
-                </div>
-              </div>
             </>
           )}
 
           {/* Summary Cards - only show when sync + fetch are complete */}
           {isInitialLoad && availableSeasons && availableSeasons.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, index) => (
+              {Array.from({ length: 7 }).map((_, index) => (
                 <Card key={index} className="border-primary/20 shadow-lg card-hover">
                   <CardHeader className="bg-brand-100 p-3">
                     <div className="mx-auto h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
@@ -368,6 +313,25 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
                   <div className="text-xl font-bold text-brand-dark text-center">
                     {report.totalForfaits}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 shadow-lg card-hover col-span-2 sm:col-span-1">
+                <CardHeader className="bg-brand-100 p-3">
+                  <CardTitle className="text-xs flex items-center justify-center gap-2 text-brand-dark">
+                    <Wallet className="h-3 w-3" aria-hidden />
+                    Eindsaldo ploegen
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-card p-3 space-y-1">
+                  <div className="text-lg font-bold text-brand-dark text-center">
+                    {formatCurrency(report.totalRemainingBalance)}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground text-center leading-snug">
+                    {balanceIncludesTopUps
+                      ? "Incl. bijstortingen naar €600"
+                      : "Excl. bijstortingen naar €600"}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -656,16 +620,12 @@ export const FinancialMonthlyReportsModal: React.FC<FinancialMonthlyReportsModal
 
           {/* Show message when no data but seasons are available */}
           {report && !isInitialLoad && !error && report.totalMatches === 0 && availableSeasons && availableSeasons.length > 0 && (
-            <Card className="border-primary/20 shadow-lg card-hover">
-              <CardContent className="text-center py-8 bg-card">
-                <p className="text-brand-dark mb-2">Geen wedstrijden gevonden voor deze periode.</p>
-                <p className="text-sm text-brand-dark opacity-70">
-                  Selecteer een andere maand of bekijk het hele seizoen.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="text-sm text-muted-foreground text-center">
+              {report.isBalanceOnly
+                ? "Nog geen wedstrijden in dit seizoen. Kosten staan op €0; saldi zijn actueel."
+                : "Geen wedstrijden gevonden voor deze periode. Selecteer een andere maand of bekijk het hele seizoen."}
+            </p>
           )}
-
         </div>
     </AppModal>
   );

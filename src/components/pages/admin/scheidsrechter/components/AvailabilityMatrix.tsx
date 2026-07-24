@@ -1146,14 +1146,13 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
             </Badge>
             <Button
               type="button"
-              variant="outline"
-              size="icon"
-              className="min-h-[44px] min-w-[44px] shrink-0"
+              variant="unstyled"
+              className="btn btn--icon shrink-0"
               onClick={() => void fetchData()}
               disabled={loading}
               aria-label="Gegevens vernieuwen"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
             </Button>
           </div>
           <MatrixStatusLegend />
@@ -1173,8 +1172,15 @@ const AvailabilityMatrix: React.FC<AvailabilityMatrixProps> = ({
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <Button
+              type="button"
+              variant="unstyled"
+              className="btn btn--icon"
+              onClick={fetchData}
+              disabled={loading}
+              aria-label="Gegevens vernieuwen"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
             </Button>
             {!toolbarContainer && autoAssignButton}
           </div>

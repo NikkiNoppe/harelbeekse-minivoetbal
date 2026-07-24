@@ -23,6 +23,7 @@ import { useFinancialData } from "@/hooks/useFinancialData";
 import { prefetchTeamFinancialDetail } from "@/components/modals/financial/useTeamFinancialDetailModal";
 import { useOrgQueryScope } from "@/hooks/useOrganization";
 import type { TeamFinancesSummary } from "@/services/financial/teamCostCategories";
+import { amountToTopUp } from "@/services/financial/teamCostCategories";
 
 interface Team {
   team_id: number;
@@ -231,8 +232,8 @@ const AdminFinancialPage: React.FC = () => {
                     {(teamsError as Error | undefined)?.message ||
                       "Er is een fout opgetreden bij het laden van de teams."}
                   </span>
-                  <Button type="button" variant="outline" size="sm" onClick={() => void refetchAll()}>
-                    <RefreshCw className="h-3 w-3 mr-1" />
+                  <Button type="button" variant="unstyled" className="btn btn--secondary" onClick={() => void refetchAll()}>
+                    <RefreshCw className="h-3 w-3 mr-1" aria-hidden />
                     Opnieuw
                   </Button>
                 </AlertDescription>
@@ -247,8 +248,8 @@ const AdminFinancialPage: React.FC = () => {
                     {(transactionsError as Error | undefined)?.message ||
                       "Kon financiële transacties niet laden. Teamnamen zijn wel zichtbaar."}
                   </span>
-                  <Button type="button" variant="outline" size="sm" onClick={() => void refetchAll()}>
-                    <RefreshCw className="h-3 w-3 mr-1" />
+                  <Button type="button" variant="unstyled" className="btn btn--secondary" onClick={() => void refetchAll()}>
+                    <RefreshCw className="h-3 w-3 mr-1" aria-hidden />
                     Opnieuw
                   </Button>
                 </AlertDescription>
@@ -279,12 +280,11 @@ const AdminFinancialPage: React.FC = () => {
                 {syncStatus === "error" && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 min-h-[44px] sm:min-h-7"
+                    variant="unstyled"
+                    className="btn btn--secondary min-h-[44px] sm:min-h-7 h-7 gap-1 px-2"
                     onClick={() => void forceResync().then(() => refreshInstantly())}
                   >
-                    <RefreshCw className="h-3 w-3" />
+                    <RefreshCw className="h-3 w-3" aria-hidden />
                     Opnieuw
                   </Button>
                 )}
@@ -341,7 +341,7 @@ const AdminFinancialPage: React.FC = () => {
                               <Skeleton className="h-5 w-20" />
                             ) : (
                               <div className={`text-right ${isNegative ? "text-destructive" : "text-green-600"}`}>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 justify-end">
                                   {isNegative ? (
                                     <TrendingDown className="h-4 w-4" />
                                   ) : (
@@ -351,6 +351,11 @@ const AdminFinancialPage: React.FC = () => {
                                     {formatCurrency(finances.currentBalance)}
                                   </span>
                                 </div>
+                                {amountToTopUp(finances.currentBalance) > 0 ? (
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                                    Nog te storten: {formatCurrency(amountToTopUp(finances.currentBalance))}
+                                  </p>
+                                ) : null}
                               </div>
                             )}
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />

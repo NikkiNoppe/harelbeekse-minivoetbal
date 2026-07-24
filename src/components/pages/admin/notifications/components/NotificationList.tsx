@@ -283,8 +283,8 @@ function NotificationCard({
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
-            className="min-h-[44px] flex-1"
+            variant="unstyled"
+            className="btn btn--outline min-h-[44px] flex-1"
             onClick={() => onEdit(notification)}
           >
             <Edit className="mr-2 h-4 w-4 shrink-0" aria-hidden />
@@ -292,8 +292,8 @@ function NotificationCard({
           </Button>
           <Button
             type="button"
-            variant="outline"
-            className="min-h-[44px] min-w-[44px] shrink-0 px-0 text-destructive hover:text-destructive"
+            variant="unstyled"
+            className="btn btn--icon btn--danger shrink-0"
             onClick={() => onDelete(notification)}
             aria-label={`Verwijder ${title}`}
           >
@@ -494,12 +494,11 @@ const NotificationList: React.FC<NotificationListProps> = ({
                             </span>
                           </TableCell>
                           <TableCell>
-                            <div className="flex justify-end gap-1">
+                            <div className="flex justify-end gap-1.5">
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="min-h-[44px] min-w-[44px]"
+                                variant="unstyled"
+                                className="btn btn--icon btn--edit"
                                 onClick={() => onEdit(notification)}
                                 aria-label={`Bewerk ${sv.title || "bericht"}`}
                               >
@@ -507,9 +506,8 @@ const NotificationList: React.FC<NotificationListProps> = ({
                               </Button>
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
+                                variant="unstyled"
+                                className="btn btn--icon btn--danger"
                                 onClick={() => onDelete(notification)}
                                 aria-label={`Verwijder ${sv.title || "bericht"}`}
                               >

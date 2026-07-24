@@ -127,14 +127,15 @@ export function MatchFormCardsSection({
                           )}
                         >
                           {canEdit && isValid && (
-                            <button
+                            <Button
                               type="button"
+                              variant="unstyled"
                               onClick={() => onRemoveCardItem(idx)}
-                              className="absolute right-2 top-2 z-10 flex h-8 min-h-[44px] w-8 min-w-[44px] items-center justify-center rounded-md border border-border bg-background text-muted-foreground shadow-sm transition-all duration-150 hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                              className="btn btn--icon btn--danger absolute right-2 top-2 z-10"
                               aria-label="Kaart verwijderen"
                             >
-                              <X className="h-4 w-4" />
-                            </button>
+                              <X className="h-4 w-4" aria-hidden />
+                            </Button>
                           )}
 
                           <div className="grid grid-cols-1 gap-1.5 pr-10 md:grid-cols-3">
@@ -332,11 +333,12 @@ export function MatchFormCardsSection({
                           {canEdit && (
                             <Button
                               type="button"
+                              variant="unstyled"
                               onClick={() => onRemoveSavedCard(index)}
                               className="btn btn--icon btn--danger shrink-0"
                               aria-label="Kaart verwijderen"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             </Button>
                           )}
                         </div>

@@ -9,7 +9,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { costSettingsService, invalidateFinancialTransactionQueries } from "@/services/financial";
-import { computeCurrentBalance } from "@/services/financial/teamCostCategories";
+import { computeCurrentBalance, amountToTopUp } from "@/services/financial/teamCostCategories";
 import { useFinancialData } from "@/hooks/useFinancialData";
 import { useTeamFinancialDetailModal } from "./useTeamFinancialDetailModal";
 import { useToast } from "@/hooks/use-toast";
@@ -405,13 +405,20 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                 {isBalanceLoading ? (
                   <Skeleton className="h-9 w-28" />
                 ) : (
-                  <div
-                    className={cn(
-                      "text-2xl sm:text-3xl font-bold whitespace-nowrap",
-                      (currentBalance ?? 0) >= 0 ? "text-green-600" : "text-red-600",
-                    )}
-                  >
-                    {formatCurrency(currentBalance ?? 0)}
+                  <div className="text-right">
+                    <div
+                      className={cn(
+                        "text-2xl sm:text-3xl font-bold whitespace-nowrap",
+                        (currentBalance ?? 0) >= 0 ? "text-green-600" : "text-red-600",
+                      )}
+                    >
+                      {formatCurrency(currentBalance ?? 0)}
+                    </div>
+                    {amountToTopUp(currentBalance ?? 0) > 0 ? (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Nog te storten: {formatCurrency(amountToTopUp(currentBalance ?? 0))}
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -426,8 +433,8 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
-                      className="w-full sm:w-auto flex items-center justify-center gap-2"
+                      type="button"
+                      className="btn btn--outline w-full sm:w-auto flex items-center justify-center gap-2"
                       disabled={loadingCostSettings || !costSettings || costSettings.length === 0}
                     >
                       {loadingCostSettings ? (
@@ -608,11 +615,10 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                     </span>
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
+                      className="btn btn--secondary"
                       onClick={() => void refetchTransactions()}
                     >
-                      <RefreshCw className="h-3 w-3 mr-1" />
+                      <RefreshCw className="h-3 w-3 mr-1" aria-hidden />
                       Opnieuw
                     </Button>
                   </AlertDescription>
@@ -745,24 +751,22 @@ export const FinancialTeamDetailModal: React.FC<FinancialTeamDetailModalProps> =
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Button
-                                      variant="outline"
-                                      size="icon"
+                                      type="button"
                                       onClick={() => handleEditTransaction(transaction)}
-                                      className="min-h-[44px] min-w-[44px] h-7 w-7 border-primary/30 bg-white hover:bg-brand-50 hover:border-primary/50 text-brand-dark hover:text-brand-dark transition-colors duration-150"
+                                      className="btn btn--icon btn--edit"
                                       disabled={isSubmitting}
                                       aria-label="Bewerk transactie"
                                     >
-                                      <Edit2 size={14} />
+                                      <Edit2 className="h-4 w-4" aria-hidden />
                                     </Button>
                                     <Button
-                                      variant="outline"
-                                      size="icon"
+                                      type="button"
                                       onClick={() => handleDeleteTransaction(transaction)}
-                                      className="min-h-[44px] min-w-[44px] h-7 w-7 border-destructive/30 bg-white hover:bg-destructive/10 hover:border-destructive/50 text-destructive hover:text-destructive transition-colors duration-150"
+                                      className="btn btn--icon btn--danger"
                                       disabled={isSubmitting}
                                       aria-label="Verwijder transactie"
                                     >
-                                      <Trash2 size={14} />
+                                      <Trash2 className="h-4 w-4" aria-hidden />
                                     </Button>
                                   </div>
                                 </div>

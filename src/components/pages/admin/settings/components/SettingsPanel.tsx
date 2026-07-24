@@ -1,9 +1,9 @@
-
 import React from "react";
 import {
   Settings,
   Building,
   ShieldAlert,
+  Archive,
 } from "lucide-react";
 import { Accordion } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import VacationsSettings from "@/components/pages/admin/settings/components/Vaca
 import SeasonDataSettings from "@/components/pages/admin/settings/components/SeasonDataSettings";
 import MatchFormSettings from "@/components/pages/admin/settings/components/MatchFormSettings";
 import { SuspensionRulesSettings } from "@/components/pages/admin/settings/components/SuspensionRulesSettings";
+import ManualArchiveSettings from "@/components/pages/admin/settings/components/ManualArchiveSettings";
 
 function GroupHeading({
   icon,
@@ -58,8 +59,9 @@ const AdminSettingsPanel: React.FC = () => {
             Instellingen per competitie
           </h2>
           <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Beheer de tenant-specifieke opzet van het seizoen, de speelomgeving en de
-            praktische regels voor formulieren en schorsingen.
+            Beheer de tenant-specifieke speelomgeving (zalen en tijdslots blijven
+            seizoenonafhankelijk; wijzigingen doe je manueel), de seizoensperiode, regels en
+            historisch archief.
           </p>
         </div>
       </div>
@@ -71,7 +73,7 @@ const AdminSettingsPanel: React.FC = () => {
             <GroupHeading
               icon={Building}
               title="Seizoen & Speelomgeving"
-              description="Seizoensperiode, zalen, tijdslots en uitzonderingen voor deze competitie."
+              description="Seizoensperiode en uitzonderingen; sportzalen en tijdslots blijven behouden over seizoenen heen."
               badge="4 onderdelen"
             />
           }
@@ -100,6 +102,22 @@ const AdminSettingsPanel: React.FC = () => {
           <SuspensionRulesSettings />
           <PlayerListLockSettings />
           <MatchFormSettings />
+        </SectionAccordionItem>
+
+        <SectionAccordionItem
+          value="historical-archive"
+          triggerContent={
+            <GroupHeading
+              icon={Archive}
+              title="Historisch archief"
+              description="Vul voorgaande seizoenen manueel aan voor de publieke Archief-pagina (klassement, beker, play-offs)."
+              badge="historie"
+            />
+          }
+          contentClassName="space-y-4"
+          itemClassName="border-primary/20 shadow-sm hover:shadow-md transition-shadow duration-200"
+        >
+          <ManualArchiveSettings />
         </SectionAccordionItem>
       </Accordion>
     </div>

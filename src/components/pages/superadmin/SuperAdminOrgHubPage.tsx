@@ -36,6 +36,7 @@ import {
 import { parseBrandingSettings } from '@/types/branding';
 import { SuperAdminOrgEditor } from '@/components/pages/superadmin/org-hub/SuperAdminOrgEditor';
 import { OrgHubAvatar } from '@/components/pages/superadmin/org-hub/OrgHubAvatar';
+import { CloseSeasonCard } from '@/components/pages/superadmin/org-hub/CloseSeasonCard';
 import { useSuperAdminOrgHubThemePreview } from '@/hooks/useSuperAdminOrgHubThemePreview';
 import { cn } from '@/lib/utils';
 
@@ -375,35 +376,46 @@ export const SuperAdminOrgHubPage: React.FC<{ embedded?: boolean }> = ({
           </Card>
         </aside>
 
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-4">
           {selectedForm ? (
-            <SuperAdminOrgEditor
-              form={selectedForm}
-              displayName={
-                selectedOrgId === 'new'
-                  ? 'Nieuwe organisatie'
-                  : selectedBranding?.displayName || selectedForm.displayName
-              }
-              logoPath={
-                selectedOrgId === 'new'
-                  ? selectedForm.logoPath
-                  : selectedForm.logoPath || selectedBranding?.logoPath
-              }
-              isActive={
-                typeof selectedOrgId === 'number' &&
-                actingOrg?.organizationId === selectedOrgId
-              }
-              isNew={selectedOrgId === 'new'}
-              isSaving={savingId === (selectedOrgId === 'new' ? 'new' : selectedOrgId)}
-              onChange={(next) => {
-                if (selectedOrgId === 'new') {
-                  setNewOrgForm(next);
-                } else if (typeof selectedOrgId === 'number') {
-                  setForms((prev) => ({ ...prev, [selectedOrgId]: next }));
+            <>
+              <SuperAdminOrgEditor
+                form={selectedForm}
+                displayName={
+                  selectedOrgId === 'new'
+                    ? 'Nieuwe organisatie'
+                    : selectedBranding?.displayName || selectedForm.displayName
                 }
-              }}
-              onSave={() => handleSave(selectedForm, selectedOrgId === 'new')}
-            />
+                logoPath={
+                  selectedOrgId === 'new'
+                    ? selectedForm.logoPath
+                    : selectedForm.logoPath || selectedBranding?.logoPath
+                }
+                isActive={
+                  typeof selectedOrgId === 'number' &&
+                  actingOrg?.organizationId === selectedOrgId
+                }
+                isNew={selectedOrgId === 'new'}
+                isSaving={savingId === (selectedOrgId === 'new' ? 'new' : selectedOrgId)}
+                onChange={(next) => {
+                  if (selectedOrgId === 'new') {
+                    setNewOrgForm(next);
+                  } else if (typeof selectedOrgId === 'number') {
+                    setForms((prev) => ({ ...prev, [selectedOrgId]: next }));
+                  }
+                }}
+                onSave={() => handleSave(selectedForm, selectedOrgId === 'new')}
+              />
+              {typeof selectedOrgId === 'number' ? (
+                <CloseSeasonCard
+                  organizationId={selectedOrgId}
+                  organizationName={
+                    selectedBranding?.displayName || selectedForm.displayName || 'Organisatie'
+                  }
+                  enabled={actingOrg?.organizationId === selectedOrgId}
+                />
+              ) : null}
+            </>
           ) : (
             <Card className={SIDEBAR_CARD_CLASS}>
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">

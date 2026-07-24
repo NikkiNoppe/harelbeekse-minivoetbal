@@ -274,16 +274,19 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
                 </div>
                 <div className="flex flex-col gap-2 pt-2">
                   <Button
+                    type="button"
                     onClick={handleSave}
-                    className="w-full min-h-[44px]"
+                    variant="unstyled"
+                    className="btn btn--primary w-full min-h-[44px]"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? "Bezig..." : editingItem ? 'Bijwerken' : 'Toevoegen'}
                   </Button>
                   <Button
-                    variant="secondary"
+                    type="button"
+                    variant="unstyled"
                     onClick={resetForm}
-                    className="w-full min-h-[44px]"
+                    className="btn btn--secondary w-full min-h-[44px]"
                     disabled={isSubmitting}
                   >
                     Annuleren
@@ -294,12 +297,13 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
           )}
 
           <Button
+            type="button"
             onClick={() => setShowAddForm(!showAddForm)}
-            variant="secondary"
-            className="flex items-center justify-center gap-2 w-full min-h-[44px]"
+            variant="unstyled"
+            className="btn btn--secondary flex items-center justify-center gap-2 w-full min-h-[44px]"
             disabled={isSubmitting}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden />
             {showAddForm ? "Annuleren" : "Nieuw kostentarief"}
           </Button>
 
@@ -327,26 +331,26 @@ export const FinancialEnhancedSettingsModal: React.FC<FinancialEnhancedSettingsM
                         <span className="text-sm font-semibold text-brand-dark tabular-nums whitespace-nowrap shrink-0">
                           {formatCurrency(setting.amount)}
                         </span>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Button
-                            variant="outline"
-                            size="icon"
+                            type="button"
+                            variant="unstyled"
                             onClick={() => handleEdit(setting)}
-                            className="min-h-[44px] min-w-[44px] border-primary/20"
+                            className="btn btn--icon btn--edit"
                             disabled={isSubmitting}
                             aria-label="Bewerk tarief"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
-                            variant="outline"
-                            size="icon"
+                            type="button"
+                            variant="unstyled"
                             onClick={() => setDeletingItem(setting)}
-                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            className="btn btn--icon btn--danger"
                             disabled={isSubmitting}
                             aria-label="Verwijder tarief"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
                       </div>

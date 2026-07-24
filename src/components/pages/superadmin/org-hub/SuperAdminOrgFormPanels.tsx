@@ -328,9 +328,8 @@ export function OrgHubContentPanel({
               </div>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                className="min-h-[44px] w-full sm:w-auto shrink-0"
+                variant="unstyled"
+                className="btn btn--outline min-h-[44px] w-full sm:w-auto shrink-0"
                 onClick={() =>
                   update('footerContacts', [
                     ...form.footerContacts,
@@ -388,9 +387,8 @@ export function OrgHubContentPanel({
                     <div className="flex justify-end">
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="min-h-[44px] text-destructive hover:text-destructive"
+                        variant="unstyled"
+                        className="btn btn--danger min-h-[44px]"
                         onClick={() =>
                           update(
                             'footerContacts',
@@ -414,9 +412,8 @@ export function OrgHubContentPanel({
         <div className="flex justify-end mb-3">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            className="min-h-[44px]"
+            variant="unstyled"
+            className="btn btn--outline min-h-[44px]"
             onClick={() =>
               update('externalLinks', [...form.externalLinks, { label: '', url: '' }])
             }
@@ -455,9 +452,8 @@ export function OrgHubContentPanel({
                 </div>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="min-h-[44px] min-w-[44px] shrink-0 text-destructive hover:text-destructive"
+                  variant="unstyled"
+                  className="btn btn--icon btn--danger shrink-0"
                   aria-label="Link verwijderen"
                   onClick={() =>
                     update(
@@ -466,7 +462,7 @@ export function OrgHubContentPanel({
                     )
                   }
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden />
                 </Button>
               </div>
             ))}

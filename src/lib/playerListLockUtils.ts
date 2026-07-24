@@ -7,13 +7,19 @@ export type PlayerListLockScheduleStatus = "inactive" | "scheduled" | "active" |
 export interface PlayerListLockPeriod {
   from: string;
   until: string | null;
+  /** Optioneel weergavelabel (bv. Regulier seizoen, Play-offs). */
+  label?: string | null;
 }
 
 export interface PlayerListLockSettingValue {
   lock_enabled?: boolean;
   lock_from_date?: string | null;
   lock_until_date?: string | null;
-  periods?: Array<{ from?: string | null; until?: string | null }> | null;
+  periods?: Array<{
+    from?: string | null;
+    until?: string | null;
+    label?: string | null;
+  }> | null;
 }
 
 /** Legacy single range → periods[]; empty/invalid entries filtered out. */
@@ -28,12 +34,13 @@ export function normalizePlayerListLockPeriods(
       .map((p) => ({
         from: (p?.from ?? "").trim(),
         until: p?.until?.trim() ? p.until.trim() : null,
+        label: p?.label?.trim() ? p.label.trim() : null,
       }))
       .filter((p) => p.from.length > 0 || (p.until != null && p.until.length > 0))
       .map((p) => ({
-        // Prefer requiring from; if only until set (legacy), keep empty from as ""
         from: p.from,
         until: p.until,
+        label: p.label,
       }))
       .filter((p) => p.from.length > 0)
       .sort((a, b) => a.from.localeCompare(b.from));
@@ -43,7 +50,7 @@ export function normalizePlayerListLockPeriods(
   const until = settingValue.lock_until_date?.trim() || null;
   if (!from && !until) return [];
   if (!from) return [];
-  return [{ from, until: until || null }];
+  return [{ from, until: until || null, label: null }];
 }
 
 /** Payload to persist: periods + legacy mirrors of first period. */
@@ -55,6 +62,7 @@ export function toPlayerListLockSettingValue(
     .map((p) => ({
       from: p.from.trim(),
       until: p.until?.trim() ? p.until.trim() : null,
+      label: p.label?.trim() ? p.label.trim() : null,
     }))
     .filter((p) => p.from.length > 0)
     .sort((a, b) => a.from.localeCompare(b.from));
@@ -260,6 +268,91 @@ export function validatePlayerListLockPeriods(
   }
 
   return null;
+}
+
+/** YYYY-MM-DD helpers for suggested lock windows from seizoensconfig. */
+function addDaysIso(iso: string, days: number): string | null {
+  const d = parseDateOnly(iso);
+  if (!d) return null;
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function subtractDaysIso(iso: string, days: number): string | null {
+  return addDaysIso(iso, -days);
+}
+
+/**
+ * Standaardperiode = volledig seizoen (start → eind) uit Instellingen → Seizoensdata.
+ * Geen seizoensdatums → lege periode om manueel in te vullen.
+ */
+export function buildSuggestedSeasonLockPeriod(
+  seasonStart?: string | null,
+  seasonEnd?: string | null,
+): PlayerListLockPeriod {
+  const from = seasonStart?.trim() || "";
+  const until = seasonEnd?.trim() || null;
+  if (!from) return { from: "", until: null, label: null };
+  return { from, until: until || null, label: null };
+}
+
+/**
+ * Extra play-offvenster: laatste ~5 weken van het seizoen.
+ * Past de vorige periode in zodat die eindigt de dag vóór play-offs.
+ */
+export function appendSuggestedPlayoffLockPeriod(
+  periods: PlayerListLockPeriod[],
+  seasonEnd?: string | null,
+): PlayerListLockPeriod[] {
+  const end = seasonEnd?.trim() || periods.find((p) => p.until)?.until?.trim() || "";
+  if (!end) {
+    return [...periods, { from: "", until: null, label: null }];
+  }
+
+  const playoffFrom = subtractDaysIso(end, 35) || end;
+  const dayBefore = subtractDaysIso(playoffFrom, 1);
+
+  const base = periods
+    .map((p) => ({
+      from: p.from.trim(),
+      until: p.until?.trim() ? p.until.trim() : null,
+      label: p.label?.trim() ? p.label.trim() : null,
+    }))
+    .filter((p) => p.from.length > 0);
+
+  if (base.length === 0) {
+    return [
+      { from: playoffFrom, until: end, label: "Play-offs" },
+    ];
+  }
+
+  // Laatste periode inkorten tot dag vóór play-offs (als die langer loopt)
+  const lastIdx = base.length - 1;
+  const last = base[lastIdx];
+  if (dayBefore && (!last.until || last.until >= playoffFrom)) {
+    base[lastIdx] = { ...last, until: dayBefore };
+  }
+
+  // Geen dubbele play-offrij
+  if (base.some((p) => p.from === playoffFrom && p.until === end)) {
+    return base;
+  }
+
+  return [...base, { from: playoffFrom, until: end, label: "Play-offs" }];
+}
+
+/** Volgende lege rij: start na laatste "tot", anders leeg. */
+export function nextEmptyLockPeriod(periods: PlayerListLockPeriod[]): PlayerListLockPeriod {
+  const filled = periods.filter((p) => p.from.trim().length > 0);
+  const lastUntil = [...filled].reverse().find((p) => p.until?.trim())?.until?.trim();
+  if (lastUntil) {
+    const nextFrom = addDaysIso(lastUntil, 1);
+    return { from: nextFrom || "", until: null, label: null };
+  }
+  return { from: "", until: null, label: null };
 }
 
 export const PLAYER_LIST_LOCK_STATUS_LABELS: Record<PlayerListLockScheduleStatus, string> = {

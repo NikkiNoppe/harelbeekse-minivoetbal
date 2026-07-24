@@ -111,9 +111,8 @@ const SuspensionCard = memo(({
     </div>
     {showActions && onEdit && (
       <Button
-        variant="ghost"
-        size="icon"
-        className="min-h-[44px] min-w-[44px] flex-shrink-0 text-muted-foreground hover:text-foreground"
+        type="button"
+        className="btn btn--icon btn--edit flex-shrink-0"
         onClick={() => onEdit(suspension)}
         aria-label={
           suspension.source === 'manual'
@@ -122,7 +121,7 @@ const SuspensionCard = memo(({
         }
         title={suspension.source === 'manual' ? undefined : 'Aanpassen of notitie voor team'}
       >
-        <Edit size={14} />
+        <Edit className="h-4 w-4" aria-hidden />
       </Button>
     )}
   </div>

@@ -163,8 +163,8 @@ function BlogPostCard({
         <div className="flex gap-2">
           <Button
             type="button"
-            variant="outline"
-            className="min-h-[44px] flex-1"
+            variant="unstyled"
+            className="btn btn--outline min-h-[44px] flex-1"
             onClick={() => onEdit(post)}
           >
             <Edit className="mr-2 h-4 w-4 shrink-0" aria-hidden />
@@ -172,8 +172,8 @@ function BlogPostCard({
           </Button>
           <Button
             type="button"
-            variant="outline"
-            className="min-h-[44px] min-w-[44px] shrink-0 px-0 text-destructive hover:text-destructive"
+            variant="unstyled"
+            className="btn btn--icon btn--danger shrink-0"
             onClick={() => onDelete(post)}
             aria-label={`Verwijder ${title}`}
           >
@@ -418,26 +418,24 @@ const BlogList: React.FC<BlogListProps> = ({
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="flex items-center justify-center gap-1.5">
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
+                                variant="unstyled"
                                 onClick={() => onEdit(post)}
-                                className="min-h-[44px] min-w-[44px]"
+                                className="btn btn--icon btn--edit"
                                 aria-label={`Bewerk ${title}`}
                               >
-                                <Edit className="h-4 w-4" />
+                                <Edit className="h-4 w-4" aria-hidden />
                               </Button>
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
+                                variant="unstyled"
                                 onClick={() => onDelete(post)}
-                                className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
+                                className="btn btn--icon btn--danger"
                                 aria-label={`Verwijder ${title}`}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" aria-hidden />
                               </Button>
                             </div>
                           </TableCell>

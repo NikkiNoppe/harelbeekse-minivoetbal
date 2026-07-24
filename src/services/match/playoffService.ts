@@ -8,7 +8,6 @@ import { loadSlotPlanningContext } from '@/services/match/slotPlanningContext';
 import { teamService } from "@/services/core/teamService";
 import { normalizeTeamsPreferences, scoreTeamForDetails } from "@/services/core/teamPreferencesService";
 import {
-  bulkDeleteMatchesByIds,
   bulkInsertMatchesForSession,
   fetchMatchesForSession,
 } from "@/services/core/matchesSessionBulk";
@@ -309,6 +308,17 @@ export const playoffService = {
     end_date: string
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const existingPlayoffs = (await fetchMatchesForSession({})).filter(
+        (m) => m.is_playoff_match,
+      );
+      if (existingPlayoffs.length > 0) {
+        return {
+          success: false,
+          message:
+            "Er bestaan al playoffwedstrijden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+        };
+      }
+
       const seasonValidation = await this.validateSeasonData();
       if (!seasonValidation.isValid) return { success: false, message: seasonValidation.message! };
       
@@ -643,6 +653,17 @@ export const playoffService = {
     end_date: string
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const existingPlayoffs = (await fetchMatchesForSession({})).filter(
+        (m) => m.is_playoff_match,
+      );
+      if (existingPlayoffs.length > 0) {
+        return {
+          success: false,
+          message:
+            "Er bestaan al playoffwedstrijden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+        };
+      }
+
       const seasonValidation = await this.validateSeasonData();
       if (!seasonValidation.isValid) return { success: false, message: seasonValidation.message! };
       const playingWeeks = await this.generatePlayoffWeeks(start_date, end_date);
@@ -725,23 +746,12 @@ export const playoffService = {
     }
   },
 
+  /** Wedstrijden worden nooit hard verwijderd (cascade wist ook team_costs/saldi). */
   async deletePlayoffMatches(): Promise<{ success: boolean; message: string }> {
-    try {
-      const playoffMatchIds = (await fetchMatchesForSession({}))
-        .filter((m) => m.is_playoff_match)
-        .map((m) => m.match_id as number);
-
-      if (playoffMatchIds.length === 0) {
-        return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
-      }
-
-      const delResult = await bulkDeleteMatchesByIds(playoffMatchIds);
-      if (!delResult.success) {
-        return { success: false, message: `Fout bij verwijderen: ${delResult.error || 'onbekend'}` };
-      }
-      return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
-    } catch (error) {
-      return { success: false, message: `Fout bij verwijderen playoff wedstrijden: ${error instanceof Error ? error.message : 'Onbekende fout'}` };
-    }
-  }
+    return {
+      success: false,
+      message:
+        "Playoffwedstrijden mogen niet verwijderd worden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+    };
+  },
 };

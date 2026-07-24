@@ -376,26 +376,24 @@ const CompetitionFormatsSettings: React.FC = () => {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">{format.regular_rounds}</TableCell>
                       <TableCell>
-                        <div className="flex justify-end gap-1">
+                        <div className="flex justify-end gap-1.5">
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px]"
+                            variant="unstyled"
+                            className="btn btn--icon btn--edit"
                             aria-label="Bewerken"
                             onClick={() => handleEdit(format)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px] text-destructive"
+                            variant="unstyled"
+                            className="btn btn--icon btn--danger"
                             aria-label="Verwijderen"
                             onClick={() => handleDelete(format)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
                       </TableCell>
@@ -513,19 +511,19 @@ const CompetitionFormatsSettings: React.FC = () => {
                     <div className="flex flex-col gap-2 sm:flex-row">
                       <Button
                         type="button"
-                        variant="outline"
-                        className="min-h-[44px]"
+                        variant="unstyled"
+                        className="btn btn--outline min-h-[44px]"
                         onClick={handleAddDefaultDivisions}
                       >
                         Standaard reeksen
                       </Button>
                       <Button
                         type="button"
-                        variant="outline"
-                        className="min-h-[44px]"
+                        variant="unstyled"
+                        className="btn btn--outline min-h-[44px]"
                         onClick={handleAddDivision}
                       >
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="mr-2 h-4 w-4" aria-hidden />
                         Reeks toevoegen
                       </Button>
                     </div>
@@ -549,39 +547,36 @@ const CompetitionFormatsSettings: React.FC = () => {
                           className="min-h-[44px] flex-1"
                           aria-label={`Naam reeks ${index + 1}`}
                         />
-                        <div className="flex items-center gap-1 sm:shrink-0">
+                        <div className="flex items-center gap-1.5 sm:shrink-0">
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px]"
+                            variant="unstyled"
+                            className="btn btn--icon btn--outline"
                             aria-label={`Reeks ${index + 1} omhoog`}
                             disabled={index === 0}
                             onClick={() => handleMoveDivision(division.id, "up")}
                           >
-                            <ArrowUp className="h-4 w-4" />
+                            <ArrowUp className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px]"
+                            variant="unstyled"
+                            className="btn btn--icon btn--outline"
                             aria-label={`Reeks ${index + 1} omlaag`}
                             disabled={index === (editingItem.divisions?.length ?? 0) - 1}
                             onClick={() => handleMoveDivision(division.id, "down")}
                           >
-                            <ArrowDown className="h-4 w-4" />
+                            <ArrowDown className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="min-h-[44px] min-w-[44px] text-destructive"
+                            variant="unstyled"
+                            className="btn btn--icon btn--danger"
                             aria-label={`Reeks ${index + 1} verwijderen`}
                             disabled={(editingItem.divisions?.length ?? 0) <= 2}
                             onClick={() => handleRemoveDivision(division.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
                       </div>

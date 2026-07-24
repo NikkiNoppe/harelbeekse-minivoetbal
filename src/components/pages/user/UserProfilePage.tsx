@@ -51,8 +51,7 @@ import { fetchAdminDatabaseBackupForSession } from "@/services/core/adminBackupS
 import { ColorPreview } from "@/components/common/ColorPreview";
 import { ProfileRefereePlanningCard } from "./ProfileRefereePlanningCard";
 
-const ICON_BUTTON_CLASS =
-  "h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 border-border bg-background hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors duration-150";
+const ICON_BUTTON_CLASS = "btn btn--icon btn--outline shrink-0";
 
 // Loading skeleton
 const ProfileSkeleton = memo(() => (
@@ -473,14 +472,14 @@ const UserTeamInfoCard: React.FC<{
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="outline"
-                      size="icon"
+                      type="button"
+                      variant="unstyled"
                       className={ICON_BUTTON_CLASS}
                       disabled={isDownloadingBackup}
                       title="Database backup downloaden"
                       aria-label="Database backup downloaden"
                     >
-                      {isDownloadingBackup ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                      {isDownloadingBackup ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-popover">
@@ -498,30 +497,27 @@ const UserTeamInfoCard: React.FC<{
               {/* Edit button for team managers */}
               {team && user.role === 'player_manager' && (
                 <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    ICON_BUTTON_CLASS,
-                    "border-[var(--color-300)] bg-white hover:bg-brand-50 hover:border-[var(--color-400)] text-brand-dark hover:text-[var(--color-900)]",
-                  )}
+                  type="button"
+                  variant="unstyled"
+                  className="btn btn--icon btn--edit shrink-0"
                   onClick={handleEditClick}
                   title="Team gegevens bewerken"
                   aria-label="Team gegevens bewerken"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 className="h-4 w-4" aria-hidden />
                 </Button>
               )}
               {showCardContent && (
                 <Button
-                  variant="outline"
-                  size="icon"
+                  type="button"
+                  variant="unstyled"
                   onClick={() => setDetailsOpen((v) => !v)}
                   className={ICON_BUTTON_CLASS}
                   title={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
                   aria-label={detailsOpen ? 'Details inklappen' : 'Details uitklappen'}
                   aria-expanded={detailsOpen}
                 >
-                  <ChevronDown size={16} className={cn("transition-transform duration-200", detailsOpen && "rotate-180")} />
+                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", detailsOpen && "rotate-180")} aria-hidden />
                 </Button>
               )}
             </div>

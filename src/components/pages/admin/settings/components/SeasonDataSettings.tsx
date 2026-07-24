@@ -66,15 +66,23 @@ const SeasonDataSettings: React.FC = () => {
         return;
       }
 
-      const result = await saveSeasonData(nextData);
+      // Alleen datums patchen — nooit venues/timeslots/etc. overschrijven met incompleet object
+      const current = await getSeasonData();
+      const merged: SeasonData = {
+        ...current,
+        season_start_date: nextData.season_start_date,
+        season_end_date: nextData.season_end_date,
+      };
+
+      const result = await saveSeasonData(merged);
 
       if (result.success) {
-        setLocalSeasonData(nextData);
+        setLocalSeasonData(merged);
         setHasChanges(false);
         setSaveState("saved");
         lastSavedFingerprint.current = JSON.stringify({
-          season_start_date: nextData.season_start_date || "",
-          season_end_date: nextData.season_end_date || "",
+          season_start_date: merged.season_start_date || "",
+          season_end_date: merged.season_end_date || "",
         });
       } else {
         setSaveState("error");

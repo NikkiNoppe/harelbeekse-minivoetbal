@@ -96,6 +96,10 @@ export function useFinancialSeasonReportModal(open: boolean) {
     }
   }, [availableSeasons, selectedSeasonYear]);
 
+  useEffect(() => {
+    setSelectedMonth(null);
+  }, [selectedSeasonYear]);
+
   const seasonsAvailable = !!availableSeasons && availableSeasons.length > 0;
 
   const {

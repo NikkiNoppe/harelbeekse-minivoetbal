@@ -7,8 +7,6 @@ import { localDateTimeToISO } from "@/lib/dateUtils";
 import { normalizeVenueName } from "@/lib/utils";
 import { getRpcSessionArgs } from "@/lib/authSession";
 import {
-  bulkDeleteCupMatches,
-  bulkDeleteMatchesByUniqueNumbers,
   bulkInsertMatchesForSession,
   fetchMatchesForSession,
 } from "@/services/core/matchesSessionBulk";
@@ -17,6 +15,15 @@ import {
   shouldSyncMatchCostsAfterMatchUpdate,
 } from "@/services/financial/matchCostService";
 import { fetchPublicMatches, isCupMatch } from "@/services/public/publicScheduleFetch";
+import {
+  assignFirstRoundWeekIndex,
+  earlyWeekSlotBonus,
+  getCupBracketPlan,
+  getKnockoutWeekIndices,
+  matchDateFromWeekMonday,
+} from "@/lib/cupBracketPlan";
+import { pickSpacedPlayDayPair, getConfiguredPlayDays } from "@/lib/competitionPlanningEstimate";
+import { requireOrganizationId } from "@/lib/organizationScope";
 
 export interface CupMatch {
   match_id: number;
@@ -126,47 +133,54 @@ export const bekerService = {
   },
 
   // Helper functions for validation
-  validateCupTournamentInput(teams: number[], selectedDates: string[]): { isValid: boolean; message?: string } {
+  validateCupTournamentInput(
+    teams: number[],
+    selectedDates: string[],
+    slotsPerWeek: number = 7,
+  ): { isValid: boolean; message?: string; requiredWeeks?: number } {
     if (teams.length < 2) {
       return { isValid: false, message: "Selecteer minstens 2 teams" };
     }
 
-    // 16 teams uses 5 weeks (1/8 in 2 weken, QF, SF, Finale)
-    // Minder dan 16 teams: 4 weken (1/8 gecondenseerd in 1 week; QF, SF, Finale)
-    const requiredWeeks = teams.length === 16 ? 5 : 4;
-    if (selectedDates.length !== requiredWeeks) {
-      return { isValid: false, message: `Selecteer exact ${requiredWeeks} speelweken voor ${teams.length} team(s)` };
+    const plan = getCupBracketPlan(teams.length, slotsPerWeek);
+    if (selectedDates.length !== plan.requiredWeeks) {
+      return {
+        isValid: false,
+        message: `Selecteer exact ${plan.requiredWeeks} speelweken voor ${teams.length} team(s) (${plan.firstRoundPairs} achtste-finale${plan.firstRoundPairs === 1 ? "" : "s"} + kwart/halve/finale)`,
+        requiredWeeks: plan.requiredWeeks,
+      };
     }
 
-    return { isValid: true };
+    return { isValid: true, requiredWeeks: plan.requiredWeeks };
   },
 
   async checkExistingCupTournament(): Promise<{ exists: boolean; message?: string }> {
     const existingMatches = await fetchMatchesForSession({ is_cup_match: true });
 
     if (existingMatches.length > 0) {
-      return { exists: true, message: "Er bestaat al een bekertoernooi. Verwijder het eerst." };
+      return { exists: true, message: "Er bestaat al een bekertoernooi. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten." };
     }
 
     return { exists: false };
   },
 
-  async validateSeasonData(): Promise<{ isValid: boolean; message?: string; data?: any }> {
-    const seasonData = await seasonService.getSeasonData();
-    
+  async validateSeasonData(organizationId?: number): Promise<{ isValid: boolean; message?: string; data?: any }> {
+    const orgId = requireOrganizationId(organizationId);
+    const seasonData = await seasonService.getSeasonData(orgId);
+
     const venues = seasonData.venues || [];
     const timeslots = seasonData.venue_timeslots || [];
     const vacations = seasonData.vacation_periods || [];
-    
+
     if (venues.length === 0) {
       return { isValid: false, message: "Geen venues beschikbaar in de database. Configureer eerst de competitiedata." };
     }
-    
+
     if (timeslots.length === 0) {
       return { isValid: false, message: "Geen tijdslots beschikbaar in de database. Configureer eerst de competitiedata." };
     }
 
-    return { isValid: true, data: { venues, timeslots, vacations } };
+    return { isValid: true, data: { venues, timeslots, vacations, organizationId: orgId } };
   },
 
   validateVacationConflicts(selectedDates: string[], vacations: any[]): { isValid: boolean; message?: string } {
@@ -234,36 +248,32 @@ export const bekerService = {
     };
   },
 
-  async createEightFinals(shuffledTeams: number[], playingWeeks: string[], opts?: { teamPreferences?: Map<number, TeamPreferencesNormalized>; venues?: any[] }): Promise<any[]> {
+  async createEightFinals(shuffledTeams: number[], playingWeeks: string[], opts?: { teamPreferences?: Map<number, TeamPreferencesNormalized>; venues?: any[]; slotsPerWeek?: number; earlyDay?: number; organizationId?: number }): Promise<any[]> {
     const cupMatches = [];
-    // Create only as many matches as there are pairs
     const numberOfPairs = Math.floor(shuffledTeams.length / 2);
-    // Preload all slot details once
-    const totalAvailableSlots = 7;
-    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-    for (let s = 0; s < totalAvailableSlots; s++) {
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, totalAvailableSlots);
-      slotDetails.push({ venue, timeslot });
-    }
+    const { firstRoundWeeks } = getKnockoutWeekIndices(playingWeeks.length);
+    const slotsPerWeek = Math.max(1, opts?.slotsPerWeek ?? 7);
+    const earlyDay = opts?.earlyDay ?? 1;
+
+    const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
+    const slotCtx = await loadSlotPlanningContext(opts?.organizationId);
+    const totalAvailableSlots = slotCtx.totalSlots;
+    const slotDetails = slotCtx.slotDetails;
+
     for (let i = 0; i < numberOfPairs; i++) {
       const homeTeamIndex = i * 2;
       const awayTeamIndex = i * 2 + 1;
-      // If we only have 4 weeks (reduced schedule), play all 1/8 in week 0; otherwise split over week 0 and 1
-      const weekIndex = playingWeeks.length === 5 ? (i < 4 ? 0 : 1) : 0;
-      const matchIndexInWeek = i % 4; // 0-3 for each week (4 matches per week)
+      const weekIndex = assignFirstRoundWeekIndex(i, numberOfPairs, firstRoundWeeks, slotsPerWeek);
+      const cycleIndex = i % totalAvailableSlots;
 
-      // Use cyclical distribution across ALL 7 priority slots, with preference scoring
-      const cycleIndex = i % totalAvailableSlots; // Cycle through all slots
-      
       let bestSlot = cycleIndex;
       let bestScore = -1;
-      
-      // Check a few slots around the cycle index to find best team preference match
+
       for (let offset = 0; offset < totalAvailableSlots; offset++) {
         const slotIndex = (cycleIndex + offset) % totalAvailableSlots;
         const { venue, timeslot } = slotDetails[slotIndex];
         let combined = 0;
-        
+
         if (opts?.teamPreferences && opts?.venues) {
           const homeId = shuffledTeams[homeTeamIndex];
           const awayId = shuffledTeams[awayTeamIndex];
@@ -271,7 +281,8 @@ export const bekerService = {
           const a = scoreTeamForDetails(opts.teamPreferences.get(awayId), timeslot, venue, opts.venues);
           combined = h.score + a.score;
         }
-        
+        combined += earlyWeekSlotBonus(timeslot?.day_of_week, earlyDay);
+
         if (combined > bestScore) {
           bestScore = combined;
           bestSlot = slotIndex;
@@ -279,15 +290,12 @@ export const bekerService = {
       }
 
       const { venue, timeslot } = slotDetails[bestSlot];
-      
-      // Determine the correct date based on the selected slot's day_of_week
       const baseDate = playingWeeks[weekIndex];
-      const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
       const matchTime = timeslot?.start_time || '19:00';
-      
-      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${bestSlot + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}, prefScore=${bestScore}`);
-      
+
+      console.log(`🎯 Match ${i + 1}: Week ${weekIndex + 1}, day=${timeslot?.day_of_week}, Slot ${bestSlot + 1}, Venue: ${venue}, Time: ${matchTime}, prefScore=${bestScore}`);
+
       cupMatches.push(bekerService.createMatchObject(
         `1/8-${i + 1}`,
         `1/8 Finale ${i + 1}`,
@@ -302,28 +310,21 @@ export const bekerService = {
     return cupMatches;
   },
 
-  async createQuarterFinals(playingWeeks: string[]): Promise<any[]> {
+  async createQuarterFinals(playingWeeks: string[], organizationId?: number): Promise<any[]> {
     const cupMatches = [];
-    // Use week 3 for a 5-week schedule, otherwise week 2 (indexing from 0)
-    const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
-    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-    for (let s = 0; s < 7; s++) {
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 7);
-      slotDetails.push({ venue, timeslot });
-    }
+    const { quarterFinal: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
+    const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
+    const slotCtx = await loadSlotPlanningContext(organizationId);
+    const slotDetails = slotCtx.slotDetails;
     for (let i = 0; i < 4; i++) {
-      // Distribute across priority slots cyclically (using all 7 slots)
-      const slotIndex = i; // Use first 4 priority slots for quarterfinals
-      const { venue, timeslot } = slotDetails[slotIndex]; // Use all 7 slots
-      
-      // Determine the correct date based on the selected slot's day_of_week
+      const slotIndex = Math.min(i, slotDetails.length - 1);
+      const { venue, timeslot } = slotDetails[slotIndex];
       const baseDate = playingWeeks[baseWeekIndex];
-      const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
       const matchTime = timeslot?.start_time || '19:00';
-      
-      console.log(`🎯 Kwartfinale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}`);
-      
+
+      console.log(`🎯 Kwartfinale ${i + 1}: day=${timeslot?.day_of_week}, Slot ${slotIndex + 1}, Venue: ${venue}, Time: ${matchTime}`);
+
       cupMatches.push(bekerService.createMatchObject(
         `QF-${i + 1}`,
         `Kwartfinale ${i + 1}`,
@@ -338,28 +339,21 @@ export const bekerService = {
     return cupMatches;
   },
 
-  async createSemiFinals(playingWeeks: string[]): Promise<any[]> {
+  async createSemiFinals(playingWeeks: string[], organizationId?: number): Promise<any[]> {
     const cupMatches = [];
-    // Use week 4 for a 5-week schedule, otherwise week 3 (indexing from 0)
-    const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
-    const slotDetails: Array<{ venue: string; timeslot: any }> = [];
-    for (let s = 0; s < 7; s++) {
-      const { venue, timeslot } = await priorityOrderService.getMatchDetails(s, 7);
-      slotDetails.push({ venue, timeslot });
-    }
+    const { semiFinal: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
+    const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
+    const slotCtx = await loadSlotPlanningContext(organizationId);
+    const slotDetails = slotCtx.slotDetails;
     for (let i = 0; i < 2; i++) {
-      // Use top 2 priority slots for semifinals
-      const slotIndex = i; // 0-1 for the 2 best slots
-      const { venue, timeslot } = slotDetails[slotIndex]; // Use all 7 slots
-      
-      // Determine the correct date based on the selected slot's day_of_week
+      const slotIndex = Math.min(i, slotDetails.length - 1);
+      const { venue, timeslot } = slotDetails[slotIndex];
       const baseDate = playingWeeks[baseWeekIndex];
-      const isMonday = timeslot?.day_of_week === 1;
-      const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+      const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
       const matchTime = timeslot?.start_time || '19:00';
-      
-      console.log(`🎯 Halve finale ${i + 1}: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${slotIndex + 1} (Priority ${timeslot?.priority || 'N/A'}), Venue: ${venue}, Time: ${matchTime}`);
-      
+
+      console.log(`🎯 Halve finale ${i + 1}: day=${timeslot?.day_of_week}, Slot ${slotIndex + 1}, Venue: ${venue}, Time: ${matchTime}`);
+
       cupMatches.push(bekerService.createMatchObject(
         `SF-${i + 1}`,
         `Halve Finale ${i + 1}`,
@@ -374,21 +368,20 @@ export const bekerService = {
     return cupMatches;
   },
 
-  async createFinal(playingWeeks: string[]): Promise<any[]> {
-    // Get the best slot for the final (priority slot #1)
-    const finalSlotIndex = 0; // Best slot for the final
-    const { venue: finalVenue, timeslot: finalTimeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7); // direct fetch once
-    
-    // Determine the correct date based on the selected slot's day_of_week
-    // Use last week index (4 for 5-week schedule, 3 for 4-week schedule)
-    const baseWeekIndex = playingWeeks.length === 5 ? 4 : 3;
+  async createFinal(playingWeeks: string[], organizationId?: number): Promise<any[]> {
+    const finalSlotIndex = 0;
+    const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
+    const slotCtx = await loadSlotPlanningContext(organizationId);
+    const { venue: finalVenue, timeslot: finalTimeslot } = slotCtx.slotDetails[finalSlotIndex]
+      ?? await priorityOrderService.getMatchDetails(finalSlotIndex, 7);
+
+    const { final: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
     const baseDate = playingWeeks[baseWeekIndex];
-    const isMonday = finalTimeslot?.day_of_week === 1;
-    const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+    const finalDate = matchDateFromWeekMonday(baseDate, finalTimeslot?.day_of_week);
     const finalTime = finalTimeslot?.start_time || '19:00';
-    
-    console.log(`🎯 Finale: ${isMonday ? 'Monday' : 'Tuesday'}, Slot ${finalSlotIndex + 1} (Priority ${finalTimeslot?.priority || 'N/A'}), Venue: ${finalVenue}, Time: ${finalTime}`);
-    
+
+    console.log(`🎯 Finale: day=${finalTimeslot?.day_of_week}, Slot ${finalSlotIndex + 1}, Venue: ${finalVenue}, Time: ${finalTime}`);
+
     return [bekerService.createMatchObject(
       'FINAL',
       'Finale',
@@ -404,26 +397,34 @@ export const bekerService = {
    * Preview cup tournament plan without DB writes.
    * Returns detailed planned matches including preference scores for 1/8 finales.
    */
-  async previewCupTournament(teams: number[], selectedDates: string[], attempts?: number, byeTeamId?: number | null): Promise<{
+  async previewCupTournament(teams: number[], selectedDates: string[], attempts?: number, byeTeamId?: number | null, organizationId?: number): Promise<{
     success: boolean;
     message: string;
     plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string; slot_index: number; details: { homeScore?: number; awayScore?: number; combined?: number; maxCombined: number; priority?: number; day_of_week?: number } }>,
     totalCombined?: number
   }> {
-    // Validate input
-    const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates);
+    // Validate input — slots from season data when available
+    const seasonValidationEarly = await bekerService.validateSeasonData(organizationId);
+    const slotsPerWeek = Math.max(
+      1,
+      seasonValidationEarly.isValid
+        ? (seasonValidationEarly.data?.timeslots?.length || 7)
+        : 7,
+    );
+    const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates, slotsPerWeek);
     if (!inputValidation.isValid) {
       return { success: false, message: inputValidation.message!, plan: [] };
     }
 
     try {
       // Load and validate season data
-      const seasonValidation = await bekerService.validateSeasonData();
+      const seasonValidation = seasonValidationEarly;
       if (!seasonValidation.isValid) {
         return { success: false, message: seasonValidation.message!, plan: [] };
       }
 
-      const { venues, vacations } = seasonValidation.data!;
+      const { venues, vacations, timeslots } = seasonValidation.data!;
+      const earlyDay = pickSpacedPlayDayPair(getConfiguredPlayDays(timeslots || [])).early;
 
       // Validate vacation conflicts
       const vacationValidation = bekerService.validateVacationConflicts(selectedDates, vacations);
@@ -440,7 +441,7 @@ export const bekerService = {
       const teamPreferences = normalizeTeamsPreferences(allTeamsData.filter(t => selectedTeamsSet.has(t.team_id)));
 
       const { loadSlotPlanningContext } = await import("@/services/match/slotPlanningContext");
-      const slotCtx = await loadSlotPlanningContext();
+      const slotCtx = await loadSlotPlanningContext(organizationId);
 
       // Helper to build a plan for a given shuffled order and compute total combined score
       const buildPlanForOrder = async (order: number[]) => {
@@ -449,17 +450,21 @@ export const bekerService = {
 
         // 1/8 finales with per-week optimal unique slot assignment
         const numberOfPairs = Math.floor(order.length / 2);
+        const totalAvailableSlots = slotCtx.totalSlots;
+        const slotDetails = slotCtx.slotDetails;
+        const { firstRoundWeeks } = getKnockoutWeekIndices(playingWeeks.length);
         const weekToIndices = new Map<number, number[]>();
         for (let i = 0; i < numberOfPairs; i++) {
-          const weekIndex = playingWeeks.length === 5 ? (i < 4 ? 0 : 1) : 0;
+          const weekIndex = assignFirstRoundWeekIndex(
+            i,
+            numberOfPairs,
+            firstRoundWeeks,
+            totalAvailableSlots,
+          );
           const arr = weekToIndices.get(weekIndex) || [];
           arr.push(i);
           weekToIndices.set(weekIndex, arr);
         }
-
-        // Preload slot details once
-        const totalAvailableSlots = slotCtx.totalSlots;
-        const slotDetails = slotCtx.slotDetails;
 
         // Helpers to generate combinations and permutations (small sizes only)
         const combinations = (arr: number[], k: number): number[][] => {
@@ -521,6 +526,7 @@ export const bekerService = {
                 const a = scoreTeamForDetails(teamPreferences.get(awayId), timeslot, venue, venues);
                 hScore = h.score as number; aScore = a.score as number; combined = hScore + aScore;
               }
+              combined += earlyWeekSlotBonus(timeslot?.day_of_week, earlyDay);
               row.push({ combined, h: hScore, a: aScore });
             }
             scoreMatrix.push(row);
@@ -570,8 +576,7 @@ export const bekerService = {
             const i = asn.matchIdx;
             const { venue, timeslot } = slotDetails[asn.slot];
             const baseDate = playingWeeks[weekIndex];
-            const isMonday = timeslot?.day_of_week === 1;
-            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
             const matchTime = timeslot?.start_time || '19:00';
             totalCombined += asn.combined;
             plan.push({
@@ -590,13 +595,12 @@ export const bekerService = {
 
         // Kwartfinales
         {
-          const baseWeekIndex = playingWeeks.length === 5 ? 2 : 1;
+          const { quarterFinal: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
           for (let i = 0; i < 4; i++) {
-            const slotIndex = i;
-            const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+            const slotIndex = Math.min(i, slotDetails.length - 1);
+            const { venue, timeslot } = slotDetails[slotIndex];
             const baseDate = playingWeeks[baseWeekIndex];
-            const isMonday = timeslot?.day_of_week === 1;
-            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
             const matchTime = timeslot?.start_time || '19:00';
             plan.push({
               unique_number: `QF-${i + 1}`,
@@ -614,13 +618,12 @@ export const bekerService = {
 
         // Halve finales
         {
-          const baseWeekIndex = playingWeeks.length === 5 ? 3 : 2;
+          const { semiFinal: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
           for (let i = 0; i < 2; i++) {
-            const slotIndex = i;
-            const { venue, timeslot } = await priorityOrderService.getMatchDetails(slotIndex, 7);
+            const slotIndex = Math.min(i, slotDetails.length - 1);
+            const { venue, timeslot } = slotDetails[slotIndex];
             const baseDate = playingWeeks[baseWeekIndex];
-            const isMonday = timeslot?.day_of_week === 1;
-            const matchDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+            const matchDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
             const matchTime = timeslot?.start_time || '19:00';
             plan.push({
               unique_number: `SF-${i + 1}`,
@@ -639,11 +642,10 @@ export const bekerService = {
         // Finale
         {
           const finalSlotIndex = 0;
-          const { venue, timeslot } = await priorityOrderService.getMatchDetails(finalSlotIndex, 7);
-          const baseWeekIndex = playingWeeks.length === 5 ? 4 : 3;
+          const { venue, timeslot } = slotDetails[finalSlotIndex] ?? await priorityOrderService.getMatchDetails(finalSlotIndex, 7);
+          const { final: baseWeekIndex } = getKnockoutWeekIndices(playingWeeks.length);
           const baseDate = playingWeeks[baseWeekIndex];
-          const isMonday = timeslot?.day_of_week === 1;
-          const finalDate = isMonday ? baseDate : bekerService.addDaysToDate(baseDate, 1);
+          const finalDate = matchDateFromWeekMonday(baseDate, timeslot?.day_of_week);
           const finalTime = timeslot?.start_time || '19:00';
           plan.push({
             unique_number: 'FINAL',
@@ -699,13 +701,13 @@ export const bekerService = {
    */
   async createCupFromPlan(plan: Array<{ unique_number: string; speeldag: string; home_team_id: number | null; away_team_id: number | null; match_date: string; match_time: string; venue: string }>): Promise<{ success: boolean; message: string }> {
     try {
-      // Remove any existing cup matches with the same unique_numbers to avoid duplicate key errors
-      const uniqueNumbers = plan.map(p => p.unique_number);
-      if (uniqueNumbers.length > 0) {
-        const delResult = await bulkDeleteMatchesByUniqueNumbers(uniqueNumbers, true);
-        if (!delResult.success) {
-          console.warn('Warning: could not clear existing matches before import', delResult.error);
-        }
+      const existingCup = await fetchMatchesForSession({ is_cup_match: true });
+      if (existingCup.length > 0) {
+        return {
+          success: false,
+          message:
+            "Er bestaat al een bekertoernooi. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+        };
       }
 
       const cupMatches = plan.map(p => bekerService.createMatchObject(
@@ -727,16 +729,10 @@ export const bekerService = {
     }
   },
 
-  async createCupTournament(teams: number[], selectedDates: string[], byeTeamId?: number | null): Promise<{ success: boolean; message: string }> {
-    // Validate input
-    const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates);
-    if (!inputValidation.isValid) {
-      return { success: false, message: inputValidation.message! };
-    }
-
+  async createCupTournament(teams: number[], selectedDates: string[], byeTeamId?: number | null, organizationId?: number): Promise<{ success: boolean; message: string }> {
     try {
       console.log('🏆 Starting cup tournament creation...');
-      
+
       // Check if cup matches already exist
       const existingCheck = await bekerService.checkExistingCupTournament();
       if (existingCheck.exists) {
@@ -745,17 +741,24 @@ export const bekerService = {
 
       // Load and validate season data
       console.log('📋 Loading competition data from database...');
-      const seasonValidation = await bekerService.validateSeasonData();
+      const seasonValidation = await bekerService.validateSeasonData(organizationId);
       if (!seasonValidation.isValid) {
         return { success: false, message: seasonValidation.message! };
       }
 
       const { venues, timeslots, vacations } = seasonValidation.data!;
-      
+      const slotsPerWeek = Math.max(1, timeslots?.length || 7);
+      const earlyDay = pickSpacedPlayDayPair(getConfiguredPlayDays(timeslots || [])).early;
+
+      const inputValidation = bekerService.validateCupTournamentInput(teams, selectedDates, slotsPerWeek);
+      if (!inputValidation.isValid) {
+        return { success: false, message: inputValidation.message! };
+      }
+
       console.log('🏟️ Available venues:', venues.length);
       console.log('⏰ Available timeslots:', timeslots.length);
       console.log('🏖️ Vacation periods:', vacations.length);
-      
+
       // Validate vacation conflicts
       const vacationValidation = bekerService.validateVacationConflicts(selectedDates, vacations);
       if (!vacationValidation.isValid) {
@@ -779,7 +782,7 @@ export const bekerService = {
       const prioritizedTimeslots = await priorityOrderService.getPrioritizedTimeslots();
       console.log('🎯 Available prioritized timeslots:', prioritizedTimeslots.length);
       console.log('🎯 Timeslots details:', prioritizedTimeslots.map(t => `${t.priority}. ${t.venue_name} - ${t.start_time}`));
-      
+
       // Show the priority order for information
       await priorityOrderService.showPriorityOrder();
 
@@ -791,14 +794,20 @@ export const bekerService = {
       // Create all cup matches
       const cupMatches = [];
 
-      // Create 8e finales - number of matches depends on available teams; split over 2 weeks for 5-week schedule or condensed into week 1 for 4-week schedule
+      // Create 8e finales - number of matches depends on available teams; split over firstRoundWeeks
       console.log('🏆 Creating 1/8 finales with optimal timeslot distribution...');
-      const eightFinals = await bekerService.createEightFinals(shuffledTeams, playingWeeks, { teamPreferences, venues });
+      const eightFinals = await bekerService.createEightFinals(shuffledTeams, playingWeeks, {
+        teamPreferences,
+        venues,
+        slotsPerWeek,
+        earlyDay,
+        organizationId,
+      });
       cupMatches.push(...eightFinals);
 
       // Create kwartfinales (4 matches) - dynamic week index based on schedule length
       console.log('🏆 Creating kwartfinales with optimal timeslot distribution...');
-      const quarterFinals = await bekerService.createQuarterFinals(playingWeeks);
+      const quarterFinals = await bekerService.createQuarterFinals(playingWeeks, organizationId);
       // If bye team exists, put it in QF-1 home automatically
       if (byeTeamId) {
         const idx = quarterFinals.findIndex(x => x.unique_number === 'QF-1');
@@ -808,23 +817,23 @@ export const bekerService = {
 
       // Create halve finales (2 matches) - dynamic week index based on schedule length
       console.log('🏆 Creating halve finales with optimal timeslot distribution...');
-      const semiFinals = await bekerService.createSemiFinals(playingWeeks);
+      const semiFinals = await bekerService.createSemiFinals(playingWeeks, organizationId);
       cupMatches.push(...semiFinals);
 
       // Create finale (1 match) - dynamic week index based on schedule length
       console.log('🏆 Creating finale with optimal timeslot...');
-      const final = await bekerService.createFinal(playingWeeks);
+      const final = await bekerService.createFinal(playingWeeks, organizationId);
       cupMatches.push(...final);
 
       const insertResult = await bulkInsertMatchesForSession(cupMatches);
       if (!insertResult.success) throw new Error(insertResult.error || 'Insert mislukt');
 
       console.log('✅ Cup tournament created successfully with optimal timeslot distribution');
-      const isFullBracket = teams.length === 16;
+      const plan = getCupBracketPlan(teams.length, slotsPerWeek);
       const weeksUsed = selectedDates.length;
-      return { 
-        success: true, 
-        message: `Bekertoernooi succesvol aangemaakt! Schema over ${weeksUsed} week(en) (${isFullBracket ? 'volledige 16-teams bracket' : 'geconsolideerd schema voor minder teams'}). Gebruikt ${venues.length} venue(s), ${timeslots.length} tijdslot(s) en ${vacations.length} vakantieperiode(s) uit de database.` 
+      return {
+        success: true,
+        message: `Bekertoernooi succesvol aangemaakt! Schema over ${weeksUsed} week(en) (${plan.firstRoundPairs} achtste-finale${plan.firstRoundPairs === 1 ? "" : "s"}${plan.firstRoundWeeks > 1 ? ` over ${plan.firstRoundWeeks} weken` : ""} + kwart/halve/finale). Gebruikt ${venues.length} venue(s), ${timeslots.length} tijdslot(s) en ${vacations.length} vakantieperiode(s) uit de database.`,
       };
 
     } catch (error) {
@@ -837,9 +846,10 @@ export const bekerService = {
   },
 
   async getCupMatches(organizationId?: number): Promise<any> {
+    const orgId = requireOrganizationId(organizationId);
     const [allMatches, teamMap] = await Promise.all([
-      fetchPublicMatches(organizationId),
-      teamService.getPublicTeamMap(organizationId),
+      fetchPublicMatches(orgId),
+      teamService.getPublicTeamMap(orgId),
     ]);
 
     const data = allMatches
@@ -890,43 +900,13 @@ export const bekerService = {
     };
   },
 
+  /** Wedstrijden worden nooit hard verwijderd (cascade wist ook team_costs/saldi). */
   async deleteCupTournament(): Promise<{ success: boolean; message: string }> {
-    try {
-      console.log('🗑️ Starting cup tournament deletion process...');
-
-      const cupMatches = await fetchMatchesForSession({ is_cup_match: true });
-      if (cupMatches.length === 0) {
-        return { success: false, message: "Geen bekertoernooi gevonden om te verwijderen." };
-      }
-
-      console.log('🎯 Found cup matches to delete:', cupMatches.map((m) => m.match_id));
-      console.log('⚠️ Skipping team_costs deletion (RLS restriction - costs are managed by triggers)');
-
-      const delResult = await bulkDeleteCupMatches();
-      if (!delResult.success) throw new Error(delResult.error || 'Verwijderen mislukt');
-
-      console.log('✅ Cup tournament deleted successfully');
-      return { success: true, message: "Bekertoernooi succesvol verwijderd!" };
-    } catch (error) {
-      console.error('❌ Error deleting cup tournament:', error);
-      
-      // Provide more detailed error information
-      let errorMessage = 'Onbekende fout';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        // Check for specific PostgreSQL errors
-        if (error.message.includes('foreign key constraint')) {
-          errorMessage = 'Er zijn nog gerelateerde gegevens gekoppeld aan het toernooi. Probeer opnieuw of neem contact op met de beheerder.';
-        } else if (error.message.includes('violates')) {
-          errorMessage = 'Database constraint overtreding. Er zijn mogelijk nog gekoppelde gegevens.';
-        }
-      }
-      
-      return { 
-        success: false, 
-        message: `Fout bij verwijderen toernooi: ${errorMessage}` 
-      };
-    }
+    return {
+      success: false,
+      message:
+        "Bekerwedstrijden mogen niet verwijderd worden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+    };
   },
 
   async updateCupMatch(matchId: number, updateData: Partial<CupMatch>): Promise<{ success: boolean; message: string }> {

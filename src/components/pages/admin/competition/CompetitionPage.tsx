@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
-import { Loader2, AlertCircle, CheckCircle, Trash2, Archive, Trophy } from "lucide-react";
+import { AppAlertModal, InfoConfirmDescription } from "@/components/modals";
+import { Loader2, AlertCircle, CheckCircle, Archive, Trophy } from "lucide-react";
 import ArchiveSeasonModal from "@/components/modals/admin/ArchiveSeasonModal";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -22,7 +22,7 @@ import {
 } from "@/components/pages/admin/competition/DivisionTeamAssigner";
 import { PageHeader, PUBLIC_CARD_CLASS } from "@/components/layout";
 import { cn } from "@/lib/utils";
-import { estimateCompetitionPlanning } from "@/lib/competitionPlanningEstimate";
+import { estimateCompetitionPlanning, countVacationWeeksInRange, uniqueMondaysFromDates } from "@/lib/competitionPlanningEstimate";
 
 const AdminCompetitionPage: React.FC = () => {
   const { organizationId, orgQueryEnabled, getSeasonData } = useSeasonDataScope();
@@ -38,6 +38,9 @@ const AdminCompetitionPage: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
   const [venues, setVenues] = useState<any[]>([]);
   const [timeslots, setTimeslots] = useState<any[]>([]);
+  const [vacations, setVacations] = useState<any[]>([]);
+  const [cupMatchCount, setCupMatchCount] = useState(0);
+  const [cupWeekMondays, setCupWeekMondays] = useState<string[]>([]);
   const [existingCompetition, setExistingCompetition] = useState<any[]>([]);
   const { toast } = useToast();
   const [previewPlan, setPreviewPlan] = useState<Array<{ unique_number: string; speeldag: string; home_team_id: number; away_team_id: number | null; match_date: string; match_time: string; venue: string; details: { homeScore: number; awayScore: number; combined: number; maxCombined: number } }> | null>(null);
@@ -69,6 +72,7 @@ const AdminCompetitionPage: React.FC = () => {
       setFormats(normalizeCompetitionFormats(seasonData.competition_formats || []));
       setVenues(seasonData.venues || []);
       setTimeslots(seasonData.venue_timeslots || []);
+      setVacations(seasonData.vacation_periods || []);
 
       // Set default dates from season data
       if (seasonData.season_start_date && seasonData.season_end_date) {
@@ -76,9 +80,14 @@ const AdminCompetitionPage: React.FC = () => {
         setEndDate(seasonData.season_end_date);
       }
 
-      // Check for existing competition
-      const existingMatches = await competitionService.getCompetitionMatches();
+      // Check for existing competition + beker (reserved weeks)
+      const [existingMatches, cupInfo] = await Promise.all([
+        competitionService.getCompetitionMatches(),
+        competitionService.checkExistingCupMatches(),
+      ]);
       setExistingCompetition(existingMatches);
+      setCupMatchCount(cupInfo.matchCount ?? 0);
+      setCupWeekMondays(uniqueMondaysFromDates(cupInfo.cupDates ?? []));
     } catch (error) {
       console.error('Error loading initial data:', error);
       toast({
@@ -208,38 +217,6 @@ const AdminCompetitionPage: React.FC = () => {
     setPreviewTotal(null);
   };
 
-  const handleDeleteCompetition = async () => {
-    setLoading(true);
-    try {
-      const result = await competitionService.deleteCompetition();
-      
-      if (result.success) {
-        toast({
-          title: "Competitie verwijderd",
-          description: result.message,
-          variant: "default"
-        });
-        
-        setExistingCompetition([]);
-      } else {
-        toast({
-          title: "Fout bij verwijderen",
-          description: result.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error deleting competition:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen van de competitie.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleTeamToggle = (teamId: number) => {
     setSelectedTeams((prev) => {
       const next = prev.includes(teamId)
@@ -264,8 +241,6 @@ const AdminCompetitionPage: React.FC = () => {
 
   const hasExistingCompetition = existingCompetition.length > 0;
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -281,7 +256,7 @@ const AdminCompetitionPage: React.FC = () => {
           className="mb-0 min-w-0 flex-1"
           title="Competitie"
           icon={Trophy}
-          subtitle="Beheer de competitie — aanmaken, verwijderen en overzicht"
+          subtitle="Beheer de competitie — aanmaken, overzicht en seizoen archiveren"
         />
         <Button
           variant="outline"
@@ -548,18 +523,22 @@ const AdminCompetitionPage: React.FC = () => {
                         (selectedTeams.length * (selectedTeams.length - 1) / 2) * rounds;
                     }
 
-                    const playoffMatches = 0; // Playoffs worden later apart gegenereerd
-                    const totalMatches = regularMatches;
+                    const playoffEnabled = Boolean(format.has_playoffs);
 
                     const start = new Date(startDate);
                     const end = new Date(endDate);
                     const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                    const totalWeeks = Math.max(0, Math.ceil(totalDays / 7));
+                    const calendarWeeks = Math.max(0, Math.ceil(totalDays / 7));
+                    const vacationWeeks = countVacationWeeksInRange(vacations, startDate, endDate);
 
                     const planning = estimateCompetitionPlanning({
-                      totalMatches,
-                      availableWeeks: totalWeeks,
+                      totalMatches: regularMatches,
+                      calendarWeeks,
                       timeslots,
+                      vacationWeeks,
+                      cupMatches: cupMatchCount,
+                      cupWeeksReserved:
+                        cupWeekMondays.length > 0 ? cupWeekMondays.length : undefined,
                     });
 
                     const fitsNormally = planning.weekDeficit === 0;
@@ -575,106 +554,155 @@ const AdminCompetitionPage: React.FC = () => {
                       : planning.dayPair.earlyLabel;
 
                     return (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between gap-3">
-                          <span>Teams:</span>
-                          <span className="font-medium">{selectedTeams.length}</span>
-                        </div>
-                        {useDivisions ? (
+                      <div className="space-y-3 text-sm">
+                        <div className="space-y-2">
                           <div className="flex justify-between gap-3">
-                            <span>Reeksen:</span>
+                            <span>Teams:</span>
+                            <span className="font-medium">{selectedTeams.length}</span>
+                          </div>
+                          {useDivisions ? (
+                            <div className="flex justify-between gap-3">
+                              <span>Reeksen:</span>
+                              <span className="font-medium text-right">
+                                {format.divisions!.length}
+                                {unassignedCount > 0
+                                  ? ` (${unassignedCount} nog toe te wijzen)`
+                                  : ""}
+                              </span>
+                            </div>
+                          ) : null}
+                          <div className="flex justify-between gap-3">
+                            <span>Reguliere competitie:</span>
                             <span className="font-medium text-right">
-                              {format.divisions!.length}
-                              {unassignedCount > 0
-                                ? ` (${unassignedCount} nog toe te wijzen)`
-                                : ""}
+                              {useDivisions
+                                ? `${rounds} ronde(s) per reeks`
+                                : `${rounds} ronde(s) (thuis/uit)`}
                             </span>
                           </div>
-                        ) : null}
-                        <div className="flex justify-between gap-3">
-                          <span>Reguliere competitie:</span>
-                          <span className="font-medium text-right">
-                            {useDivisions
-                              ? `${rounds} ronde(s) per reeks`
-                              : `${rounds} ronde(s) (thuis/uit)`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Reguliere wedstrijden:</span>
-                          <span className="font-medium">{regularMatches}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Playoff wedstrijden:</span>
-                          <span className="font-medium text-right">Later apart gegenereerd</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Totaal wedstrijden:</span>
-                          <span className="font-medium">{totalMatches}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Slots / week:</span>
-                          <span className="font-medium">{planning.slotsPerWeek}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Weken nodig (1×/week):</span>
-                          <span className="font-medium">{planning.weeksNeeded}</span>
-                        </div>
-                        <div className="flex justify-between gap-3">
-                          <span>Beschikbare weken:</span>
-                          <span className="font-medium">{planning.availableWeeks}</span>
-                        </div>
-                        {fitsWithDoublePlay ? (
-                          <>
+                          <div className="flex justify-between gap-3">
+                            <span>Reguliere wedstrijden:</span>
+                            <span className="font-medium">{regularMatches}</span>
+                          </div>
+                          {playoffEnabled ? (
                             <div className="flex justify-between gap-3">
-                              <span>Dubbele speelweken:</span>
-                              <span className="font-medium">~{planning.doublePlayWeeks}</span>
+                              <span>Playoff wedstrijden:</span>
+                              <span className="font-medium text-right">Later apart gegenereerd</span>
                             </div>
+                          ) : null}
+                          <div className="flex justify-between gap-3">
+                            <span>Bekerwedstrijden:</span>
+                            <span className="font-medium text-right">
+                              {planning.cupMatches > 0
+                                ? `${planning.cupMatches} (gespreid over ${planning.cupWeeksReserved} week${planning.cupWeeksReserved === 1 ? "" : "en"})`
+                                : "Geen beker gepland"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span>Kalenderweken:</span>
+                            <span className="font-medium">{planning.calendarWeeks}</span>
+                          </div>
+                          {planning.vacationWeeks > 0 ? (
                             <div className="flex justify-between gap-3">
-                              <span>Voorkeur dagen:</span>
-                              <span className="font-medium text-right">{dayPairLabel}</span>
+                              <span>Vakantieweken:</span>
+                              <span className="font-medium">−{planning.vacationWeeks}</span>
                             </div>
-                          </>
-                        ) : null}
-                        <div
-                          className={`flex justify-between gap-3 font-medium ${
-                            fitsNormally
-                              ? "text-green-700"
-                              : fitsWithDoublePlay
-                                ? "text-amber-700"
-                                : "text-destructive"
-                          }`}
-                        >
-                          <span>Status:</span>
-                          <span className="text-right">
-                            {fitsNormally
-                              ? "Haalbaar (1× per week)"
-                              : fitsWithDoublePlay
-                                ? "Haalbaar met dubbele speelweken"
-                                : "Niet haalbaar"}
-                          </span>
+                          ) : null}
+                          {planning.cupWeeksReserved > 0 ? (
+                            <div className="flex justify-between gap-3">
+                              <span>Bekerweken (gereserveerd):</span>
+                              <span className="font-medium">−{planning.cupWeeksReserved}</span>
+                            </div>
+                          ) : null}
+                          <div className="flex justify-between gap-3">
+                            <span>Slots / week:</span>
+                            <span className="font-medium">{planning.slotsPerWeek}</span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span>Weken nodig (1×/week):</span>
+                            <span className="font-medium">{planning.weeksNeeded}</span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span>Beschikbaar voor competitie:</span>
+                            <span className="font-medium">{planning.availableWeeks}</span>
+                          </div>
+                          {fitsWithDoublePlay ? (
+                            <>
+                              <div className="flex justify-between gap-3">
+                                <span>Dubbele speelweken:</span>
+                                <span className="font-medium">~{planning.doublePlayWeeks}</span>
+                              </div>
+                              <div className="flex justify-between gap-3">
+                                <span>Voorkeur dagen:</span>
+                                <span className="font-medium text-right">{dayPairLabel}</span>
+                              </div>
+                            </>
+                          ) : null}
+                          <div
+                            className={`flex justify-between gap-3 font-medium ${
+                              fitsNormally
+                                ? "text-green-700"
+                                : fitsWithDoublePlay
+                                  ? "text-amber-700"
+                                  : "text-destructive"
+                            }`}
+                          >
+                            <span>Status:</span>
+                            <span className="text-right">
+                              {fitsNormally
+                                ? "Haalbaar (1× per week)"
+                                : fitsWithDoublePlay
+                                  ? "Haalbaar met dubbele speelweken"
+                                  : "Niet haalbaar"}
+                            </span>
+                          </div>
                         </div>
-                        {fitsWithDoublePlay ? (
-                          <div className="rounded-md border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs text-amber-950">
-                            <p className="font-medium mb-1">Tactiek bij tekort</p>
+
+                        {planning.cupMatches > 0 ? (
+                          <div className="rounded-md border border-primary/20 bg-background px-3 py-2 text-xs text-muted-foreground">
+                            <p className="font-medium text-foreground mb-1">Beker gescheiden houden</p>
                             <p>
-                              Zo’n {planning.overflowMatches} wedstrijd
-                              {planning.overflowMatches === 1 ? "" : "en"} past niet in een
-                              strikt 1×/week-schema. In ~{planning.doublePlayWeeks} week
-                              {planning.doublePlayWeeks === 1 ? "" : "en"} spelen sommige teams
-                              uitzonderlijk 2× — bij voorkeur gespreid op{" "}
-                              <strong>{dayPairLabel}</strong>
-                              {planning.dayPair.separated
-                                ? ", zodat herstel tussen beide momenten maximaal blijft."
-                                : ". Voeg een tweede speeldag toe in Instellingen voor betere spreiding."}
+                              {planning.cupMatches} bekerwedstrijd
+                              {planning.cupMatches === 1 ? "" : "en"} staan gepland over{" "}
+                              {planning.cupWeeksReserved} week
+                              {planning.cupWeeksReserved === 1 ? "" : "en"}. Die weken blijven
+                              vrij van competitie zodat beker en competitie niet overlappen.
+                              {cupWeekMondays.length === 0
+                                ? ` Streef naar spreiding (~${planning.cupPreferredWeeks} weken) i.p.v. alles dicht op elkaar.`
+                                : ""}
                             </p>
                           </div>
                         ) : null}
+
+                        {fitsWithDoublePlay ? (
+                          <div
+                            role="status"
+                            className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-950"
+                          >
+                            <p className="font-medium mb-1">Melding: uitzonderlijk 2× in één week</p>
+                            <p>
+                              Er is een tekort van ~{planning.weekDeficit} week
+                              {planning.weekDeficit === 1 ? "" : "en"} (~{planning.overflowMatches}{" "}
+                              wedstrijd
+                              {planning.overflowMatches === 1 ? "" : "en"}). In ~{planning.doublePlayWeeks}{" "}
+                              week{planning.doublePlayWeeks === 1 ? "" : "en"} spelen sommige teams
+                              uitzonderlijk twee keer — bij voorkeur gespreid op{" "}
+                              <strong>{dayPairLabel}</strong>
+                              {planning.dayPair.separated
+                                ? " (maximale herstelperiode binnen de week)."
+                                : ". Voeg een tweede speeldag toe in Instellingen voor betere spreiding."}{" "}
+                              Vermijd dubbele speelweken in dezelfde week als een bekerwedstrijd van
+                              dat team.
+                            </p>
+                          </div>
+                        ) : null}
+
                         {!isFeasible && (
-                          <div className="text-xs text-muted-foreground mt-2">
+                          <div className="text-xs text-muted-foreground">
                             <p>Suggesties:</p>
                             <ul className="list-disc list-inside space-y-1 mt-1">
                               <li>Breid de einddatum uit</li>
                               <li>Verminder het aantal teams of rondes</li>
+                              <li>Spreid bekerwedstrijden minder (alleen indien nodig)</li>
                               <li>Voeg extra tijdslots toe (Instellingen → Tijdslots)</li>
                             </ul>
                           </div>
@@ -834,82 +862,7 @@ const AdminCompetitionPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Competitie Verwijderen */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Competitie Verwijderen</CardTitle>
-            <CardDescription>
-              Verwijder de volledige competitie en alle gegenereerde wedstrijden. Deze actie kan niet ongedaan worden gemaakt.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {hasExistingCompetition ? (
-              <>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Je staat op het punt een actieve competitie met {existingCompetition.length} wedstrijden te verwijderen.
-                  </AlertDescription>
-                </Alert>
-                <Button 
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={loading}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verwijderen...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Competitie Verwijderen
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Er is momenteel geen actieve competitie om te verwijderen.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
       </section>
-
-      <AppAlertModal
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title="Competitie Verwijderen?"
-        description={
-          <DestructiveConfirmDescription
-            message="Weet je zeker dat je de volledige competitie wilt verwijderen?"
-            warning={`Alle competitiewedstrijden (${existingCompetition.length}) worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt.`}
-          />
-        }
-        confirmAction={{
-          label: "Verwijderen",
-          onClick: async () => {
-            setShowDeleteConfirm(false);
-            await handleDeleteCompetition();
-          },
-          variant: "destructive",
-          disabled: loading,
-          loading: loading,
-        }}
-        cancelAction={{
-          label: "Annuleren",
-          onClick: () => setShowDeleteConfirm(false),
-          disabled: loading,
-        }}
-        size="sm"
-      />
     </div>
   );
 };

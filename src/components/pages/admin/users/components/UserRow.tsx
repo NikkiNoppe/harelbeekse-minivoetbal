@@ -23,10 +23,6 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
   };
 
   const handleDelete = () => {
-    console.log('🗑️ UserRow delete button clicked for user:', {
-      id: user.id,
-      username: user.username
-    });
     onDelete(user.id);
   };
 
@@ -36,22 +32,24 @@ const UserRow: React.FC<UserRowProps> = ({ user, teamName, onEdit, onDelete }) =
       <TableCell>{getRoleName(user.role)}</TableCell>
       <TableCell>{user.role === "player_manager" ? teamName : "-"}</TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1.5">
           <Button
-            variant="outline"
-            size="sm"
+            type="button"
+            variant="unstyled"
             onClick={() => onEdit(user)}
-            className="bg-white text-brand-600 border-brand-400 hover:bg-brand-50"
+            className="btn btn--icon btn--edit"
+            aria-label={`Bewerk ${user.username}`}
           >
-            <Edit size={16} />
+            <Edit className="h-4 w-4" aria-hidden />
           </Button>
           <Button
-            variant="outline"
-            size="sm"
+            type="button"
+            variant="unstyled"
             onClick={handleDelete}
-            className="bg-white text-red-500 border-red-400 hover:bg-red-50"
+            className="btn btn--icon btn--danger"
+            aria-label={`Verwijder ${user.username}`}
           >
-            <Trash2 size={16} />
+            <Trash2 className="h-4 w-4" aria-hidden />
           </Button>
         </div>
       </TableCell>

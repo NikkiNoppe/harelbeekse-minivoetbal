@@ -91,9 +91,8 @@ function ProfileRefereePlanningContent() {
         </div>
         <Button
           type="button"
-          variant="outline"
-          size="icon"
-          className="min-h-[44px] min-w-[44px] shrink-0"
+          variant="unstyled"
+          className="btn btn--icon shrink-0"
           onClick={() => void handleRefresh()}
           disabled={isRefreshing || loading}
           aria-label="Planning vernieuwen"

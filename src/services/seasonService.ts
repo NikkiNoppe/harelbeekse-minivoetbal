@@ -123,13 +123,35 @@ export const seasonService = {
     const orgId = requireOrganizationId(organizationId);
 
     try {
-      localStorage.setItem(seasonDataStorageKey(orgId), JSON.stringify(data));
+      // Merge met bestaande config zodat partial updates (bv. alleen datums)
+      // venues/timeslots/vakanties niet wissen.
+      let existing: SeasonData = createDefaultSeasonData();
+      try {
+        existing = await this.getSeasonData(orgId);
+      } catch {
+        // geen bestaande rij — defaults
+      }
 
-      // Upsert via session-RPC (ON CONFLICT op organization_id + category + name).
+      const merged: SeasonData = {
+        ...createDefaultSeasonData(),
+        ...existing,
+        ...data,
+        venues: data.venues ?? existing.venues ?? [],
+        venue_timeslots: data.venue_timeslots ?? existing.venue_timeslots ?? [],
+        vacation_periods: data.vacation_periods ?? existing.vacation_periods ?? [],
+        slot_unavailability:
+          data.slot_unavailability ?? existing.slot_unavailability ?? [],
+        competition_formats:
+          data.competition_formats ?? existing.competition_formats ?? [],
+        day_names: data.day_names ?? existing.day_names ?? createDefaultSeasonData().day_names,
+      };
+
+      localStorage.setItem(seasonDataStorageKey(orgId), JSON.stringify(merged));
+
       await insertApplicationSettingForSession({
         setting_category: 'season_data',
         setting_name: 'main_config',
-        setting_value: data,
+        setting_value: merged,
       });
 
       return {

@@ -12,9 +12,6 @@ import { getRpcSessionArgs } from "@/lib/authSession";
 import { loadSlotPlanningContext } from "@/services/match/slotPlanningContext";
 import type { CompetitionFormat } from "@/services/competitionDataService";
 import {
-  bulkDeleteCompetitionMatches,
-  bulkDeleteMatchesByIds,
-  bulkDeleteMatchesByUniqueNumbers,
   bulkInsertMatchesForSession,
   fetchMatchesForSession,
 } from "@/services/core/matchesSessionBulk";
@@ -132,22 +129,32 @@ export const competitionService = {
       .filter((m) => !m.is_playoff_match);
 
     if (existingMatches.length > 0) {
-      return { exists: true, message: "Er bestaat al een reguliere competitie. Verwijder het eerst." };
+      return { exists: true, message: "Er bestaat al een reguliere competitie. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten." };
     }
 
     return { exists: false };
   },
 
-  async checkExistingCupMatches(): Promise<{ exists: boolean; message?: string; cupDates?: string[] }> {
+  async checkExistingCupMatches(): Promise<{
+    exists: boolean;
+    message?: string;
+    cupDates?: string[];
+    matchCount?: number;
+  }> {
     const existingCupMatches = await fetchMatchesForSession({ is_cup_match: true });
 
     if (existingCupMatches.length > 0) {
       // Extraheer unieke datums van bekerwedstrijden
       const cupDates = [...new Set(existingCupMatches.map(match => String(match.match_date).split('T')[0]))];
-      return { exists: true, message: "Er bestaat al een bekertoernooi.", cupDates };
+      return {
+        exists: true,
+        message: "Er bestaat al een bekertoernooi.",
+        cupDates,
+        matchCount: existingCupMatches.length,
+      };
     }
 
-    return { exists: false };
+    return { exists: false, matchCount: 0 };
   },
 
   async validateSeasonData(organizationId?: number): Promise<{ isValid: boolean; message?: string; data?: any }> {
@@ -1492,15 +1499,18 @@ export const competitionService = {
 
   async createCompetitionFromPlan(plan: Array<{ unique_number: string; speeldag: string; home_team_id: number; away_team_id: number | null; match_date: string; match_time: string; venue: string }>): Promise<{ success: boolean; message: string }> {
     try {
+      const existing = await fetchMatchesForSession({ is_cup_match: false });
+      const existingCompetition = existing.filter((m) => !m.is_playoff_match);
+      if (existingCompetition.length > 0) {
+        return {
+          success: false,
+          message:
+            "Er bestaat al een competitie. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+        };
+      }
+
       // Verwijder BYE-rijen (away_team_id === null) bij import
       const filteredPlan = plan.filter(p => p.away_team_id !== null);
-      const uniqueNumbers = filteredPlan.map(p => p.unique_number);
-      if (uniqueNumbers.length > 0) {
-        const delResult = await bulkDeleteMatchesByUniqueNumbers(uniqueNumbers, false);
-        if (!delResult.success) {
-          console.warn('Warning: could not clear competition matches before import', delResult.error);
-        }
-      }
 
       const rows = filteredPlan.map(p => this.createMatchObject(
         p.unique_number,
@@ -1581,10 +1591,12 @@ export const competitionService = {
           alternatives.push(`- Verminder naar ${reducedTeams} teams: ${reducedWeeks} weken nodig`);
         }
         
-        // Optie 3: Meer wedstrijden per week
+        // Optie 3: Uitzonderlijk dubbel spelen (gespreide dagen)
         const moreMatchesPerWeek = this.calculateWeeksNeeded(totalRegularMatches, 8);
         if (moreMatchesPerWeek <= playingWeeks.length) {
-          alternatives.push(`- Speel 8 wedstrijden per week: ${moreMatchesPerWeek} weken nodig`);
+          alternatives.push(
+            `- Uitzonderlijk 2× per week in ~${weeksNeeded - playingWeeks.length} week(en), bij voorkeur gespreid (bv. maandag + vrijdag): ${moreMatchesPerWeek} weken nodig`,
+          );
         }
         
         const alternativesText = alternatives.length > 0 ? `\n\nAlternatieven:\n${alternatives.join('\n')}` : '';
@@ -1717,22 +1729,13 @@ export const competitionService = {
     }
   },
 
-  // Verwijder competitie
+  /** Wedstrijden worden nooit hard verwijderd (cascade wist ook team_costs/saldi). */
   async deleteCompetition(): Promise<{ success: boolean; message: string }> {
-    try {
-      const delResult = await bulkDeleteCompetitionMatches();
-      if (!delResult.success) {
-        return { success: false, message: `Fout bij verwijderen: ${delResult.error || 'onbekend'}` };
-      }
-
-      return { success: true, message: "Competitie succesvol verwijderd" };
-    } catch (error) {
-      console.error('Error deleting competition:', error);
-      return { 
-        success: false, 
-        message: `Fout bij verwijderen competitie: ${error instanceof Error ? error.message : 'Onbekende fout'}` 
-      };
-    }
+    return {
+      success: false,
+      message:
+        "Competitiewedstrijden mogen niet verwijderd worden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+    };
   },
 
   // Update competitie wedstrijd
@@ -1766,30 +1769,13 @@ export const competitionService = {
     }
   },
 
-  // Verwijder playoff wedstrijden
+  /** Wedstrijden worden nooit hard verwijderd (cascade wist ook team_costs/saldi). */
   async deletePlayoffMatches(): Promise<{ success: boolean; message: string }> {
-    try {
-      const playoffMatchIds = (await fetchMatchesForSession({ is_cup_match: false }))
-        .filter((m) => typeof m.speeldag === 'string' && m.speeldag.includes('[PLAYOFF:'))
-        .map((m) => m.match_id as number);
-
-      if (playoffMatchIds.length === 0) {
-        return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
-      }
-
-      const delResult = await bulkDeleteMatchesByIds(playoffMatchIds);
-      if (!delResult.success) {
-        return { success: false, message: `Fout bij verwijderen: ${delResult.error || 'onbekend'}` };
-      }
-
-      return { success: true, message: "Playoff wedstrijden succesvol verwijderd" };
-    } catch (error) {
-      console.error('Error deleting playoff matches:', error);
-      return { 
-        success: false, 
-        message: `Fout bij verwijderen playoff wedstrijden: ${error instanceof Error ? error.message : 'Onbekende fout'}` 
-      };
-    }
+    return {
+      success: false,
+      message:
+        "Playoffwedstrijden mogen niet verwijderd worden. Sluit eerst het seizoen af via SuperAdmin → Platform → Seizoen afsluiten.",
+    };
   },
 
   // Genereer beschikbare speelweken voor playoffs (zonder weekbehoefte-berekening)

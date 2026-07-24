@@ -14,6 +14,12 @@ export type TimeslotLike = {
   day_of_week?: number | null;
 };
 
+export type VacationLike = {
+  start_date?: string | null;
+  end_date?: string | null;
+  is_active?: boolean | null;
+};
+
 /** Unieke speeldagen uit geconfigureerde tijdslots, oplopend. */
 export function getConfiguredPlayDays(timeslots: TimeslotLike[]): number[] {
   const days = new Set<number>();
@@ -58,16 +64,17 @@ export function pickSpacedPlayDayPair(playDays: number[]): {
 
   let bestA = playDays[0];
   let bestB = playDays[playDays.length - 1];
-  let bestDist = -1;
+  let bestScore = -1;
   for (let i = 0; i < playDays.length; i++) {
     for (let j = i + 1; j < playDays.length; j++) {
       const a = playDays[i];
       const b = playDays[j];
+      // Prefer same-week span (ma → vr) over weekend wrap; secondary: absolute gap.
       const forward = b - a;
       const wrap = 7 - forward;
-      const dist = Math.max(forward, wrap);
-      if (dist > bestDist) {
-        bestDist = dist;
+      const score = forward * 10 + wrap;
+      if (score > bestScore) {
+        bestScore = score;
         bestA = a;
         bestB = b;
       }
@@ -85,10 +92,86 @@ export function pickSpacedPlayDayPair(playDays: number[]): {
   };
 }
 
+export function toMondayIso(dateInput: string | Date): string {
+  const d = typeof dateInput === "string"
+    ? new Date(`${dateInput.split("T")[0]}T12:00:00`)
+    : new Date(dateInput);
+  const day = d.getDay();
+  const delta = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Unieke speelweken (maandagen) voor een set kalenderdatums. */
+export function uniqueMondaysFromDates(dates: string[]): string[] {
+  const mondays = new Set<string>();
+  for (const date of dates) {
+    if (!date) continue;
+    mondays.add(toMondayIso(date));
+  }
+  return Array.from(mondays).sort();
+}
+
+/** Aantal actieve vakantieweken (maandagen) binnen seizoensperiode. */
+export function countVacationWeeksInRange(
+  vacations: VacationLike[],
+  seasonStart: string,
+  seasonEnd: string,
+): number {
+  const start = new Date(`${seasonStart.split("T")[0]}T12:00:00`);
+  const end = new Date(`${seasonEnd.split("T")[0]}T12:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return 0;
+
+  const vacationMondays = new Set<string>();
+  for (const vacation of vacations) {
+    if (vacation.is_active === false) continue;
+    if (!vacation.start_date || !vacation.end_date) continue;
+    let cursor = new Date(`${toMondayIso(vacation.start_date)}T12:00:00`);
+    const vacEnd = new Date(`${vacation.end_date.split("T")[0]}T12:00:00`);
+    while (cursor <= vacEnd) {
+      if (cursor >= start && cursor <= end) {
+        vacationMondays.add(toMondayIso(cursor));
+      }
+      cursor.setDate(cursor.getDate() + 7);
+    }
+  }
+  return vacationMondays.size;
+}
+
+/**
+ * Bekerweken zo gespreid mogelijk: minimaal ceil(matches/slots),
+ * bij voorkeur meer weken (minder densiteit) tot maxAvailable.
+ */
+export function estimateCupSpreadWeeks(input: {
+  cupMatches: number;
+  slotsPerWeek: number;
+  maxAvailableWeeks: number;
+}): { minWeeks: number; preferredWeeks: number } {
+  const cupMatches = Math.max(0, input.cupMatches);
+  const slots = Math.max(1, input.slotsPerWeek);
+  const maxAvailable = Math.max(0, input.maxAvailableWeeks);
+  if (cupMatches === 0 || maxAvailable === 0) {
+    return { minWeeks: 0, preferredWeeks: 0 };
+  }
+  const minWeeks = Math.min(maxAvailable, Math.ceil(cupMatches / slots));
+  // Streef naar ~halve slotbezetting zodat ronden/datums verder uit elkaar liggen.
+  const preferredWeeks = Math.min(
+    maxAvailable,
+    Math.max(minWeeks, Math.ceil(cupMatches / Math.max(1, Math.floor(slots / 2) || 1))),
+  );
+  return { minWeeks, preferredWeeks };
+}
+
 export type CompetitionPlanningEstimate = {
   slotsPerWeek: number;
-  weeksNeeded: number;
+  calendarWeeks: number;
+  vacationWeeks: number;
+  cupWeeksReserved: number;
+  cupMatches: number;
+  cupPreferredWeeks: number;
+  /** Weken die overblijven voor reguliere competitie. */
   availableWeeks: number;
+  weeksNeeded: number;
   weekDeficit: number;
   overflowMatches: number;
   /** Weken waarin sommige teams uitzonderlijk 2× spelen (ruwe schatting). */
@@ -100,12 +183,16 @@ export type CompetitionPlanningEstimate = {
 
 /**
  * Ruwe capaciteitsschatting: standaard 1× per team per week via slotsPerWeek.
+ * Beker- en vakantieweken worden vooraf afgetrokken.
  * Tekort → uitzonderlijke dubbele speelweken, bij voorkeur op gespreide dagen.
  */
 export function estimateCompetitionPlanning(input: {
   totalMatches: number;
-  availableWeeks: number;
+  calendarWeeks: number;
   timeslots: TimeslotLike[];
+  vacationWeeks?: number;
+  cupWeeksReserved?: number;
+  cupMatches?: number;
   /** Fallback als er geen tijdslots zijn (historisch ~7 speelmomenten/week). */
   defaultSlotsPerWeek?: number;
 }): CompetitionPlanningEstimate {
@@ -114,30 +201,46 @@ export function estimateCompetitionPlanning(input: {
     1,
     configuredSlots > 0 ? configuredSlots : (input.defaultSlotsPerWeek ?? 7),
   );
-  const availableWeeks = Math.max(0, input.availableWeeks);
+  const calendarWeeks = Math.max(0, input.calendarWeeks);
+  const vacationWeeks = Math.max(0, input.vacationWeeks ?? 0);
+  const cupMatches = Math.max(0, input.cupMatches ?? 0);
+  const cupSpread = estimateCupSpreadWeeks({
+    cupMatches,
+    slotsPerWeek,
+    maxAvailableWeeks: Math.max(0, calendarWeeks - vacationWeeks),
+  });
+  const cupWeeksReserved = Math.max(
+    0,
+    input.cupWeeksReserved ?? cupSpread.preferredWeeks,
+  );
+
+  const availableWeeks = Math.max(0, calendarWeeks - vacationWeeks - cupWeeksReserved);
   const totalMatches = Math.max(0, input.totalMatches);
-  const weeksNeeded = Math.ceil(totalMatches / slotsPerWeek);
+  const weeksNeeded = totalMatches === 0 ? 0 : Math.ceil(totalMatches / slotsPerWeek);
   const weekDeficit = Math.max(0, weeksNeeded - availableWeeks);
   const capacity = availableWeeks * slotsPerWeek;
   const overflowMatches = Math.max(0, totalMatches - capacity);
   const dayPair = pickSpacedPlayDayPair(getConfiguredPlayDays(input.timeslots));
 
-  // Elke "dubbele speelweek" kan ruwweg één extra speeldag-equivalent opvangen
-  // (teams die al speelden krijgen een 2e wedstrijd op een gespreide dag).
   const doublePlayWeeks = weekDeficit;
   const feasibleWithDoublePlay =
-    availableWeeks > 0 && totalMatches > 0 && weekDeficit > 0 && overflowMatches > 0
-      ? doublePlayWeeks <= availableWeeks
-      : weekDeficit === 0;
+    weekDeficit === 0
+      ? true
+      : availableWeeks > 0 && totalMatches > 0 && doublePlayWeeks <= availableWeeks;
 
   return {
     slotsPerWeek,
-    weeksNeeded,
+    calendarWeeks,
+    vacationWeeks,
+    cupWeeksReserved,
+    cupMatches,
+    cupPreferredWeeks: cupSpread.preferredWeeks,
     availableWeeks,
+    weeksNeeded,
     weekDeficit,
     overflowMatches,
     doublePlayWeeks,
-    feasibleWithDoublePlay: weekDeficit === 0 || feasibleWithDoublePlay,
+    feasibleWithDoublePlay,
     dayPair,
   };
 }

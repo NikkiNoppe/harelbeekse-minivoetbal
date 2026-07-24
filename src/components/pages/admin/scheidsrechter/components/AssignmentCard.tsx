@@ -149,13 +149,14 @@ const AssignmentCard: React.FC<SessionAssignmentCardProps> = ({
               </Badge>
             </div>
             <Button
-              variant="ghost"
-              size="icon"
+              type="button"
+              variant="unstyled"
+              className="btn btn--icon btn--danger"
               onClick={handleRemoveAssignment}
               disabled={assigning}
-              className="h-8 w-8 text-destructive hover:text-destructive"
+              aria-label="Toewijzing verwijderen"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden />
             </Button>
           </div>
         )}

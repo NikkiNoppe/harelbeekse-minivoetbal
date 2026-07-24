@@ -121,6 +121,7 @@ export type Database = {
           poll_month: string | null
           referee: string | null
           referee_notes: string | null
+          season_label: string | null
           skip_auto_match_costs: boolean
           speeldag: string | null
           unique_number: string | null
@@ -149,6 +150,7 @@ export type Database = {
           poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
+          season_label?: string | null
           skip_auto_match_costs?: boolean
           speeldag?: string | null
           unique_number?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           poll_month?: string | null
           referee?: string | null
           referee_notes?: string | null
+          season_label?: string | null
           skip_auto_match_costs?: boolean
           speeldag?: string | null
           unique_number?: string | null
@@ -359,6 +362,7 @@ export type Database = {
           is_auto_card_penalty: boolean
           match_id: number | null
           organization_id: number
+          season_label: string | null
           team_id: number | null
           transaction_date: string
         }
@@ -369,6 +373,7 @@ export type Database = {
           is_auto_card_penalty?: boolean
           match_id?: number | null
           organization_id: number
+          season_label?: string | null
           team_id?: number | null
           transaction_date?: string
         }
@@ -379,6 +384,7 @@ export type Database = {
           is_auto_card_penalty?: boolean
           match_id?: number | null
           organization_id?: number
+          season_label?: string | null
           team_id?: number | null
           transaction_date?: string
         }
@@ -620,6 +626,31 @@ export type Database = {
       }
     }
     Functions: {
+      close_season_for_session: {
+        Args: {
+          p_session_token: string
+          p_season_label: string
+          p_cutoff_date: string
+          p_target_capital?: number
+        }
+        Returns: Json
+      }
+      export_season_backup_for_session: {
+        Args: {
+          p_session_token: string
+          p_season_label?: string
+          p_target_capital?: number
+        }
+        Returns: Json
+      }
+      get_latest_season_backup_for_session: {
+        Args: { p_session_token: string; p_season_label?: string }
+        Returns: Json
+      }
+      preview_close_season_for_session: {
+        Args: { p_session_token: string; p_cutoff_date: string }
+        Returns: Json
+      }
       add_team_cost: {
         Args: {
           p_amount: number
@@ -1169,6 +1200,7 @@ export type Database = {
           match_date: string
           match_id: number
           match_unique_number: string
+          season_label: string
           team_id: number
           transaction_date: string
         }[]

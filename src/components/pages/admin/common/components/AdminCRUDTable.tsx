@@ -77,7 +77,7 @@ const ErrorState = memo(({ message, onRetry }: { message: string; onRetry: () =>
     <AlertTriangle className="h-4 w-4" />
     <AlertDescription className="flex items-center justify-between">
       <span>{message}</span>
-      <Button variant="outline" size="sm" onClick={onRetry}>
+      <Button type="button" variant="unstyled" className="btn btn--secondary" onClick={onRetry}>
         Opnieuw proberen
       </Button>
     </AlertDescription>
@@ -104,24 +104,26 @@ const TableActions = memo(<T extends { id?: number | string }>({
   
   return (
     <>
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-end gap-1.5">
         <Button
-          variant="outline"
-          size="sm"
+          type="button"
+          variant="unstyled"
           onClick={() => onEdit(item)}
-          className="h-8 w-8 p-0 bg-white text-brand-600 border-brand-400 hover:bg-brand-50"
+          className="btn btn--icon btn--edit"
           disabled={isDeleting || isUpdating}
+          aria-label="Bewerken"
         >
-          {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Edit className="h-4 w-4" />}
+          {isUpdating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Edit className="h-4 w-4" aria-hidden />}
         </Button>
         <Button
-          variant="outline"
-          size="sm"
+          type="button"
+          variant="unstyled"
           onClick={() => setShowDeleteConfirm(true)}
-          className="h-8 w-8 p-0 bg-white text-red-500 border-red-400 hover:bg-red-50 hover:text-red-700"
+          className="btn btn--icon btn--danger"
           disabled={isDeleting || isUpdating}
+          aria-label="Verwijderen"
         >
-          {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Trash2 className="h-4 w-4" aria-hidden />}
         </Button>
       </div>
       <AppAlertModal
@@ -210,14 +212,16 @@ export const AdminCRUDTable = memo(<T extends { id?: number | string }>({
           <CardTitle>{title}</CardTitle>
           <div className="flex gap-2">
             <Button 
+              type="button"
               onClick={onAdd} 
-              className="btn-dark"
+              variant="unstyled"
+              className="btn btn--primary"
               disabled={isAdding}
             >
               {isAdding ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden />
               ) : (
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" aria-hidden />
               )}
               {addButtonText}
             </Button>

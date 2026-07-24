@@ -203,16 +203,19 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
 
                 <div className="flex flex-col gap-2 pt-2">
                   <Button
+                    type="button"
                     onClick={handleSave}
-                    className="w-full min-h-[44px]"
+                    variant="unstyled"
+                    className="btn btn--primary w-full min-h-[44px]"
                     disabled={isSaving}
                   >
                     {isSaving ? "Bezig..." : editingId ? "Opslaan" : "Toevoegen"}
                   </Button>
                   <Button
-                    variant="secondary"
+                    type="button"
+                    variant="unstyled"
                     onClick={resetForm}
-                    className="w-full min-h-[44px]"
+                    className="btn btn--secondary w-full min-h-[44px]"
                     disabled={isSaving}
                   >
                     Annuleren
@@ -223,12 +226,13 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
           )}
 
           <Button
+            type="button"
             onClick={handleAddNew}
-            variant="secondary"
-            className="flex items-center justify-center gap-2 w-full min-h-[44px]"
+            variant="unstyled"
+            className="btn btn--secondary flex items-center justify-center gap-2 w-full min-h-[44px]"
             disabled={isSaving}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden />
             {showAddForm ? "Annuleren" : "Nieuw tarief"}
           </Button>
 
@@ -254,8 +258,9 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                 <div className="text-center py-8 space-y-3">
                   <p className="text-sm text-destructive">Tarieven konden niet geladen worden.</p>
                   <Button
-                    variant="outline"
-                    className="min-h-[44px]"
+                    type="button"
+                    variant="unstyled"
+                    className="btn btn--secondary min-h-[44px]"
                     onClick={() => void refetchCostSettings()}
                   >
                     Opnieuw proberen
@@ -283,29 +288,29 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                             ? "Variabel"
                             : formatCurrency(Number(setting.amount))}
                         </span>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Button
-                            variant="outline"
-                            size="icon"
+                            type="button"
+                            variant="unstyled"
                             onClick={() => editingId === setting.id ? resetForm() : handleEdit(setting)}
                             className={cn(
-                              "min-h-[44px] min-w-[44px] border-primary/20",
+                              "btn btn--icon btn--edit",
                               editingId === setting.id && "bg-brand-50"
                             )}
                             disabled={isSaving}
                             aria-label="Bewerk tarief"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4" aria-hidden />
                           </Button>
                           <Button
-                            variant="outline"
-                            size="icon"
+                            type="button"
+                            variant="unstyled"
                             onClick={() => setDeletingItem(setting)}
-                            className="min-h-[44px] min-w-[44px] border-destructive/30 text-destructive hover:bg-destructive/10"
+                            className="btn btn--icon btn--danger"
                             disabled={isSaving}
                             aria-label="Verwijder tarief"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </Button>
                         </div>
                       </div>
@@ -339,16 +344,19 @@ export const FinancialCostSettingsModal: React.FC<FinancialCostSettingsModalProp
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
                             <Button
+                              type="button"
                               onClick={handleSave}
-                              className="flex-1 min-h-[44px]"
+                              variant="unstyled"
+                              className="btn btn--primary flex-1 min-h-[44px]"
                               disabled={isSaving}
                             >
                               {isSaving ? "Bezig..." : "Opslaan"}
                             </Button>
                             <Button
-                              variant="secondary"
+                              type="button"
+                              variant="unstyled"
                               onClick={resetForm}
-                              className="flex-1 min-h-[44px]"
+                              className="btn btn--secondary flex-1 min-h-[44px]"
                               disabled={isSaving}
                             >
                               Annuleren

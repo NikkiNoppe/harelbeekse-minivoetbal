@@ -27,6 +27,10 @@ supabase/.temp/
 # Local / CI database dumps (never commit)
 backups/
 
+# Seizoens-JSON backups (financiële data — lokaal bewaren)
+/archief/*
+!/archief/.gitkeep
+
 # Editor directories and files
 .vscode/safari-debug-profile/
 .vscode/chrome-debug-profile/

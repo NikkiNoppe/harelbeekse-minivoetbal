@@ -1,38 +1,72 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Archive, AlertCircle } from 'lucide-react';
-import { useArchives } from '@/hooks/useArchives';
-import SeasonSelector from './SeasonSelector';
-import StandingsArchiveCard from './StandingsArchiveCard';
-import CupWinnerCard from './CupWinnerCard';
-import CupArchiveCard from './CupArchiveCard';
-import PlayoffArchiveCard from './PlayoffArchiveCard';
-import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from '@/components/layout';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { useEffect, useMemo, useState } from "react";
+import { Archive, AlertCircle } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { useArchives } from "@/hooks/useArchives";
+import {
+  archiveHasCup,
+  archiveHasPlayoff,
+  archiveHasStandings,
+  parseSeasonLabelStartYear,
+} from "@/lib/archiveManualUtils";
+import type { SeasonArchive } from "@/services/archiveService";
+import SeasonSelector from "./SeasonSelector";
+import SeasonArchiveLayout from "./SeasonArchiveLayout";
+import { PageHeader, PublicPage, PUBLIC_CARD_CLASS } from "@/components/layout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/** Standaard archief-tab — volledig seizoen met eindstanden */
-const DEFAULT_ARCHIVE_SEASON = '2025-2026';
+function archiveHasContent(entry: SeasonArchive): boolean {
+  return (
+    archiveHasStandings(entry.competition_standings) ||
+    archiveHasCup(entry.cup_winner) ||
+    archiveHasPlayoff(entry.playoff)
+  );
+}
+
+function sortSeasonLabelsDesc(labels: string[]): string[] {
+  return [...labels].sort((a, b) => {
+    const ya = parseSeasonLabelStartYear(a) ?? 0;
+    const yb = parseSeasonLabelStartYear(b) ?? 0;
+    return yb - ya;
+  });
+}
 
 const ArchiefPage: React.FC = () => {
   const { data: archives, isLoading, isError, refetch, isFetched } = useArchives();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const seasonFromUrl = searchParams.get("season");
   const [selected, setSelected] = useState<string | null>(null);
 
   const seasons = useMemo(() => {
-    const set = new Set<string>();
-    (archives || []).forEach((a) => set.add(a.season_label));
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
+    const labels = (archives || [])
+      .filter(archiveHasContent)
+      .map((a) => a.season_label);
+    return sortSeasonLabelsDesc(Array.from(new Set(labels)));
   }, [archives]);
 
   useEffect(() => {
-    if (!selected && seasons.length > 0) {
-      setSelected(
-        seasons.includes(DEFAULT_ARCHIVE_SEASON)
-          ? DEFAULT_ARCHIVE_SEASON
-          : seasons[0],
-      );
+    if (seasons.length === 0) {
+      if (selected !== null) setSelected(null);
+      return;
     }
-  }, [seasons, selected]);
+
+    if (seasonFromUrl && seasons.includes(seasonFromUrl)) {
+      if (selected !== seasonFromUrl) setSelected(seasonFromUrl);
+      return;
+    }
+
+    if (selected && seasons.includes(selected)) return;
+
+    setSelected(seasons[0]);
+  }, [seasons, selected, seasonFromUrl]);
+
+  const selectSeason = (label: string) => {
+    setSelected(label);
+    const next = new URLSearchParams(searchParams);
+    next.set("season", label);
+    setSearchParams(next, { replace: true });
+  };
 
   const active = useMemo(
     () => (archives || []).find((a) => a.season_label === selected) || null,
@@ -44,7 +78,7 @@ const ArchiefPage: React.FC = () => {
       <PublicPage>
         <PageHeader
           title="Archief"
-        icon={Archive}
+          icon={Archive}
           subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
         />
         <Skeleton className="h-10 w-full max-w-xs" />
@@ -59,7 +93,7 @@ const ArchiefPage: React.FC = () => {
       <PublicPage>
         <PageHeader
           title="Archief"
-        icon={Archive}
+          icon={Archive}
           subtitle="Eindklassementen, playoffs en bekerwinnaars per seizoen."
         />
         <Card className={PUBLIC_CARD_CLASS} role="alert">
@@ -98,22 +132,15 @@ const ArchiefPage: React.FC = () => {
             <Archive className="w-10 h-10 mx-auto text-muted-foreground mb-3" aria-hidden />
             <p className="font-medium text-foreground">Nog geen gearchiveerde seizoenen</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Een beheerder kan het huidige seizoen archiveren via de competitie-, playoff- en bekerbeheerpagina.
+              Een beheerder vult klassement, beker of play-offs aan via Instellingen → Historisch
+              archief, of via seizoensafsluiting.
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <SeasonSelector seasons={seasons} selected={selected} onSelect={setSelected} />
-          <div className="space-y-4 sm:space-y-6">
-            <CupWinnerCard
-              cup={active?.cup_winner ?? null}
-              playoff={active?.playoff ?? null}
-            />
-            <CupArchiveCard cup={active?.cup_winner ?? null} />
-            <PlayoffArchiveCard entry={active?.playoff ?? null} />
-            <StandingsArchiveCard standings={active?.competition_standings ?? []} />
-          </div>
+          <SeasonSelector seasons={seasons} selected={selected} onSelect={selectSeason} />
+          <SeasonArchiveLayout archive={active} />
         </>
       )}
     </PublicPage>

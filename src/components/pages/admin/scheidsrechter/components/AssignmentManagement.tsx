@@ -203,12 +203,14 @@ const AssignmentManagement: React.FC<AssignmentManagementProps> = ({
               </SelectContent>
             </Select>
             <Button
-              variant="outline"
-              size="icon"
+              type="button"
+              variant="unstyled"
+              className="btn btn--icon"
               onClick={fetchData}
               disabled={loading}
+              aria-label="Vernieuwen"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
             </Button>
           </div>
         </div>

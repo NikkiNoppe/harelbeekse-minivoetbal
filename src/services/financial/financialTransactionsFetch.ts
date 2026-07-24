@@ -10,6 +10,7 @@ export interface FinancialTeamTransaction {
   cost_setting_id?: number | null;
   match_id?: number | null;
   transaction_date: string;
+  season_label?: string | null;
   cost_settings?: {
     name?: string | null;
     category?: string | null;
@@ -41,6 +42,7 @@ interface TeamCostTransactionRow {
   away_team_id?: number | null;
   home_team_name?: string | null;
   away_team_name?: string | null;
+  season_label?: string | null;
 }
 
 function mapOverviewRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
@@ -58,6 +60,7 @@ function mapOverviewRow(row: TeamCostTransactionRow): FinancialTeamTransaction {
     cost_setting_id: row.cost_setting_id,
     match_id: row.match_id,
     transaction_date: row.transaction_date,
+    season_label: row.season_label ?? null,
     cost_settings:
       row.cost_name || row.cost_category
         ? {

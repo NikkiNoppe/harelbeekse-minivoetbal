@@ -12,9 +12,10 @@ import { AlertCircle, Loader2, Trophy } from 'lucide-react';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  organizationId: number;
 }
 
-const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
+const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange, organizationId }) => {
   const [label, setLabel] = useState('');
   const [cup, setCup] = useState<ArchivedCupWinner | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,9 +28,9 @@ const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
     setLoading(true);
     (async () => {
       try {
-        const season = await seasonService.getSeasonData().catch(() => null);
+        const season = await seasonService.getSeasonData(organizationId).catch(() => null);
         setLabel(deriveSeasonLabel(season?.season_start_date, season?.season_end_date));
-        const snap = await archiveService.snapshotCurrentCupFinal();
+        const snap = await archiveService.snapshotCurrentCupFinal(organizationId);
         setCup(snap);
       } catch (e: any) {
         toast({ title: 'Fout bij laden', description: e.message, variant: 'destructive' });
@@ -37,7 +38,7 @@ const ArchiveCupModal: React.FC<Props> = ({ open, onOpenChange }) => {
         setLoading(false);
       }
     })();
-  }, [open, toast]);
+  }, [open, toast, organizationId]);
 
   const exists = !!archives?.find((a) => a.season_label === label && a.cup_winner);
 

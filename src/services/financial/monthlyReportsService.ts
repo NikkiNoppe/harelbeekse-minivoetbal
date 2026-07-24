@@ -6,10 +6,12 @@ import {
   type FinancialTeamTransaction,
 } from "./financialTransactionsFetch";
 import {
+  computeCurrentBalance,
   computePeriodCostTotals,
   costCategory,
   isAdminCostTransaction,
   isFieldCostTransaction,
+  isSeasonTopUpDeposit,
   resolveTeamCostAmount,
   type TeamCostTransaction,
 } from "./teamCostCategories";
@@ -99,6 +101,16 @@ export interface MonthlyReport {
   totalFines: number;
   totalMatches: number;
   totalForfaits: number;
+  /**
+   * Som van team-saldi t.e.m. rapport-einddatum.
+   * Bij seizoen mét wedstrijden: excl. bijstortingen vanaf 1 juni seizoenseinde.
+   * Bij nieuw seizoen (nog geen wedstrijden): incl. bijstortingen.
+   */
+  totalRemainingBalance: number;
+  /** Geen ingediende wedstrijden in deze periode — UI toont alleen saldi. */
+  isBalanceOnly: boolean;
+  /** Of totalRemainingBalance de bijstortingen naar doelkapitaal meeneemt. */
+  balanceIncludesTopUps: boolean;
 }
 
 // Helper functions for season handling
@@ -169,6 +181,7 @@ function toTeamCostTransaction(transaction: FinancialTeamTransaction): TeamCostT
     team_id: transaction.team_id,
     amount: transaction.amount,
     transaction_type: transaction.transaction_type,
+    season_label: transaction.season_label,
     cost_settings: transaction.cost_settings,
     description: transaction.description,
   };
@@ -308,8 +321,14 @@ function rowLabelFromMatchJoin(m: any): {
   };
 }
 
+function getCurrentSeasonStartYear(): number {
+  const now = new Date();
+  const year = now.getFullYear();
+  return now.getMonth() >= 6 ? year : year - 1;
+}
+
 export const monthlyReportsService = {
-  // Get available seasons based on actual match data (not just transactions)
+  // Get available seasons based on match/transaction data + altijd het lopende seizoen
   async getAvailableSeasons(): Promise<SeasonData[]> {
     try {
       const transactions = await fetchAllTeamTransactionsOverview();
@@ -321,6 +340,7 @@ export const monthlyReportsService = {
       }
 
       const seasonYears = new Set<number>();
+      seasonYears.add(getCurrentSeasonStartYear());
 
       for (const transaction of transactions) {
         const seasonStartYear = seasonStartYearFromDate(transaction.transaction_date);
@@ -333,14 +353,12 @@ export const monthlyReportsService = {
         if (seasonStartYear !== null) seasonYears.add(seasonStartYear);
       }
 
-      if (seasonYears.size === 0) return [];
-
       return Array.from(seasonYears)
         .sort((a, b) => b - a)
         .map((year) => getSeasonFromYear(year));
     } catch (error) {
       console.error("Error fetching available seasons:", error);
-      return [];
+      return [getSeasonFromYear(getCurrentSeasonStartYear())];
     }
   },
 
@@ -610,6 +628,43 @@ export const monthlyReportsService = {
           : [],
       }));
       const matchStats = Object.values(matchStatsByMonth);
+      const totalMatches = matchStats.reduce((sum, item) => sum + item.totalMatches, 0);
+
+      const seasonStartStr = startDate.toISOString().split("T")[0];
+      const seasonEndStr = endDate.toISOString().split("T")[0];
+      const seasonHasMatches = allMatchesRaw.some(
+        (m) =>
+          m.is_submitted &&
+          isDateInRange(m.match_date, seasonStartStr, seasonEndStr),
+      );
+      const isBalanceOnly = !seasonHasMatches;
+      const balanceIncludesTopUps = isBalanceOnly;
+
+      // Eindsaldo: bij seizoen mét wedstrijden excl. bijstortingen (vanaf 1 juni seizoenseinde);
+      // bij nieuw seizoen (geen wedstrijden) incl. bijstortingen.
+      const balanceTx = allTransactionsRaw
+        .filter((t) => {
+          const d = t.transaction_date?.slice(0, 10);
+          if (d && d > endDateStr) return false;
+          if (balanceIncludesTopUps) return true;
+          const dated = {
+            ...toTeamCostTransaction(t),
+            transaction_date: t.transaction_date,
+          };
+          return !isSeasonTopUpDeposit(dated, seasonYear);
+        })
+        .map((t) => toTeamCostTransaction(t));
+      const balanceByTeam = new Map<number, TeamCostTransaction[]>();
+      for (const tx of balanceTx) {
+        if (typeof tx.team_id !== "number") continue;
+        const list = balanceByTeam.get(tx.team_id) ?? [];
+        list.push(tx);
+        balanceByTeam.set(tx.team_id, list);
+      }
+      let totalRemainingBalance = 0;
+      for (const teamId of teams.map((t) => t.team_id)) {
+        totalRemainingBalance += computeCurrentBalance(balanceByTeam.get(teamId) ?? []);
+      }
 
       return {
         fieldCosts,
@@ -621,8 +676,11 @@ export const monthlyReportsService = {
         totalRefereeCosts: periodTotals.totalRefereeCosts,
         totalAdminCosts: periodTotals.totalAdminCosts,
         totalFines: periodTotals.totalFines,
-        totalMatches: matchStats.reduce((sum, item) => sum + item.totalMatches, 0),
+        totalMatches,
         totalForfaits,
+        totalRemainingBalance,
+        isBalanceOnly,
+        balanceIncludesTopUps,
       };
     } catch (error) {
       console.error('Error fetching season report:', error);

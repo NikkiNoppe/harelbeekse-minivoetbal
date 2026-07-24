@@ -8,8 +8,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, SectionCollapsibleCard, SectionIcon } from "@/components/layout";
-import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
-import { Loader2, Trophy, AlertCircle, Trash2, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive, Target } from "lucide-react";
+import { AppAlertModal, InfoConfirmDescription } from "@/components/modals";
+import { Loader2, Trophy, AlertCircle, Calendar, CheckCircle, Clock, Undo2, ChevronRight, Settings, MapPin, Palmtree, Archive, Target } from "lucide-react";
 import ArchivePlayoffModal from "@/components/modals/admin/ArchivePlayoffModal";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -49,7 +49,7 @@ interface WeekData {
 }
 
 type PlayoffStatus = 'none' | 'concept' | 'finalized';
-type ConfirmAction = 'finalize' | 'unfinalize' | 'delete' | null;
+type ConfirmAction = 'finalize' | 'unfinalize' | null;
 
 // Helper functions - gebruik UTC voor consistentie met database opslag
 const getWeekMonday = (dateStr: string): string => {
@@ -595,36 +595,6 @@ const AdminPlayoffPage: React.FC = () => {
     }
   };
 
-  const handleDeletePlayoffs = async () => {
-    setActionLoading(true);
-    try {
-      const result = await playoffService.deletePlayoffMatches();
-      if (result.success) {
-        toast({
-          title: "Playoffs verwijderd",
-          description: result.message
-        });
-        await loadInitialData();
-      } else {
-        toast({
-          title: "Fout bij verwijderen",
-          description: result.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error deleting playoffs:', error);
-      toast({
-        title: "Fout bij verwijderen",
-        description: "Er is een fout opgetreden bij het verwijderen.",
-        variant: "destructive"
-      });
-    } finally {
-      setActionLoading(false);
-      setConfirmAction(null);
-    }
-  };
-
   const handleConfirmedAction = async () => {
     // Sla de huidige actie op VOORDAT we iets doen
     const action = confirmAction;
@@ -638,9 +608,6 @@ const AdminPlayoffPage: React.FC = () => {
         break;
       case 'unfinalize':
         await handleUnfinalizePlayoffs();
-        break;
-      case 'delete':
-        await handleDeletePlayoffs();
         break;
     }
     
@@ -674,12 +641,6 @@ const AdminPlayoffPage: React.FC = () => {
       description: 'Teams worden weer vervangen door posities. Je kunt later opnieuw finaliseren met een nieuwe stand.',
       actionLabel: 'Maak Ongedaan',
       variant: 'default' as const
-    },
-    delete: {
-      title: 'Playoffs Verwijderen?',
-      description: 'Alle playoff wedstrijden worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.',
-      actionLabel: 'Verwijder',
-      variant: 'destructive' as const
     }
   };
 
@@ -954,36 +915,6 @@ const AdminPlayoffPage: React.FC = () => {
           </Card>
         )}
 
-        {/* Playoffs Verwijderen */}
-        {hasPlayoffMatches && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Playoffs Verwijderen</CardTitle>
-              <CardDescription>Verwijder de volledige playoff planning. Deze actie kan niet ongedaan worden gemaakt.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Je staat op het punt {playoffMatches.length} playoff wedstrijden permanent te verwijderen.
-                </AlertDescription>
-              </Alert>
-              <Button 
-                variant="destructive" 
-                onClick={() => setConfirmAction('delete')} 
-                disabled={actionLoading} 
-                className="w-full"
-              >
-                {actionLoading && confirmAction === 'delete' ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verwijderen...</>
-                ) : (
-                  <><Trash2 className="mr-2 h-4 w-4" /> Playoffs Verwijderen</>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Planning per Week */}
         {hasPlayoffMatches && (
           <Card>
@@ -1045,12 +976,7 @@ const AdminPlayoffPage: React.FC = () => {
         }}
         title={confirmAction ? confirmDialogContent[confirmAction].title : ''}
         description={
-          confirmAction === "delete" ? (
-            <DestructiveConfirmDescription
-              message="Weet je zeker dat je alle playoff-wedstrijden wilt verwijderen?"
-              warning="Alle playoff wedstrijden worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt."
-            />
-          ) : confirmAction ? (
+          confirmAction ? (
             <InfoConfirmDescription
               message={confirmDialogContent[confirmAction].description}
             />
@@ -1059,7 +985,7 @@ const AdminPlayoffPage: React.FC = () => {
         confirmAction={{
           label: confirmAction ? confirmDialogContent[confirmAction].actionLabel : '',
           onClick: handleConfirmedAction,
-          variant: confirmAction === 'delete' ? 'destructive' : 'primary',
+          variant: 'primary',
           disabled: actionLoading,
           loading: actionLoading,
         }}
@@ -1071,6 +997,8 @@ const AdminPlayoffPage: React.FC = () => {
         }}
         size="sm"
       />
-    </div>;
+    </div>
+  );
 };
+
 export default AdminPlayoffPage;

@@ -2,12 +2,25 @@ export interface TeamCostTransaction {
   team_id: number;
   amount: number | string | null | undefined;
   transaction_type?: string | null;
+  /** NULL = actief seizoen; anders gearchiveerd seizoenslabel */
+  season_label?: string | null;
   cost_settings?: {
     name?: string | null;
     category?: string | null;
     amount?: number | string | null;
   } | null;
   description?: string | null;
+}
+
+/** Doelkapitaal per team aan seizoensstart (nog bij te storten). */
+export const TARGET_TEAM_CAPITAL = 600;
+
+export function isCurrentSeasonTransaction(transaction: TeamCostTransaction): boolean {
+  return transaction.season_label == null || transaction.season_label === "";
+}
+
+export function amountToTopUp(currentBalance: number, target = TARGET_TEAM_CAPITAL): number {
+  return Math.max(0, target - currentBalance);
 }
 
 export interface TeamFinancesSummary {
@@ -144,41 +157,62 @@ export function computeCurrentBalance(transactions: TeamCostTransaction[]): numb
   }, 0);
 }
 
+/**
+ * Bijstortingen naar doelkapitaal gebeuren typisch vanaf juni van het seizoenseinde
+ * (of later in juli/augustus). Voor “eindsaldo afgelopen seizoen” tellen die niet mee.
+ */
+export function seasonTopUpDepositCutoffDate(seasonStartYear: number): string {
+  return `${seasonStartYear + 1}-06-01`;
+}
+
+/** Storting bedoeld om saldo opnieuw aan te vullen na/rond seizoenseinde. */
+export function isSeasonTopUpDeposit(
+  transaction: DatedTeamCostTransaction,
+  seasonStartYear: number,
+): boolean {
+  if (costCategory(transaction) !== "deposit") return false;
+  const d = transaction.transaction_date?.slice(0, 10);
+  if (!d) return false;
+  return d >= seasonTopUpDepositCutoffDate(seasonStartYear);
+}
+
 export function computeTeamFinances(
   teamId: number,
   transactions: TeamCostTransaction[],
 ): TeamFinancesSummary {
   const teamTransactions = transactions.filter((t) => t.team_id === teamId);
+  const currentSeason = teamTransactions.filter(isCurrentSeasonTransaction);
 
-  const startCapital = teamTransactions
+  const startCapital = currentSeason
     .filter((t) => costCategory(t) === "deposit")
     .reduce((sum, t) => sum + amountValue(t, true), 0);
 
-  const uncategorizedMatchCosts = teamTransactions
+  const uncategorizedMatchCosts = currentSeason
     .filter(isUncategorizedMatchCost)
     .reduce((sum, t) => sum + amountValue(t, true), 0);
 
   const fieldCosts =
-    teamTransactions
+    currentSeason
       .filter(isFieldCostTransaction)
       .reduce((sum, t) => sum + amountValue(t, true), 0) + uncategorizedMatchCosts;
 
-  const refereeCosts = teamTransactions
+  const refereeCosts = currentSeason
     .filter(isRefereeCostTransaction)
     .reduce((sum, t) => sum + amountValue(t, true), 0);
 
-  const adminCosts = teamTransactions
+  const adminCosts = currentSeason
     .filter(isAdminCostTransaction)
     .reduce((sum, t) => sum + amountValue(t, true), 0);
 
-  const fines = teamTransactions
+  const fines = currentSeason
     .filter((t) => costCategory(t) === "penalty")
     .reduce((sum, t) => sum + amountValue(t, true), 0);
 
-  const adjustments = teamTransactions
+  const adjustments = currentSeason
     .filter((t) => costCategory(t) === "adjustment" || costCategory(t) === "other")
     .reduce((sum, t) => sum + amountValue(t), 0);
 
+  // Saldo blijft doorlopend over alle seizoenen
   const currentBalance = computeCurrentBalance(teamTransactions);
 
   return {

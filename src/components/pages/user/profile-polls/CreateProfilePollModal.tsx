@@ -198,14 +198,13 @@ export function CreateProfilePollModal({
                 />
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="min-h-[44px] min-w-[44px] shrink-0"
+                  variant="unstyled"
+                  className="btn btn--icon btn--danger shrink-0"
                   disabled={options.length <= 2}
                   onClick={() => removeOption(index)}
                   aria-label="Optie verwijderen"
                 >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  <Trash2 className="h-4 w-4" aria-hidden />
                 </Button>
               </div>
             ))}

@@ -528,14 +528,13 @@ export const TeamModal: React.FC<TeamModalProps> = ({
                 {contactEmailFields.length > 1 && (
                   <Button
                     type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-11 w-11 shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10"
+                    variant="unstyled"
+                    className="btn btn--icon btn--danger shrink-0"
                     onClick={() => handleRemoveContactEmail(index)}
                     disabled={isLoading}
                     aria-label={`Verwijder e-mailadres ${index + 1}`}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
                 )}
               </div>
@@ -543,12 +542,12 @@ export const TeamModal: React.FC<TeamModalProps> = ({
           </div>
           <Button
             type="button"
-            variant="outline"
-            className="min-h-[44px] w-full border-primary/20"
+            variant="unstyled"
+            className="btn btn--outline min-h-[44px] w-full"
             onClick={handleAddContactEmail}
             disabled={isLoading}
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" aria-hidden />
             E-mailadres toevoegen
           </Button>
         </div>

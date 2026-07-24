@@ -113,17 +113,6 @@ const PlayersList: React.FC<PlayersListProps> = ({
       return <EmptyState profile />;
     }
 
-    const editButtonClass = cn(
-      "min-h-[44px] min-w-[44px] transition-colors duration-150",
-      "h-11 w-11 border-border bg-background hover:bg-muted/50",
-    );
-
-    const deleteButtonClass = cn(
-      "min-h-[44px] min-w-[44px] rounded-md border-red-300 transition-colors duration-150",
-      "hover:bg-red-50 hover:border-red-400 text-red-600 hover:text-red-700",
-      "h-11 w-11",
-    );
-
     const playerRows = players.map((player) => {
       const matchCount = matchCountByPlayerId?.get(player.player_id);
       const displayName = getRosterDisplayName(player);
@@ -159,25 +148,25 @@ const PlayersList: React.FC<PlayersListProps> = ({
               {editMode && (
                 <div className="flex items-center gap-1.5">
                   <Button
+                    type="button"
                     onClick={() => onEditPlayer(player.player_id)}
-                    variant="outline"
-                    size="icon"
-                    className={editButtonClass}
+                    variant="unstyled"
+                    className="btn btn--icon btn--edit"
                     aria-label={`Bewerk ${displayName}`}
                   >
-                    <Edit size={16} />
+                    <Edit className="h-4 w-4" aria-hidden />
                   </Button>
                   <Button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteClick(player);
                     }}
-                    variant="outline"
-                    size="icon"
-                    className={deleteButtonClass}
+                    variant="unstyled"
+                    className="btn btn--icon btn--danger"
                     aria-label={`Verwijder ${displayName}`}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
                 </div>
               )}
@@ -338,26 +327,24 @@ const PlayersList: React.FC<PlayersListProps> = ({
                       </TableCell>
                       {editMode && (
                         <TableCell className="text-center">
-                          <div className="flex items-center gap-1 justify-center">
+                          <div className="flex items-center gap-1.5 justify-center">
                             <Button
                               type="button"
                               onClick={() => onEditPlayer(player.player_id)}
-                              variant="ghost"
-                              size="icon"
-                              className="min-h-[44px] min-w-[44px]"
+                              variant="unstyled"
+                              className="btn btn--icon btn--edit"
                               aria-label={`Bewerk ${displayName}`}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4" aria-hidden />
                             </Button>
                             <Button
                               type="button"
                               onClick={() => handleDeleteClick(player)}
-                              variant="ghost"
-                              size="icon"
-                              className="min-h-[44px] min-w-[44px] text-destructive"
+                              variant="unstyled"
+                              className="btn btn--icon btn--danger"
                               aria-label={`Verwijder ${displayName}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             </Button>
                           </div>
                         </TableCell>

@@ -229,22 +229,18 @@ const TeamsList: React.FC<TeamsListProps> = ({
                             <Button
                               type="button"
                               onClick={() => onEdit(team)}
-                              variant="ghost"
-                              size="icon"
-                              className="min-h-[44px] min-w-[44px]"
+                              className="btn btn--icon btn--edit"
                               aria-label={`Bewerk ${team.team_name}`}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4" aria-hidden />
                             </Button>
                             <Button
                               type="button"
                               onClick={() => onDelete(team)}
-                              variant="ghost"
-                              size="icon"
-                              className="min-h-[44px] min-w-[44px] text-destructive"
+                              className="btn btn--icon btn--danger"
                               aria-label={`Verwijder ${team.team_name}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             </Button>
                           </div>
                         </TableCell>

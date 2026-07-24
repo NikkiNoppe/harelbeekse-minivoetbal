@@ -222,7 +222,9 @@ const VenuesSettings: React.FC = () => {
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Beheer de sportzalen waar wedstrijden worden gespeeld.
+              Beheer de sportzalen waar wedstrijden worden gespeeld. Sportzalen zijn{" "}
+              <strong>niet seizoensgebonden</strong>: ze blijven in de database staan bij
+              seizoenswissel of soft-archive.
               <br />
               <strong>Let op:</strong> Wijzigingen vereisen een herstart van de applicatie.
             </p>
@@ -250,28 +252,45 @@ const VenuesSettings: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                 <TableBody>
-                  {venues.map((venue) => (
-                    <TableRow key={venue.venue_id}>
-                      <TableCell className="font-medium">{venue.name}</TableCell>
-                      <TableCell>{venue.address}</TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center gap-1">
-                          <Button
-                            className="btn btn--icon btn--edit"
-                            onClick={() => handleEdit(venue)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            className="btn btn--icon btn--danger"
-                            onClick={() => handleDelete(venue)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {isLoading && venues.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground" aria-busy>
+                        Locaties laden…
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : venues.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-muted-foreground">
+                        Geen sportzalen gevonden. Voeg er een toe of controleer of
+                        seizoensdata voor deze organisatie venues bevat.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    venues.map((venue) => (
+                      <TableRow key={venue.venue_id}>
+                        <TableCell className="font-medium">{venue.name}</TableCell>
+                        <TableCell>{venue.address}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              className="btn btn--icon btn--edit"
+                              onClick={() => handleEdit(venue)}
+                              aria-label={`Bewerk ${venue.name}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              className="btn btn--icon btn--danger"
+                              onClick={() => handleDelete(venue)}
+                              aria-label={`Verwijder ${venue.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
                   </Table>
                 </div>

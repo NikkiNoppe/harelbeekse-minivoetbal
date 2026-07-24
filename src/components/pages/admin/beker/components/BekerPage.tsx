@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppAlertModal, DestructiveConfirmDescription, InfoConfirmDescription } from "@/components/modals";
+import { AppAlertModal, InfoConfirmDescription } from "@/components/modals";
 import { AppModal } from "@/components/modals/base/app-modal";
-import { Loader2, Trophy, AlertCircle, CheckCircle, Trash2, Archive, Award } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, CheckCircle, Archive, Award } from "lucide-react";
 import { PageHeader } from "@/components/layout";
 import ArchiveCupModal from "@/components/modals/admin/ArchiveCupModal";
 
@@ -15,14 +15,18 @@ import { teamService, Team } from "@/services/core";
 import { bekerService } from "@/services/match/cupService";
 import AdminTeamSelector from "@/components/pages/admin/common/components/AdminTeamSelector";
 import { supabase } from "@/integrations/supabase/client";
+import { seasonService } from "@/services";
+import { describeCupPlan, getCupBracketPlan } from "@/lib/cupBracketPlan";
+import { useOrgQueryScope } from "@/hooks/useOrganization";
+
 const BekerPage: React.FC = () => {
   const { toast } = useToast();
+  const { organizationId, orgQueryEnabled } = useOrgQueryScope();
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<number[]>([]);
   const [tournamentDates, setTournamentDates] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [existingCup, setExistingCup] = useState<null | {
@@ -33,7 +37,6 @@ const BekerPage: React.FC = () => {
   }>(null);
   const [byeTeamId, setByeTeamId] = useState<number | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<Array<{
     unique_number: string;
     speeldag: string;
@@ -47,23 +50,41 @@ const BekerPage: React.FC = () => {
   }> | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [previewTotal, setPreviewTotal] = useState<number | null>(null);
+  const [slotsPerWeek, setSlotsPerWeek] = useState(7);
   const teamNameById = useMemo(() => {
     const map = new Map<number, string>();
     teams.forEach(t => map.set(t.team_id, t.team_name));
     return map;
   }, [teams]);
 
-  // Load teams from database on component mount
+  const cupPlan = useMemo(
+    () => getCupBracketPlan(selectedTeams.length, slotsPerWeek),
+    [selectedTeams.length, slotsPerWeek],
+  );
+
+  // Load teams + cup for de actieve organisatie
   useEffect(() => {
+    if (!orgQueryEnabled || organizationId == null) return;
+
     const loadInitial = async () => {
       try {
         setLoading(true);
-        const [teamsData, cupData] = await Promise.all([
+        setExistingCup(null);
+        setSelectedTeams([]);
+        setTournamentDates([]);
+        setPreviewPlan(null);
+        setPreviewTotal(null);
+        setByeTeamId(null);
+
+        const [teamsData, cupData, seasonData] = await Promise.all([
           teamService.getAllTeams(),
-          bekerService.getCupMatches().catch(() => null)
+          bekerService.getCupMatches(organizationId).catch(() => null),
+          seasonService.getSeasonData(organizationId).catch(() => null),
         ]);
         setTeams(teamsData);
         if (cupData) setExistingCup(cupData);
+        const slots = seasonData?.venue_timeslots?.length || 7;
+        setSlotsPerWeek(Math.max(1, slots));
 
         // Defensive fallback: ensure all winners are advanced to their next round.
         // Catches edge cases where matches were updated outside the normal flow.
@@ -71,8 +92,7 @@ const BekerPage: React.FC = () => {
           const reconcileResult = await bekerService.reconcileAdvancements();
           if (reconcileResult.success && reconcileResult.advancedCount > 0) {
             console.log(`[BekerPage] Reconciled bracket: ${reconcileResult.message}`);
-            // Reload to reflect the freshly advanced winners
-            const refreshed = await bekerService.getCupMatches().catch(() => null);
+            const refreshed = await bekerService.getCupMatches(organizationId).catch(() => null);
             if (refreshed) setExistingCup(refreshed);
             toast({
               title: "Bracket gesynchroniseerd",
@@ -95,32 +115,37 @@ const BekerPage: React.FC = () => {
       }
     };
 
-    loadInitial();
-  }, [toast]);
+    void loadInitial();
+  }, [toast, orgQueryEnabled, organizationId]);
 
   const reloadExistingCup = useCallback(async () => {
+    if (organizationId == null) {
+      setExistingCup(null);
+      return;
+    }
     try {
-      const cupData = await bekerService.getCupMatches();
+      const cupData = await bekerService.getCupMatches(organizationId);
       setExistingCup(cupData);
     } catch (e) {
       setExistingCup(null);
     }
-  }, []);
+  }, [organizationId]);
 
-  // Realtime: update bracket when cup matches change elsewhere (e.g., match form updates)
+  // Realtime: alleen cup-matches van de actieve organisatie
   useEffect(() => {
+    if (organizationId == null) return;
+
     const channel = supabase
-      .channel('cup-matches-live')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
+      .channel(`cup-matches-live-${organizationId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
         table: 'matches',
-        filter: 'is_cup_match=eq.true'
+        filter: `is_cup_match=eq.true,organization_id=eq.${organizationId}`,
       }, () => {
         reloadExistingCup();
       })
       .subscribe((status) => {
-        // Silently handle subscription errors to prevent console errors that affect SEO
         if (status === 'CHANNEL_ERROR') {
           console.debug('Realtime connection unavailable, continuing without live updates');
         }
@@ -128,7 +153,16 @@ const BekerPage: React.FC = () => {
     return () => {
       try { supabase.removeChannel(channel); } catch (_) {}
     };
-  }, [reloadExistingCup]);
+  }, [reloadExistingCup, organizationId]);
+
+  // Reset speeldata wanneer het benodigde aantal weken wijzigt
+  useEffect(() => {
+    if (tournamentDates.length > 0 && tournamentDates.length !== cupPlan.requiredWeeks) {
+      setTournamentDates([]);
+      setPreviewPlan(null);
+      setPreviewTotal(null);
+    }
+  }, [cupPlan.requiredWeeks, tournamentDates.length]);
 
   const handleCancelTournament = useCallback(() => {
     setSelectedTeams([]);
@@ -167,7 +201,7 @@ const BekerPage: React.FC = () => {
 
   // Memoize tournament creation handler
   const handleCreateTournament = useCallback(async () => {
-    const requiredWeeks = selectedTeams.length === 16 ? 5 : 4;
+    const requiredWeeks = cupPlan.requiredWeeks;
     if (selectedTeams.length < 2) {
       toast({ title: "Onvoldoende teams", description: "Selecteer minstens 2 teams", variant: "destructive" });
       return;
@@ -188,7 +222,7 @@ const BekerPage: React.FC = () => {
       if (previewPlan && previewPlan.length > 0) {
         createResult = await bekerService.createCupFromPlan(previewPlan);
       } else {
-        createResult = await bekerService.createCupTournament(selectedTeams, tournamentDates, byeTeamId);
+        createResult = await bekerService.createCupTournament(selectedTeams, tournamentDates, byeTeamId, organizationId ?? undefined);
       }
       if (createResult.success) {
         toast({ title: "Beker aangemaakt", description: createResult.message });
@@ -217,10 +251,10 @@ const BekerPage: React.FC = () => {
     } finally {
       setIsCreating(false);
     }
-  }, [selectedTeams, tournamentDates, toast, reloadExistingCup]);
+  }, [selectedTeams, tournamentDates, toast, reloadExistingCup, cupPlan.requiredWeeks, previewPlan, byeTeamId, organizationId]);
 
   const handleGeneratePreview = useCallback(async () => {
-    const requiredWeeks = selectedTeams.length === 16 ? 5 : 4;
+    const requiredWeeks = cupPlan.requiredWeeks;
     if (selectedTeams.length < 2) {
       toast({ title: "Onvoldoende teams", description: "Selecteer minstens 2 teams", variant: "destructive" });
       return;
@@ -231,7 +265,7 @@ const BekerPage: React.FC = () => {
     }
     setIsPreviewing(true);
     try {
-      const res = await bekerService.previewCupTournament(selectedTeams, tournamentDates, 1, byeTeamId || null);
+      const res = await bekerService.previewCupTournament(selectedTeams, tournamentDates, 1, byeTeamId || null, organizationId ?? undefined);
       if (!res.success || !res.plan || res.plan.length === 0) {
         toast({ title: "Preview mislukt", description: res.message || "Geen plan gegenereerd", variant: "destructive" });
         setPreviewPlan(null);
@@ -248,32 +282,15 @@ const BekerPage: React.FC = () => {
     } finally {
       setIsPreviewing(false);
     }
-  }, [selectedTeams, tournamentDates, toast]);
-
-  const handleDeleteCup = useCallback(async () => {
-    setIsDeleting(true);
-    try {
-      const result = await bekerService.deleteCupTournament();
-      if (result.success) {
-        toast({ title: "Beker verwijderd", description: result.message });
-        setExistingCup(null);
-      } else {
-        toast({ title: "Fout bij verwijderen", description: result.message, variant: "destructive" });
-      }
-    } catch (error) {
-      toast({ title: "Fout", description: "Kon beker niet verwijderen", variant: "destructive" });
-    } finally {
-      setIsDeleting(false);
-    }
-  }, [toast]);
+  }, [selectedTeams, tournamentDates, toast, byeTeamId, cupPlan.requiredWeeks, organizationId]);
 
   // Memoize validation states
   const canCreateTournament = useMemo(() => {
-    const requiredWeeks = selectedTeams.length === 16 ? 5 : 4;
+    const requiredWeeks = cupPlan.requiredWeeks;
     const hasBasics = selectedTeams.length >= 2 && tournamentDates.length === requiredWeeks;
     const needsBye = selectedTeams.length % 2 === 1;
     return hasBasics && (!needsBye || !!byeTeamId);
-  }, [selectedTeams.length, tournamentDates.length, byeTeamId]);
+  }, [selectedTeams.length, tournamentDates.length, byeTeamId, cupPlan.requiredWeeks]);
 
   const canSelectDates = useMemo(() => selectedTeams.length >= 2, [selectedTeams.length]);
 
@@ -296,10 +313,11 @@ const BekerPage: React.FC = () => {
     };
   }, [existingCup]);
 
-  if (loading) {
+  if (!orgQueryEnabled || organizationId == null || loading) {
     return (
-      <div className="flex justify-center items-center py-8">
+      <div className="flex justify-center items-center py-8" aria-busy="true">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="sr-only">Laden…</span>
       </div>
     );
   }
@@ -323,14 +341,18 @@ const BekerPage: React.FC = () => {
         </Button>
       </div>
 
-      <ArchiveCupModal open={showArchiveModal} onOpenChange={setShowArchiveModal} />
+      <ArchiveCupModal open={showArchiveModal} onOpenChange={setShowArchiveModal} organizationId={organizationId} />
 
       <section className="space-y-6 mt-6">
         {/* Nieuwe Beker Aanmaken */}
         <Card>
           <CardHeader>
             <CardTitle>Nieuwe Beker Aanmaken</CardTitle>
-            <CardDescription>Maak een nieuw bekertoernooi aan met 16 teams en 5 speelweken</CardDescription>
+            <CardDescription>
+              {selectedTeams.length >= 2
+                ? `Maak een bekertoernooi aan: ${describeCupPlan(cupPlan)}`
+                : "Selecteer teams om het aantal speelweken automatisch te bepalen"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -350,7 +372,12 @@ const BekerPage: React.FC = () => {
                 />
                 <div className="mt-2 text-sm text-muted-foreground">
                   <Badge variant="secondary">{selectedTeams.length} / {teams.length} geselecteerd</Badge>
-                  <span className="ml-2">Minstens 2 teams. 16 teams = 5 weken, anders 4.</span>
+                  <span className="ml-2">
+                    Minstens 2 teams.{" "}
+                    {selectedTeams.length >= 2
+                      ? `${cupPlan.requiredWeeks} speelweken nodig (${cupPlan.firstRoundPairs}× 1/8${cupPlan.firstRoundWeeks > 1 ? ` over ${cupPlan.firstRoundWeeks} weken` : ""} + QF/SF/finale).`
+                      : "Speelweken worden berekend op basis van teams en tijdslots."}
+                  </span>
                 </div>
               </div>
               <div className="space-y-4">
@@ -360,12 +387,20 @@ const BekerPage: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Nog geen speeldata geselecteerd</p>
                   ) : (
                     <div className="space-y-1">
-                      {tournamentDates.map((date, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm">Speelweek {index + 1}</span>
-                          <span className="text-sm font-medium">{new Date(date).toLocaleDateString('nl-NL')}</span>
-                        </div>
-                      ))}
+                      {tournamentDates.map((date, index) => {
+                        const label =
+                          cupPlan.roundLabels.flatMap((r) =>
+                            r.type === "group"
+                              ? r.subRounds.map((s) => `${r.name} — ${s.name}`)
+                              : [r.name],
+                          )[index] ?? `Speelweek ${index + 1}`;
+                        return (
+                          <div key={index} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded min-h-[44px]">
+                            <span className="text-sm">{label}</span>
+                            <span className="text-sm font-medium shrink-0">{new Date(date).toLocaleDateString('nl-NL')}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -502,42 +537,6 @@ const BekerPage: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Beker Verwijderen */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Beker Verwijderen</CardTitle>
-            <CardDescription>Verwijder het volledige bekertoernooi. Deze actie kan niet ongedaan worden gemaakt.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {hasExistingCup ? (
-              <>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Je staat op het punt een actief bekertoernooi met {cupCounts.total} wedstrijden te verwijderen.
-                  </AlertDescription>
-                </Alert>
-                <Button onClick={() => setShowDeleteConfirm(true)} disabled={isDeleting} variant="destructive" className="w-full">
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verwijderen...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" /> Beker Verwijderen
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>Er is momenteel geen actieve beker om te verwijderen.</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
       </section>
 
       {/* Date Selector Modal */}
@@ -552,41 +551,14 @@ const BekerPage: React.FC = () => {
           onDatesSelected={handleDatesSelected}
           onCancel={handleCancelDateSelection}
           isLoading={isCreating}
-          weeks={selectedTeams.length === 16 ? 5 : 4}
+          weeks={cupPlan.requiredWeeks}
+          firstRoundWeeks={cupPlan.firstRoundWeeks}
+          organizationId={organizationId}
           allowByeSelection={selectedTeams.length % 2 === 1}
           teamsForBye={teams.filter(t => selectedTeams.includes(t.team_id)).map(t => ({ team_id: t.team_id, team_name: t.team_name }))}
           onByeSelected={setByeTeamId}
         />
       </AppModal>
-
-      {/* Delete Confirmation */}
-      <AppAlertModal
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        title="Beker Verwijderen?"
-        description={
-          <DestructiveConfirmDescription
-            message="Weet je zeker dat je de volledige beker wilt verwijderen?"
-            warning={`Alle bekerwedstrijden (${cupCounts.total}) worden permanent verwijderd. Deze actie kan niet ongedaan worden gemaakt.`}
-          />
-        }
-        confirmAction={{
-          label: "Verwijderen",
-          onClick: async () => {
-            setShowDeleteConfirm(false);
-            await handleDeleteCup();
-          },
-          variant: "destructive",
-          disabled: isDeleting,
-          loading: isDeleting,
-        }}
-        cancelAction={{
-          label: "Annuleren",
-          onClick: () => setShowDeleteConfirm(false),
-          disabled: isDeleting,
-        }}
-        size="sm"
-      />
     </div>
   );
 };

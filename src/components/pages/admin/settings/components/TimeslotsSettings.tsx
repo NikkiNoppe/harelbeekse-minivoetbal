@@ -234,6 +234,8 @@ const TimeslotsSettings: React.FC = () => {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Beheer de tijdslots per locatie waar wedstrijden kunnen worden gespeeld.
+              Tijdslots blijven behouden bij seizoenswissel of soft-archive; pas ze manueel
+              aan als de speeltijden wijzigen.
               Laat de periode leeg voor slots die het hele seizoen gelden, of stel een
               start- en einddatum in voor extra speelmomenten in bepaalde periodes.
             </p>
